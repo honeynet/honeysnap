@@ -1,0 +1,102 @@
+Honeysnap TODO list
+$Id$
+$URL$
+
+    * Add $Id$ to all files
+
+    * Remove all the gzip and fifo related code
+
+    * Remove the input data directory etc stuff
+
+        * Usage: honeysnap.py configfile pcapfile
+
+    * irc wordlist moved to the config file
+
+    * change honeynet IPs in sample config file to 192.168 address rather than
+      being live UK honeypots
+
+    * The flow extraction grinds my machine into the ground on a real dataset
+
+    * The output format of the flows isn't that useful. Maybe write a general
+      output class/fn that prints out the top N talkers, ordered by traffic
+      count. N would be defined in the config file
+
+    * Filename extraction from FTP/HTTP needs porting from the final UK sh
+      version
+
+    * The better IRC analysis from the final UK honeysnap also needs porting.
+      That bit is perl so isn't to hard to port I hope
+
+    * file extraction from http/ftp with file naming
+
+        * we drop files in a directory corresponding to the honeypot+remote ip,
+          adding a postfix to every file name to ensure uniqueness so
+            GET /fred/fred.tar
+          run twice produces two files
+            ./honeynetip/remoteip/fred-DIR-fred.tar.1 and fred-DIR-fred.tar.2
+
+        * we strip the http header and store that as filename.hdr
+
+        * md5 sum of file
+
+        * type of file as reported by 'file'
+
+	* Putting the files into the db as a blob/whatever is good here, but
+	  the option to not put it into a DB is always useful for quick one-off
+	  runs and should be kept I feel.
+
+    * IRC analysis
+
+        * number of messages
+
+        * messages matching patterns
+            * static patterns
+            * regex patterns
+            * possible bot commands
+
+        * spot lines repeated N times (N=100 seems to work well) to spot
+	  botnets reporting back
+
+        * number of users
+            * top N users
+
+        * number of channels
+            * top N channels
+
+        * IP addresses of irc talkers
+            * top N ips
+
+
+Currently our pattern lists are:
+
+# keywords is a list of literal strings to match, case insensitive
+@keywords = qw{ 
+   ./ ./remote /bin /etc /var 0day access account admin auth backdoor bank bash
+   binaries binary bot brute buffer card cash cc cent code connect crack credit
+   dns denied dollar ebay e-bay egg elf exec flood euro ftp google hackexploit
+   http leech login mail mastercard merge money nologin owns ownz packet pass
+   password paypal perl phish php pirate pound probe prv putty remote resolved
+   root rooted rootkit salts scam scan shell smtp sploit ssh sterling sucess
+   sysop sys-op trade uid uname uptime USD userid virus visa warez
+   };
+
+
+For regexs, we currently just look for IP addresses. Surprisingly useful
+
+   # keyword_res is a list of regular expressions to match
+   @keyword_res = ();
+   # Match an IP addr. From Jeffrey Friedl's "Mastering Regular Expressions"
+   my $ReIpNum = qr{(?:[01]?\d\d?|2[0-4]\d|25[0-5])};
+   my $ReIpAddr = qr{(?:\b$ReIpNum\.$ReIpNum\.$ReIpNum\.$ReIpNum\b)};
+   push @keyword_res, $ReIpAddr;
+
+
+For the bot commands, we have two lists, one of possible prefixes and one of
+commands
+
+   @botprefixes = qw{ . - ! \`  \  | };
+   @botcoms = qw{ die esay flood m me part payment ping s say server services
+                  startflood stopflood x};
+
+and then create a regex from this that looks for all combinations for prefixes
++ commands.
