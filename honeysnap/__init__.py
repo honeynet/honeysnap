@@ -27,7 +27,6 @@ import string
 import gzip
 import os
 #import dataextractor
-from dbconnect import *
 from threading import Thread
 from ConfigParser import SafeConfigParser
 import tcpflow
@@ -573,6 +572,7 @@ def main():
 		honeypots = honeypots.split()
 		dbargs = None
 		if parser.has_section("DATABASE"):
+			from dbconnect import *
 			dbargs = {}
 			dbargs["host"] = parser.get("DATABASE", "host")
 			dbargs["user"] = parser.get("DATABASE", "user")
