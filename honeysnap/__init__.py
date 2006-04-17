@@ -417,7 +417,8 @@ def processFile(honeypots, file, options, dbargs=None):
 			for name, val in options.items():
 				if name in FILTERS and val == "YES":
 					filt = FILTERS[name]
-					p = open_offline("/tmp/fifo")
+					p = open_offline(fifo)
+					#p = open_offline("/tmp/fifo")
 					c = Counter(p)
 					c.setOutput(options["output_data_directory"] + "/results")
 					f = filt % ipaddr
@@ -605,11 +606,17 @@ def main():
 		options["output_data_directory"] = outputdir
 		options["tmp_file_directory"] = tmpdir
 
+		nomatch = 0
+
 		files = os.listdir(inputdir)
 		for f in files:
 			if dateregex.match(f) and string.find(f, "pcap.log.gz") > 0:
 				processFile(honeypots, inputdir+"/" + f, options, dbargs)
+				nomatch = 1
 
+		if nomatch != 1:
+			print "No pcap files found!"
+	
 		cleanup(options)
 
 	else:
