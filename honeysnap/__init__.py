@@ -30,6 +30,7 @@ import os
 from threading import Thread
 from ConfigParser import SafeConfigParser
 import tcpflow
+from ram import ram
 
 FILTERS = {'do_packets':'src host %s', 
 			'do_ftp':'src host %s and dst port 21',
@@ -511,7 +512,8 @@ def processFile(honeypots, file, options, dbargs=None):
 			de.setOutdir(options["output_data_directory"] + "/ftp-extract")
 			de.setOutput(options["output_data_directory"] + "/results")
 			de.start()
-
+			
+			
 		if options["do_smtp"] == "YES" and options["do_files"] == "YES":
 			print "Extracting from smtp"
 			p = open_offline(fifo)
@@ -527,6 +529,12 @@ def processFile(honeypots, file, options, dbargs=None):
 		if options["do_sebek"] == "YES":
 			print "Sebek not currently supported"
 
+		if options["id_files"] == "YES":
+			de = tcpflow.tcpFlow(p)
+			filelist =  de.fname
+			for fstr in filelist:
+				t = ram()
+				print fstr + ":\t" + t.filetype(fstr)
 
 def usage():
 	use = """Usage:
@@ -597,7 +605,8 @@ def main():
 					"do_irc_detail":"NO",
 					"do_sebek":"NO",
 					"do_rrd":"NO",
-					"do_files": "NO"
+					"do_files":"NO",
+					"id_files":"NO"
 					}
 		
 		for i in parser.items("OPTIONS"):
@@ -625,4 +634,5 @@ def main():
 if __name__ == "__main__":
 	#import profile
 	#profile.run('main()', 'mainprof')
+		
 	main()

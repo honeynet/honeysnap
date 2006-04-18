@@ -46,6 +46,9 @@ class flow:
 		self.dport = None
 
 class flow_state:
+	
+	fname = []
+
 	def __init__(self):
 		self.next = None # link to next flow state
 		self.flow = None # Description of the flow
@@ -61,6 +64,8 @@ class flow_state:
 
 
 class flow_state_manager:
+
+
 	def __init__(self):
 		self.current_time = 0
 		self.max_fds = self.get_max_fds() - NUM_RESERVED_FDS
@@ -142,7 +147,6 @@ class flow_state_manager:
 
 	def open_file(self, state):
 		filename = self.flow_filename(state.flow)
-
 		if state.fp is not None:
 			if not state.fp.closed:
 				# the state fp is already open, return it
@@ -157,6 +161,7 @@ class flow_state_manager:
 			self.contract_fd_ring()
 
 		return state.fp
+	
 
 	def close_file(self, state):
 		if state.fp is None:
@@ -202,6 +207,10 @@ class flow_state_manager:
 		"""
 
 class tcpFlow:
+	
+	fname = []
+	fhash = {}
+
 	def __init__(self, pcapObj):
 		self.p = pcapObj
 		self.states = flow_state_manager()
@@ -215,6 +224,13 @@ class tcpFlow:
 		else:
 			raise Exception("Datalink type not supported: " % datalink)
 		
+	def flow_filename(self, flow):
+		"""
+		filename should be:
+		"%03d.%03d.%03d.%03d.%05d-%03d.%03d.%03d.%03d.%05d"
+		"""
+		name = "%s/%s.%s-%s.%s" % (self.outdir, flow.src, flow.sport, flow.dst, flow.dport)
+		return name
 	
 	def packetHandler(self, hdr, data):
 		try:
@@ -245,7 +261,10 @@ class tcpFlow:
 		data = tcp.child().get_buffer_as_string()
 
 		self.store_packet(this_flow, data, seq)
-
+		
+		if not self.fhash.has_key(self.flow_filename(this_flow)):
+			self.fname.append(self.flow_filename(this_flow))
+			self.fhash[self.flow_filename(this_flow)] = 1
 
 	def store_packet(self, flow, data, seq):
 		bytes_per_flow = 1000000
@@ -273,6 +292,7 @@ class tcpFlow:
 		#pdb.set_trace()
 		if state.fp is None:
 			fp = self.states.open_file(state)
+
 			if fp is None:
 				#print "open_file returned none!!"
 				sys.exit(1)
@@ -288,6 +308,7 @@ class tcpFlow:
 			fpos = offset
 			#state.fp.seek(fpos)
 
+		
 		state.fp.write(data)
 		state.fp.flush()
 
@@ -296,6 +317,7 @@ class tcpFlow:
 		if state.flags&FLOW_FINISHED:
 			#print "flow marked finished, closing file"
 			self.states.close_file(state)
+
 
 	def start(self):
 		while 1:
