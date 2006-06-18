@@ -84,9 +84,10 @@ class Counter(Base):
 		self.total = 0
 
 	def writeResults(self):
-		f = open(self.outfile, "a")
+		f = sys.stdout
+		#f = open(self.outfile, "a")
 		f.write("%-40s %10d\n" % (self.filter, self.total))
-		f.close()
+		#f.close()
 
 class Summarize(Base):
 	"""
@@ -172,7 +173,8 @@ class Summarize(Base):
 					print "%-15s %-15s %8s %10s" % (key[0], key[1], key[2], val)
 	
 	def writeResults(self):
-		f = open(self.outfile, 'a')
+		f = sys.stdout
+		#f = open(self.outfile, 'a')
 		f.write("TCP TRAFFIC SUMMARY:\n")
 		f.write("%-15s %-15s %8s %10s\n" % ("SOURCE", "DEST", "DPORT", "COUNT"))
 		for key, val in self.tcpports.items():
@@ -184,7 +186,7 @@ class Summarize(Base):
 			for key, val in self.udpports.items():
 				#if val > 10:
 				f.write("%-15s %-15s %8s %10s\n" % (key[0], key[1], key[2], val))
-		f.close()
+		#f.close()
 		if self.db:
 			self.db.doInserts()
 				
@@ -274,13 +276,14 @@ class PcapRE(Base):
 			self.searcher.writeResults()
 
 	def writeResults(self):
-		f = open(self.outfile, 'a')
+		f = sys.stdout
+		#f = open(self.outfile, 'a')
 		f.write("%-10s %-5s %-15s %-15s %-5s %10s\n" % ("PATTERN", "PROTO", "SOURCE", "DEST", "DPORT", "COUNT"))
 		for key, val in self.results.items():
 			f.write("%-10s %-5s %-15s %-15s %-5s %10s\n" % (self.pattern, key[0], key[1], key[2], key[3], val))
 		if self.doWordSearch:
 			self.searcher.writeResults()
-		f.close()
+		#f.close()
 
 class wordSearch(Base):
 	"""
@@ -332,13 +335,14 @@ class wordSearch(Base):
 				print "%s: %s\t\t%s\t\t%s\t\t%s\t\t\t%s" % (word, k[0], k[1], k[2], k[3], self.results[word][k])
 
 	def writeResults(self):
-		f = open(self.outfile, 'a')
+		f = sys.stdout
+		#f = open(self.outfile, 'a')
 		f.write("Word Matches\n")
 		f.write("%-10s %-5s %-17s %-17s %-7s %10s\n" % ("WORD", "PROTO", "SOURCE", "DEST", "DPORT", "COUNT"))
 		for word, cons in self.results.items():
 			for k in cons:
 				f.write("%-10s %-5s %-17s %-17s %-7s %10s\n" % (word, k[0], k[1], k[2], k[3], self.results[word][k]))
-		f.close()
+		#f.close()
 	
 		
 
@@ -386,7 +390,8 @@ def processFile(honeypots, file, options, dbargs=None):
 		gz = gzToPipe(file, fifo)
 		gz.run()
 		try:
-			outfile = open(options["output_data_directory"] + "/results", 'a+')
+			outfile = sys.stdout
+			#outfile = open(options["output_data_directory"] + "/results", 'a+')
 		except IOError:
 			# we have some error opening the file
 			# first we check if the output dir exists
@@ -395,7 +400,8 @@ def processFile(honeypots, file, options, dbargs=None):
 				try:
 					os.mkdir(options["output_data_directory"])
 					# now we can create the output file
-					outfile = open(options["output_data_directory"] + "/results", 'a+')
+					outfile = sys.stdout					
+#outfile = open(options["output_data_directory"] + "/results", 'a+')
 				except:
 					print "Error creating output directory"
 					sys.exit(1)
@@ -409,7 +415,7 @@ def processFile(honeypots, file, options, dbargs=None):
 
 			
 			
-		print "Processing file: %s" % file
+		outfile.write("Processing file: %s\n" % file)
 		outfile.write("\n\nResults for file: %s\n" % file)
 		outfile.write("Outgoing Packet Counts\n")
 		outfile.write("%-40s %10s\n" % ("Filter", "Packets"))
@@ -421,7 +427,8 @@ def processFile(honeypots, file, options, dbargs=None):
 					p = open_offline(fifo)
 					#p = open_offline("/tmp/fifo")
 					c = Counter(p)
-					c.setOutput(options["output_data_directory"] + "/results")
+					c.setOutput(outfile)
+					#c.setOutput(options["output_data_directory"] + "/results")
 					f = filt % ipaddr
 					c.setFilter(f)
 					c.count()
@@ -440,7 +447,8 @@ def processFile(honeypots, file, options, dbargs=None):
 			s = Summarize(p, db)
 			filt = 'dst host ' + string.join(honeypots, ' or dst host ')
 			s.setFilter(filt, file)
-			s.setOutput(options["output_data_directory"] + "/results")
+			s.setOutput(outfile)
+			#s.setOutput(options["output_data_directory"] + "/results")
 			s.start()
 			s.writeResults()
 
@@ -453,7 +461,8 @@ def processFile(honeypots, file, options, dbargs=None):
 			s = Summarize(p, db)
 			filt = 'src host ' + string.join(honeypots, ' or src host ')
 			s.setFilter(filt, file)
-			s.setOutput(options["output_data_directory"] + "/results")
+			s.setOutput(outfile)
+			#s.setOutput(options["output_data_directory"] + "/results")
 			s.start()
 			s.writeResults()
 
@@ -474,23 +483,26 @@ def processFile(honeypots, file, options, dbargs=None):
 			words = '0day access account admin auth bank bash #!/bin binaries binary bot card cash cc cent connect crack credit dns dollar ebay e-bay egg flood ftp hackexploit http leech login money /msg nologin owns ownz password paypal phish pirate pound probe prv putty remote resolved root rooted scam scan shell smtp sploit sterling sucess sysop sys-op trade uid uname uptime userid virus warez' 
 			ws = wordSearch()
 			ws.setWords(words)
-			ws.setOutput(options["output_data_directory"] + "/results")
+			ws.setOutput(outfile)
+			#ws.setOutput(options["output_data_directory"] + "/results")
 			r = PcapRE(p)
 			r.setFilter("port 6667")
 			r.setRE('PRIVMSG')
 			r.setWordSearch(ws)
-			r.setOutput(options["output_data_directory"] + "/results")
+			r.setOutput(outfile)
+			#r.setOutput(options["output_data_directory"] + "/results")
 			r.start()
 			r.writeResults()
 
 		if options["do_irc_detail"] == "YES":
 			#outfile.write("\nIRC DETAIL\n")
-			print "Extracting from IRC"
+			outfile.write("Extracting from IRC\n")
 			outfile.flush()
 			p = open_offline(fifo)
 			de = tcpflow.tcpFlow(p)
 			de.setFilter("port 6667")
-			de.setOutput(options["output_data_directory"] +"/results")
+			de.setOutput(outfile)
+			#de.setOutput(options["output_data_directory"] +"/results")
 			de.setOutdir(options["output_data_directory"]+ "/irc-extract")
 			de.start()
 			del de
@@ -501,7 +513,8 @@ def processFile(honeypots, file, options, dbargs=None):
 			de = tcpflow.tcpFlow(p)
 			de.setFilter("port 80")
 			de.setOutdir(options["output_data_directory"]+ "/http-extract")
-			de.setOutput(options["output_data_directory"] + "/results")
+			de.setOutput(outfile)
+			#de.setOutput(options["output_data_directory"] + "/results")
 			de.start()
 
 		if options["do_ftp"] == "YES" and options["do_files"] == "YES":
@@ -510,7 +523,8 @@ def processFile(honeypots, file, options, dbargs=None):
 			de = tcpflow.tcpFlow(p)
 			de.setFilter("port 20")
 			de.setOutdir(options["output_data_directory"] + "/ftp-extract")
-			de.setOutput(options["output_data_directory"] + "/results")
+			de.setOutput(outfile)
+			#de.setOutput(options["output_data_directory"] + "/results")
 			de.start()
 			
 			
@@ -520,7 +534,8 @@ def processFile(honeypots, file, options, dbargs=None):
 			de = tcpflow.tcpFlow(p)
 			de.setFilter("port 25")
 			de.setOutdir(options["output_data_directory"] + "/smtp-extract")
-			de.setOutput(options["output_data_directory"] + "/results")
+			de.setOutput(outfile)
+			#de.setOutput(options["output_data_directory"] + "/results")
 			de.start()
 
 		if options["do_rrd"] == "YES":
@@ -576,6 +591,7 @@ def main():
 			sys.exit(1)
 		try:
 			datemask = parser.get("IO", "DATEMASK")
+			filestr = parser.get("IO", "FILESTR")
 		except:
 			datemask = 0
 		honeypots = honeypots.split()
@@ -619,7 +635,7 @@ def main():
 
 		files = os.listdir(inputdir)
 		for f in files:
-			if dateregex.match(f) and string.find(f, "pcap.log.gz") > 0:
+			if dateregex.match(f) and string.find(f, filestr) > 0:
 				processFile(honeypots, inputdir+"/" + f, options, dbargs)
 				nomatch = 1
 
