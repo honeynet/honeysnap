@@ -58,7 +58,8 @@ class flow_state:
 		self.flags = 0
 		self.last_access = 0 # time of last access
 		self.size  = 0
-
+		self.dport = 0
+		self.realname = ""
 	def __cmp__(self, other):
 		# to facilitate sorting a list of states by last_access
 		return cmp(self.last_access, other.last_access)
@@ -324,7 +325,8 @@ class tcpFlow:
 			self.flows[filename].data = []
 			self.flows[filename].data.append(data)
 			state.size = len(data)
-		
+			self.flows[filename].dport = flow.dport
+	
 		#state.fp.write(data)
 		#state.fp.flush()
 

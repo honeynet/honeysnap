@@ -532,7 +532,11 @@ def processFile(honeypots, file, options, dbargs=None):
 			de.setOutput(outfile)
 			#de.setOutput(options["output_data_directory"] + "/results")
 			de.start()
-
+			getnames(de)
+		
+		"""
+              #_httpfile=`sed -e 's///g' "${_httpsource}.${_httpsourceport}-${_httpdest}.${_httpdestport}" | grep -i ^GET | awk '{ print $2 }' | sed -e 's#.*/##g'`
+"""
 		if options["do_ftp"] == "YES" and options["do_files"] == "YES":
 			print "Extracting from ftp"
 			p = open_offline(fifo)
@@ -559,6 +563,9 @@ def processFile(honeypots, file, options, dbargs=None):
 		if options["do_sebek"] == "YES":
 			print "Sebek not currently supported"
 
+		if options["do_files"] == "YES":
+			dump_extract(de,options)
+
 		if options["id_files"] == "YES":
 			de = tcpflow.tcpFlow(p)
 			de.setOutput(outfile)
@@ -579,12 +586,65 @@ def processFile(honeypots, file, options, dbargs=None):
 				space = ' ' *slen
 				tfile = OutputSTDOUT()
 				tfile.write(type + ":%s%s\n" % (space,typehash[type]))	
-		if options["do_files"] == "YES":
-			dump_extract(de)
 
-def dump_extract(de):
+def getnames(de):
+		for z in de.flows.keys():
+			if de.flows[z].dport == 80:
+				#hreg = re.compile("^M")
+				for line in de.flows[z].data:
+					line = re.sub("^M","",line)
+					match = re.search("^GET ",line)
+					if(match):
+						gline = line.split()
+						rn = re.sub(".*/+","",gline[1])
+						de.flows[reverseflow(z)].realname = rn
+						de.flows[reverseflow(z)].dport = de.flows[z].dport
+						adjustdataflow(de,reverseflow(z))
+
+def adjustdataflow(de,flow):
+	i = 0
+	tstring = ""
+
+	for line in de.flows[flow].data:
+		tstring = tstring + line
+		
+	#match = re.sub("\r\n\r\n","",tstring)
+	match = string.find(tstring,"\r\n\r\n")
+	if(match):
+		print "extracted file with name of: " + de.flows[flow].realname
+		match = match+4
+		de.flows[flow].data = []
+		de.flows[flow].data.append(tstring[match:len(tstring)])
+		return
+
+	i = i + 1
+
+def reverseflow(name):
+	#print name
+	tmp = name.rsplit("/")
+	tmp.reverse()
+	#print tmp
+	line = tmp[0].rsplit("-")
+	#print line
+	tmp[0] = "%s-%s" % (line[1], line[0])
+	tmp.reverse()
+	tstr = "/".join("%s" % k for k in tmp)
+	#print "tstr: " + tstr
+	return tstr 
+
+def dump_extract(de,options):
+	type = ""
 	for e in de.flows.keys():
-		mfp = open(e,"a")
+		if de.flows[e].realname:
+			if de.flows[e].dport == 80:
+				type = "http-extract/"
+			elif de.flows[e].dport == 20:
+				type = "ftp-extract/"
+
+			mfp = open(options["output_data_directory"] + "/"+ type + de.flows[e].realname,"a")
+		else:
+			mfp = open(e,"a")
+
 		for y in de.flows[e].data:
 			mfp.write(y)
 
