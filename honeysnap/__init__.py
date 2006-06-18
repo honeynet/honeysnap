@@ -49,6 +49,22 @@ def ipnum(ip) :
 		v = (v << 8) | int(x);
 	return v
 
+class Output:
+	"""
+	This class will provide a generic output interface so we can output
+	in text, html, whatever.
+	"""
+	def write():
+		x = 1
+
+class OutputSTDOUT(Output):
+	
+	filehandle = sys.stdout
+
+	def write(self,text):
+		self.filehandle.write(text)	  
+	
+
 class Base:
 	"""
 	This should be a base class that provides commonly used functions.
@@ -546,11 +562,24 @@ def processFile(honeypots, file, options, dbargs=None):
 
 		if options["id_files"] == "YES":
 			de = tcpflow.tcpFlow(p)
+			de.setOutput(outfile)
 			filelist =  de.fname
+			typehash = {}
 			for fstr in filelist:
 				t = ram()
-				print fstr + ":\t" + t.filetype(fstr)
+				filetype = t.filetype(fstr)
+				if typehash.has_key(filetype):
+					typehash[filetype] = typehash[filetype] + 1
+				else:
+					typehash[filetype] = 1
 
+				#outfile.write(fstr + ":\t" + t.filetype(fstr) + "\n")
+			for type in typehash.keys():
+				tlen = len(type)
+				slen = 30 - tlen
+				space = ' ' *slen
+				tfile = OutputSTDOUT()
+				tfile.write(type + ":%s%s\n" % (space,typehash[type]))	
 def usage():
 	use = """Usage:
 honeysnap.py <config file>
@@ -624,6 +653,9 @@ def main():
 					"do_files":"NO",
 					"id_files":"NO"
 					}
+		
+		idexclude = parser.get("OPTIONS", "ID_EXCLUDE")
+		idexclude = idexclude.split(",")
 		
 		for i in parser.items("OPTIONS"):
 			options[i[0]] = i[1]
