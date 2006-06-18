@@ -63,7 +63,7 @@ class OutputSTDOUT(Output):
 
 	def write(self,text):
 		self.filehandle.write(text)	  
-	
+        	    	
 
 class Base:
 	"""
