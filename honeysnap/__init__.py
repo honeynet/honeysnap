@@ -633,10 +633,10 @@ def main():
 			dbargs["password"] = parser.get("DATABASE", "password")
 			dbargs["db"] = parser.get("DATABASE", "db")
 
-		if datemask != 0:
+		if datemask != "0":
 			dateregex = re.compile(datemask)
 		else:
-			dateregex = re.compile("*")
+			dateregex = re.compile(".*")
 
 		options = {"do_packets":"NO",
 					"do_telnet":"NO",
@@ -667,7 +667,11 @@ def main():
 
 		files = os.listdir(inputdir)
 		for f in files:
-			if dateregex.match(f) and string.find(f, filestr) > 0:
+			if datemask == "0":
+				processFile(honeypots, inputdir+"/" + f, options, dbargs)
+				nomatch = 1
+
+			elif dateregex.match(f) and string.find(f, filestr) > 0:
 				processFile(honeypots, inputdir+"/" + f, options, dbargs)
 				nomatch = 1
 
