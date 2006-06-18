@@ -44,7 +44,7 @@ class flow:
 		self.dst = None
 		self.sport = None
 		self.dport = None
-
+	
 class flow_state:
 	
 	fname = []
@@ -57,6 +57,7 @@ class flow_state:
 		self.pos = 0
 		self.flags = 0
 		self.last_access = 0 # time of last access
+		self.size  = 0
 
 	def __cmp__(self, other):
 		# to facilitate sorting a list of states by last_access
@@ -71,9 +72,10 @@ class flow_state_manager:
 		self.max_fds = self.get_max_fds() - NUM_RESERVED_FDS
 		self.fd_ring = []
 		self.flow_hash = {}
+		self.flows = {}
 		self.curent_time = 0
 		self.outdir = None
-
+		
 	def get_max_fds(self):
 		"""
 		this needs to be a xplatform method of getting max # of file descriptors
@@ -210,6 +212,7 @@ class tcpFlow:
 	
 	fname = []
 	fhash = {}
+	flows = {}
 
 	def __init__(self, pcapObj):
 		self.p = pcapObj
@@ -290,12 +293,15 @@ class tcpFlow:
 
 		#import pdb
 		#pdb.set_trace()
-		if state.fp is None:
-			fp = self.states.open_file(state)
 
-			if fp is None:
+
+		#if state.fp is None:
+		#	fp = self.states.open_file(state)
+
+		#	if fp is None:
+		#		return
 				#print "open_file returned none!!"
-				sys.exit(1)
+				#sys.exit(1)
 
 		if bytes_per_flow and (offset + length > bytes_per_flow):
 			# long enough, mark this flow finished
@@ -303,20 +309,30 @@ class tcpFlow:
 			state.flags |= FLOW_FINISHED
 			length = bytes_per_flow - offset
 
-		if offset != state.pos:
+		#if offset != state.pos:
 			#print "offeset != state.pos"
-			fpos = offset
+		#	fpos = offset
 			#state.fp.seek(fpos)
 
+			
+		filename = self.flow_filename(state.flow)
+		if self.flows.has_key(filename):
+			self.flows[filename].data.append(data)
+			state.size = state.size + len(data)
+		else:
+			self.flows[filename] = state
+			self.flows[filename].data = []
+			self.flows[filename].data.append(data)
+			state.size = len(data)
 		
-		state.fp.write(data)
-		state.fp.flush()
+		#state.fp.write(data)
+		#state.fp.flush()
 
-		state.pos = offset+length
+		#state.pos = offset+length
 
-		if state.flags&FLOW_FINISHED:
+		#if state.flags&FLOW_FINISHED:
 			#print "flow marked finished, closing file"
-			self.states.close_file(state)
+		#	self.states.close_file(state)
 
 
 	def start(self):

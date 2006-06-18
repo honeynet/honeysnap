@@ -542,8 +542,7 @@ def processFile(honeypots, file, options, dbargs=None):
 			de.setOutput(outfile)
 			#de.setOutput(options["output_data_directory"] + "/results")
 			de.start()
-			
-			
+
 		if options["do_smtp"] == "YES" and options["do_files"] == "YES":
 			print "Extracting from smtp"
 			p = open_offline(fifo)
@@ -580,6 +579,19 @@ def processFile(honeypots, file, options, dbargs=None):
 				space = ' ' *slen
 				tfile = OutputSTDOUT()
 				tfile.write(type + ":%s%s\n" % (space,typehash[type]))	
+		if options["do_files"] == "YES":
+			dump_extract(de)
+
+def dump_extract(de):
+	for e in de.flows.keys():
+		mfp = open(e,"a")
+		for y in de.flows[e].data:
+			mfp.write(y)
+
+		mfp.flush()
+		mfp.close()
+
+
 def usage():
 	use = """Usage:
 honeysnap.py <config file>
