@@ -571,9 +571,14 @@ def processFile(honeypots, file, options, dbargs=None):
 			de.setOutput(outfile)
 			filelist =  de.fname
 			typehash = {}
-			for fstr in filelist:
+			for fstr in de.flows.keys():
 				t = ram()
-				filetype = t.filetype(fstr)
+				stream = ""
+				for line in de.flows[fstr].data:
+					stream = stream + line
+			
+				filetype = t.filetype(stream)
+				de.flows[fstr].filetype = filetype	
 				if typehash.has_key(filetype):
 					typehash[filetype] = typehash[filetype] + 1
 				else:
@@ -586,6 +591,17 @@ def processFile(honeypots, file, options, dbargs=None):
 				space = ' ' *slen
 				tfile = OutputSTDOUT()
 				tfile.write(type + ":%s%s\n" % (space,typehash[type]))	
+
+def idflows(de):
+
+	for fstr in de.flows.keys():
+		t = ram()
+		stream = ""
+		for line in de.flows[fstr].data:
+			stream = stream + line
+			
+		filetype = t.filetype(stream)
+		de.flows[fstr].filetype = filetype	
 
 def getnames(de):
 		for z in de.flows.keys():
@@ -611,10 +627,11 @@ def adjustdataflow(de,flow):
 	#match = re.sub("\r\n\r\n","",tstring)
 	match = string.find(tstring,"\r\n\r\n")
 	if(match):
-		print "extracted file with name of: " + de.flows[flow].realname
 		match = match+4
 		de.flows[flow].data = []
 		de.flows[flow].data.append(tstring[match:len(tstring)])
+		idflows(de)
+		print "extracted file with name of: " + de.flows[flow].realname + " (" + de.flows[flow].filetype + ")"
 		return
 
 	i = i + 1

@@ -60,6 +60,8 @@ class flow_state:
 		self.size  = 0
 		self.dport = 0
 		self.realname = ""
+		self.filetype = ""
+
 	def __cmp__(self, other):
 		# to facilitate sorting a list of states by last_access
 		return cmp(self.last_access, other.last_access)
