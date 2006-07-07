@@ -14,6 +14,12 @@ In each of those, and this directory, run:
 	python setup.py build
 	sudo python setup.py install
 
+You will also need etheral installed, specifically the tetheral command line tool. This can be installed from
+
+http://www.ethereal.com/
+
+but on most UNIX-like systems it should be in your default packaging system.
+
 The honeysnap script should be installed in some place like /usr/local/bin
 (the exact location depends on your OS) which is probably already in your path.
 
