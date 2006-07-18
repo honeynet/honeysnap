@@ -18,7 +18,7 @@
 #
 ################################################################################
 
-import os, sys, shelve, tempfile
+import os, sys, shelve, tempfile, re
 import impacket
 import socket
 import pcapy
@@ -129,8 +129,8 @@ class flow_state_manager:
         return name
 
 class tcpFlow:
-    fname = []
-    fhash = {}
+    #fname = []
+    #fhash = {}
 
     def __init__(self, pcapObj):
         # create a tmp file to hold the shelve
@@ -189,13 +189,8 @@ class tcpFlow:
         this_flow.dport = tcp.get_th_dport()
         seq = tcp.get_th_seq()
         data = tcp.child().get_buffer_as_string()
-
         self.store_packet(this_flow, data, seq)
         
-        if not self.fhash.has_key(self.flow_filename(this_flow)):
-            self.fname.append(self.flow_filename(this_flow))
-            self.fhash[self.flow_filename(this_flow)] = 1
-
     def store_packet(self, flow, data, seq):
         bytes_per_flow = 1000000
         length = len(data)
@@ -205,12 +200,13 @@ class tcpFlow:
             state = self.states.create_state(flow, seq)
 
         if state.flags&FLOW_FINISHED:
-            #print "flow finished"
+            print "flow finished"
             return
 
         offset = seq - state.isn
         if offset < 0:
             # seq < isn, drop it
+	    print "bad seq number"
             return
 
         if bytes_per_flow and (offset > bytes_per_flow):
@@ -220,24 +216,24 @@ class tcpFlow:
 
         if bytes_per_flow and (offset + length > bytes_per_flow):
             # long enough, mark this flow finished
-            #print "flow marked finished due to length"
+            print "flow marked finished due to length"
             state.flags |= FLOW_FINISHED
             length = bytes_per_flow - offset
 
         filename = self.flow_filename(state.flow)
         if self.flows.has_key(filename):
-            print "existing flow file %s" % filename
-            self.flows[filename].data.append(data)
-            print "added %s data to file\n" % len(data)
+            #print "existing flow file %s" % filename
+            #self.flows[filename].data.append(data)
+            #print "added %s data to file\n" % len(data)
+	    state.data.append(data)
             state.size = state.size + len(data)
         else:
-            self.flows[filename] = state
-            print "new flow file %s" % filename
-            self.flows[filename].data = []
-            self.flows[filename].data.append(data)
+            #print "new flow file %s" % filename
+            state.data.append(data)
             state.size = len(data)
-            print "added %s data to file\n" % len(data)
-            self.flows[filename].dport = flow.dport
+            #print "added %s data to file\n" % len(data)
+            state.dport = flow.dport
+            self.flows[filename] = state
         
         # sync the shelf, just to be sure
         self.flows.sync()
@@ -339,12 +335,17 @@ class tcpFlow:
                     type = "http-extract/"
                 elif self.flows[e].dport == 20:
                     type = "ftp-extract/"
+                elif self.flows[e].dport == 6667:
+                    type = "irc-extract/"
+                elif self.flows[e].dport == 25:
+                    type = "smtp-extract/"
 
                 mfp = open(options["output_data_directory"] + "/"+ type + self.flows[e].realname,"a")
             else:
                 mfp = open(e,"a")
 
             for y in self.flows[e].data:
+                print "writing data to: %s" % e
                 mfp.write(y)
 
             mfp.flush()

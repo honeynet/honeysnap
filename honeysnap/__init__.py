@@ -686,7 +686,7 @@ def main():
 
         files = os.listdir(inputdir)
         for f in files:
-            if datemask == "0":
+            if datemask == "0" and string.find(f, filestr) > 0:
                 processFile(honeypots, inputdir+"/" + f, options, dbargs)
                 nomatch = 1
 
