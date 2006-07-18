@@ -200,23 +200,23 @@ class tcpFlow:
             state = self.states.create_state(flow, seq)
 
         if state.flags&FLOW_FINISHED:
-            print "flow finished"
+            #print "flow finished"
             return
 
         offset = seq - state.isn
         if offset < 0:
             # seq < isn, drop it
-	    print "bad seq number"
+	    #print "bad seq number"
             return
 
         if bytes_per_flow and (offset > bytes_per_flow):
             # too many bytes for this flow, drop it
-            print "too many bytes for flow, dropping packet"
+            #print "too many bytes for flow, dropping packet"
             return
 
         if bytes_per_flow and (offset + length > bytes_per_flow):
             # long enough, mark this flow finished
-            print "flow marked finished due to length"
+            #print "flow marked finished due to length"
             state.flags |= FLOW_FINISHED
             length = bytes_per_flow - offset
 
