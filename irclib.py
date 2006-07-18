@@ -388,7 +388,7 @@ class IRCLine:
         r = re.search(r'^(%s)' % host_re, prefix)
         if r:
             return (None, None, r.group(1))
-        r = re.search(r'^(%s)' % nick_re, prefix)Enigmail
+        r = re.search(r'^(%s)' % nick_re, prefix)
         if r:
             return (_to_rfc1459_lower(r.group(1)), None, None)
         raise IRCMessageNotParsed(prefix) 
@@ -431,7 +431,7 @@ def irc_from_pcap(pcap_file, tethereal="tethereal", tethereal_opts=""):
                         continue
                     irc.toIP = rawirc.toIP
                     irc.fromIP = rawirc.fromIP
-                    irc.timestamp = rawirc.timestampEnigmail
+                    irc.timestamp = rawirc.timestamp
                     yield irc
                 rawirc = _IRCRaw()
             h = headerline.match(line)
