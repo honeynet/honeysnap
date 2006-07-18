@@ -154,13 +154,11 @@ class tcpFlow:
         # delete shelf file
         pass
 
+    """
     def flow_filename(self, flow):
-        """
-        filename should be:
-        "%03d.%03d.%03d.%03d.%0tmp59apTB5d-%03d.%03d.%03d.%03d.%05d"
-        """
         name = "%s/%s.%s-%s.%s" % (self.outdir, flow.src, flow.sport, flow.dst, flow.dport)
         return name
+    """
     
     def packetHandler(self, hdr, data):
         try:
@@ -206,7 +204,7 @@ class tcpFlow:
         offset = seq - state.isn
         if offset < 0:
             # seq < isn, drop it
-	    #print "bad seq number"
+        #print "bad seq number"
             return
 
         if bytes_per_flow and (offset > bytes_per_flow):
@@ -220,12 +218,12 @@ class tcpFlow:
             state.flags |= FLOW_FINISHED
             length = bytes_per_flow - offset
 
-        filename = self.flow_filename(state.flow)
+        filename = self.states.flow_filename(state.flow)
         if self.flows.has_key(filename):
             #print "existing flow file %s" % filename
             #self.flows[filename].data.append(data)
             #print "added %s data to file\n" % len(data)
-	    state.data.append(data)
+            state.data.append(data)
             state.size = state.size + len(data)
         else:
             #print "new flow file %s" % filename

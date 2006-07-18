@@ -533,7 +533,7 @@ def processFile(honeypots, file, options, dbargs=None):
             de.setOutdir(options["output_data_directory"]+ "/http-extract")
             de.setOutput(outfile)
             de.start()
-            de.getnames()
+            #de.getnames()
             de.dump_extract(options)
         
         """
@@ -547,7 +547,7 @@ def processFile(honeypots, file, options, dbargs=None):
             de.setOutdir(options["output_data_directory"] + "/ftp-extract")
             de.setOutput(outfile)
             de.start()
-            de.getnames()
+            #de.getnames()
             de.dump_extract(options)
 
         if options["do_smtp"] == "YES" and options["do_files"] == "YES":
@@ -558,7 +558,7 @@ def processFile(honeypots, file, options, dbargs=None):
             de.setOutdir(options["output_data_directory"] + "/smtp-extract")
             de.setOutput(outfile)
             de.start()
-            de.getnames()
+            #de.getnames()
             de.dump_extract(options)
 
         if options["do_rrd"] == "YES":
