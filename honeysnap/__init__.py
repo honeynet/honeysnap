@@ -19,7 +19,7 @@
 ################################################################################
 import pcapy, sys
 import socket
-from pcapy import *
+#from pcapy import *
 import impacket
 from impacket.ImpactDecoder import EthDecoder, LinuxSLLDecoder
 import re
@@ -442,7 +442,7 @@ def processFile(honeypots, file, options, dbargs=None):
             for name, val in options.items():
                 if name in FILTERS and val == "YES":
                     filt = FILTERS[name]
-                    p = open_offline(fifo)
+                    p = pcapy.open_offline(fifo)
                     #p = open_offline("/tmp/fifo")
                     c = Counter(p)
                     c.setOutput(outfile)
@@ -457,7 +457,7 @@ def processFile(honeypots, file, options, dbargs=None):
             #print "INCOMING CONNECTIONS"
             outfile.write("INCOMING CONNECTIONS\n")
             outfile.flush()
-            p = open_offline(fifo)
+            p = pcapy.open_offline(fifo)
             if dbargs:
                 db = dbConnection(dbargs)
             else:
@@ -475,7 +475,7 @@ def processFile(honeypots, file, options, dbargs=None):
             #print "\nOUTGOING CONNECTIONS"
             outfile.write("\nOUTGOING CONNECTIONS\n")
             outfile.flush()
-            p = open_offline(fifo)
+            p = pcapy.open_offline(fifo)
             s = Summarize(p, db)
             filt = 'src host ' + string.join(honeypots, ' or src host ')
             s.setFilter(filt, file)
@@ -494,7 +494,7 @@ def processFile(honeypots, file, options, dbargs=None):
             #print "\nIRC SUMMARY"
             outfile.write("\nIRC SUMMARY\n")
             outfile.flush()
-            p = open_offline(fifo)
+            p = pcapy.open_offline(fifo)
             # XXX TODO: words should be moved into the config file
             # should we have the config file point to a seperate word file
             # or just store them in the config file?
@@ -516,18 +516,18 @@ def processFile(honeypots, file, options, dbargs=None):
             #outfile.write("\nIRC DETAIL\n")
             outfile.write("Extracting from IRC\n")
             outfile.flush()
-            p = open_offline(fifo)
+            p = pcapy.open_offline(fifo)
             de = tcpflow.tcpFlow(p)
             de.setFilter("port 6667")
             de.setOutput(outfile)
             de.setOutdir(options["output_data_directory"]+ "/irc-extract")
             de.start()
-            de.getnames()
+            #de.getnames()
             de.dump_extract(options)
         
         if options["do_http"] == "YES" and options["do_files"] == "YES":
             print "Extracting from http"
-            p = open_offline(fifo)
+            p = pcapy.open_offline(fifo)
             de = tcpflow.tcpFlow(p)
             de.setFilter("port 80")
             de.setOutdir(options["output_data_directory"]+ "/http-extract")
@@ -541,7 +541,7 @@ def processFile(honeypots, file, options, dbargs=None):
 """
         if options["do_ftp"] == "YES" and options["do_files"] == "YES":
             print "Extracting from ftp"
-            p = open_offline(fifo)
+            p = pcapy.open_offline(fifo)
             de = tcpflow.tcpFlow(p)
             de.setFilter("port 20")
             de.setOutdir(options["output_data_directory"] + "/ftp-extract")
@@ -552,7 +552,7 @@ def processFile(honeypots, file, options, dbargs=None):
 
         if options["do_smtp"] == "YES" and options["do_files"] == "YES":
             print "Extracting from smtp"
-            p = open_offline(fifo)
+            p = pcapy.open_offline(fifo)
             de = tcpflow.tcpFlow(p)
             de.setFilter("port 25")
             de.setOutdir(options["output_data_directory"] + "/smtp-extract")
@@ -568,7 +568,8 @@ def processFile(honeypots, file, options, dbargs=None):
             print "Sebek not currently supported"
 
         if options["do_files"] == "YES":
-            de.dump_extract(options)
+            #de.dump_extract(options)
+	    pass
 
         if options["id_files"] == "YES":
             de = tcpflow.tcpFlow(p)

@@ -44,11 +44,16 @@ class flow:
         self.dst = None
         self.sport = None
         self.dport = None
+
+    def __eq__(self, other):
+        return self.sport==other.sport and self.dport==other.dport and self.src==other.src and self.dst==other.dst
+
+    def __ne__(self, other):
+        return self.sport!=other.sport or self.dport!=other.dport or self.src!=other.src or self.dst!=other.dst
+    
     
 class flow_state:
     
-    fname = []
-
     def __init__(self):
         self.next = None # link to next flow state
         self.flow = None # Description of the flow
@@ -63,43 +68,49 @@ class flow_state:
         self.filetype = ""
         self.realname = ""
         self.data = []
+        self.fname = []
 
     def __cmp__(self, other):
         # to facilitate sorting a list of states by last_access
         return cmp(self.last_access, other.last_access)
 
-
 class flow_state_manager:
 
     def __init__(self):
         self.current_time = 0
-        self.flow_hash = {}
+        self.shelf = tempfile.mkstemp()[1]
+        os.unlink(self.shelf)
+        self.flow_hash = shelve.open(self.shelf)
         self.curent_time = 0
         self.outdir = None
         
     def setOutdir(self, outdir):
         self.outdir = outdir
 
-    def hash_flow(self, flow):
+    def fhash(self, flow):
         hash =  (((flow.sport & 0xff) | ((flow.dport & 0xff) << 8) | ((ipnum(flow.src) & 0xff) << 16) | ((ipnum(flow.dst) & 0xff) << 24) ) % HASH_SIZE)
-        return hash
+        return str(hash)
 
     def create_state(self, flow, isn):
         new_state = flow_state()
-        index = flow
-        if index in self.flow_hash:
-            new_state.next = self.flow_hash[index]
-        self.flow_hash[index] = new_state
-
         new_state.flow = flow
         new_state.isn = isn
         new_state.last_access = self.current_time+1
         self.current_time +=1
+        index = self.fhash(new_state.flow)
+        if index in self.flow_hash.keys():
+            tmp = self.flow_hash[index]
+            self.flow_hash[index] = new_state
+            new_state.next = tmp
+        else:
+            self.flow_hash[index] = new_state
         return new_state
+
     
     def find_flow_state(self, flow):
-        index = flow
-        if index in self.flow_hash:
+        index = self.fhash(flow)
+        #print "index: " + str(index)
+        if index in self.flow_hash.keys():
             state = self.flow_hash[index]
         else:
             return None
@@ -129,8 +140,6 @@ class flow_state_manager:
         return name
 
 class tcpFlow:
-    #fname = []
-    #fhash = {}
 
     def __init__(self, pcapObj):
         # create a tmp file to hold the shelve
@@ -140,6 +149,7 @@ class tcpFlow:
         self.p = pcapObj
         self.states = flow_state_manager()
         self.outdir = ""
+        self.fname = []
         # Query the type of the link and instantiate a decoder accordingly.
         datalink = self.p.datalink()
         if pcapy.DLT_EN10MB == datalink:
@@ -154,12 +164,6 @@ class tcpFlow:
         # delete shelf file
         pass
 
-    """
-    def flow_filename(self, flow):
-        name = "%s/%s.%s-%s.%s" % (self.outdir, flow.src, flow.sport, flow.dst, flow.dport)
-        return name
-    """
-    
     def packetHandler(self, hdr, data):
         try:
             pkt = self.decoder.decode(data)
@@ -196,6 +200,8 @@ class tcpFlow:
         if state is None:
             #print "state not found, creating new"
             state = self.states.create_state(flow, seq)
+            #else:
+            #print "state found"
 
         if state.flags&FLOW_FINISHED:
             #print "flow finished"
@@ -204,12 +210,13 @@ class tcpFlow:
         offset = seq - state.isn
         if offset < 0:
             # seq < isn, drop it
-        #print "bad seq number"
-            return
+            #print "bad seq number"
+            return 
 
         if bytes_per_flow and (offset > bytes_per_flow):
             # too many bytes for this flow, drop it
             #print "too many bytes for flow, dropping packet"
+            state.flags |= FLOW_FINISHED
             return
 
         if bytes_per_flow and (offset + length > bytes_per_flow):
@@ -221,10 +228,13 @@ class tcpFlow:
         filename = self.states.flow_filename(state.flow)
         if self.flows.has_key(filename):
             #print "existing flow file %s" % filename
-            #self.flows[filename].data.append(data)
-            #print "added %s data to file\n" % len(data)
-            state.data.append(data)
-            state.size = state.size + len(data)
+            s = self.flows[filename]
+            s.data.append(data)
+            s.size +=  len(data)
+            self.flows[filename] = s
+            #state.data.append(data)
+            #state.size = state.size + len(data)
+            #print "added %s data to file %s size: %s\n" % (len(data), filename, s.size)
         else:
             #print "new flow file %s" % filename
             state.data.append(data)
@@ -232,6 +242,7 @@ class tcpFlow:
             #print "added %s data to file\n" % len(data)
             state.dport = flow.dport
             self.flows[filename] = state
+            #print "added %s data to NEW file %s size: %s\n" % (len(data), filename, state.size)
         
         # sync the shelf, just to be sure
         self.flows.sync()
@@ -327,23 +338,23 @@ class tcpFlow:
 
     def dump_extract(self, options):
         type = ""
-        for e in self.flows.keys():
-            if self.flows[e].realname:
-                if self.flows[e].dport == 80:
+        for f, e in self.flows.items():
+            if e.realname:
+                if e.dport == 80:
                     type = "http-extract/"
-                elif self.flows[e].dport == 20:
+                elif e.dport == 20:
                     type = "ftp-extract/"
-                elif self.flows[e].dport == 6667:
+                elif e.dport == 6667:
                     type = "irc-extract/"
-                elif self.flows[e].dport == 25:
+                elif e.dport == 25:
                     type = "smtp-extract/"
 
-                mfp = open(options["output_data_directory"] + "/"+ type + self.flows[e].realname,"a")
+                mfp = open(options["output_data_directory"] + "/"+ type + e.realname,"a")
             else:
-                mfp = open(e,"a")
+                mfp = open(f,"a")
 
-            for y in self.flows[e].data:
-                print "writing data to: %s" % e
+            for y in e.data:
+                #print "writing data to: %s" % e
                 mfp.write(y)
 
             mfp.flush()
