@@ -19,6 +19,7 @@
 ################################################################################
 import pcapy, sys
 import socket
+from optparse import OptionParser, Option
 #from pcapy import *
 import impacket
 from impacket.ImpactDecoder import EthDecoder, LinuxSLLDecoder
@@ -569,7 +570,7 @@ def processFile(honeypots, file, options, dbargs=None):
 
         if options["do_files"] == "YES":
             #de.dump_extract(options)
-	    pass
+            pass
 
         if options["id_files"] == "YES":
             de = tcpflow.tcpFlow(p)
@@ -597,14 +598,6 @@ def processFile(honeypots, file, options, dbargs=None):
                 tfile = OutputSTDOUT()
                 tfile.write(type + ":%s%s\n" % (space,typehash[type]))  
 
-def usage():
-    use = """Usage:
-honeysnap.py <config file>
-
-Please see the accompanying documentation for instructions on configuration.
-    """
-    print use
-    
 def cleanup(options):
     """
     Clean up empty files, etc.
@@ -620,28 +613,127 @@ def cleanup(options):
             if os.stat(file).st_size == 0:
                 os.unlink(file)
 
+def configOptions(parser):
+    parser.add_option("-c", "--config", dest="config",type="string",
+                  help="Config file")
+    parser.add_option("-f", "--file", dest="filename",type="string",
+                  help="Write report to FILE", metavar="FILE")
+    parser.add_option("-o", "--output", dest="outputdir",type="string",
+                  help="Write output to DIR", metavar="DIR")
+    #parser.add_option("-i", "--input", dest="inputdir",type="string",
+    #              help="Read input from DIR, turns on batch mode. Set datemask and extension if you wish to filter which files will be read, otherwise honeysnap will try to parse every file in DIR", metavar="DIR")
+    parser.add_option("-t", "--tmpdir", dest="tmpdir",type="string",
+                  help="Directory to use as a temporary directory, defaults to /tmp")
+    parser.set_defaults(tmpdir="/tmp")
+    #parser.add_option("--filestr", dest="filestr",type="string",
+    #              help="String to use to to recognize pcap files")
+    parser.add_option("-H", "--honeypots", dest="honeypots", action="extend", type="string",
+                  help="Comma delimited list of honeypots")
+    #parser.add_option("-d", "--datemask", dest="datemask", type="int",
+                  #help="Datemask is a filename mask, if datemask is 0 all files match. If datemask is 200501 all files with 200501 at the front of their filename will be matched.")
+    #parser.set_defaults(datemask=0)
+    #parser.add_option("-e", "--extension", dest="filestr", type="string",
+    #              help="Sets the required file extension when doing a batch of files")
+    parser.add_option("-r", "--read", dest="files", type="string",
+                  help="Pcap file to be read. If this flag is set then honeysnap will not run in batch mode. Will also read from stdin.", metavar="FILE")
+
+    parser.add_option("--do-packets", dest="do_packets", action="store_const", const="YES",
+            help = "Count outbound packets")
+    parser.set_defaults(do_packets="NO")
+    parser.add_option("--do-telnet", dest="do_telnet", action="store_const", const="YES",
+            help = "Count outbound telnet")
+    parser.set_defaults(do_telnet="NO")
+    parser.add_option("--do-ssh", dest="do_ssh", action="store_const", const="YES",
+            help = "Count outbound ssh")
+    parser.set_defaults(do_ssh="NO")
+    parser.add_option("--do-http", dest="do_http", action="store_const", const="YES",
+            help = "Count outbound http")
+    parser.set_defaults(do_http="NO")
+    parser.add_option("--do-https", dest="do_https", action="store_const", const="YES",
+            help = "Count outbound https")
+    parser.set_defaults(do_https="NO")
+    parser.add_option("--do-ftp", dest="do_ftp", action="store_const", const="YES",
+            help = "Count outbound FTP")
+    parser.set_defaults(do_ftp="NO")
+    parser.add_option("--do-smtp", dest="do_smtp", action="store_const", const="YES",
+            help = "Count outbound smtp")
+    parser.set_defaults(do_smtp="NO")
+    parser.add_option("--do-irc", dest="do_irc", action="store_const", const="YES",
+            help = "Count outbound IRC")
+    parser.set_defaults(do_irc="NO")
+    parser.add_option("--do-irc-summary", dest="do_irc_summary", action="store_const", const="YES",
+            help = "Sumarize IRC message, providing a hit count for key words if --words is an argument")
+    parser.set_defaults(do_irc_summary="NO")
+    parser.add_option("--do-irc-detail", dest="do_irc_detail", action="store_const", const="YES",
+            help = "Extract IRC sessions")
+    parser.set_defaults(do_irc_detail="NO")
+    parser.add_option("--do-sebek", dest="do_sebek", action="store_const", const="YES",
+            help = "Summarize Sebek, not yet supported")
+    parser.set_defaults(do_sebek="NO")
+    parser.add_option("--do-rrd", dest="do_rrd", action="store_const", const="YES",
+            help = "Do RRD, not yet implemented")
+    parser.set_defaults(do_rrd="NO")
+    parser.add_option("--do-files", dest="do_files", action="store_const", const="YES",
+            help = "Extract payloads for any enabled protocols")
+    parser.set_defaults(do_files="NO")
+    parser.add_option("--id-files", dest="id_files", action="store_const", const="YES",
+            help = "Attempt to identify types of extracted files")
+    parser.set_defaults(do_files="NO")
+
+    return parser.parse_args()
+
+class MyOption(Option):
+    """
+    A class that extends option to allow us to have comma delimited command line args.
+    Taken from the documentation for optparse.
+    """
+    ACTIONS = Option.ACTIONS + ("extend",)
+    STORE_ACTIONS = Option.STORE_ACTIONS + ("extend",)
+    TYPED_ACTIONS = Option.TYPED_ACTIONS + ("extend",)
+
+    def take_action(self, action, dest, opt, value, values, parser):
+        if action == "extend":
+            lvalue = value.split(",")
+            values.ensure_value(dest, []).extend(lvalue)
+            print dest
+        else:
+            Option.take_action(
+                self, action, dest, opt, value, values, parser)
+
 def main():
+    cmdparser = OptionParser(option_class=MyOption)
+    values, args = configOptions(cmdparser)
     if len(sys.argv) > 1:
-        #ipaddr = sys.argv[1]
-        #file = sys.argv[2]
-        config = sys.argv[1]
-        parser = SafeConfigParser()
-        parser.read(config)
+        if values.config:
+            parser = SafeConfigParser()
+            parser.read(values.config)
+            config = values.config
+        else:
+            parser = None
         try:
-            inputdir = parser.get("IO", "INPUT_DATA_DIRECTORY")
-            outputdir = parser.get("IO", "OUTPUT_DATA_DIRECTORY")
-            tmpdir = parser.get("IO", "TMP_FILE_DIRECTORY")
-            honeypots = parser.get("IO", "HONEYPOTS")
+            if not values.inputdir:
+                inputdir = parser.get("IO", "INPUT_DATA_DIRECTORY")
+            else:
+                inputdir = values.inputdir
+            if not values.outputdir:
+                outputdir = parser.get("IO", "OUTPUT_DATA_DIRECTORY")
+            else:
+                outputdir = values.outputdir
+            if not values.outputdir:
+                tmpdir = parser.get("IO", "TMP_FILE_DIRECTORY")
+            else:
+                tmpdir = values.tmpdir
+            if not values.honeypots:
+                honeypots = parser.get("IO", "HONEYPOTS")
+                honeypots = honeypots.split()
+            else:
+                honeypots = values.honeypots
+            #datemask = values.datemask
+            filestr = values.filestr
         except:
-            print "Missing a required IO parameter in config file."
-            sys.exit(1)
-        try:
-            datemask = parser.get("IO", "DATEMASK")
-            filestr = parser.get("IO", "FILESTR")
-        except:
-            datemask = 0
-        honeypots = honeypots.split()
+            cmdparser.print_help()
         dbargs = None
+        """
         if parser.has_section("DATABASE"):
             from dbconnect import *
             dbargs = {}
@@ -654,7 +746,14 @@ def main():
             dateregex = re.compile(datemask)
         else:
             dateregex = re.compile(".*")
+        """
 
+        # pull in the vaules from the option parser
+        options = values.__dict__
+        if options['config'] is not None:
+            for i in parser.items("OPTIONS"):
+                options[i[0]] = i[1]
+        """
         options = {"do_packets":"NO",
                     "do_telnet":"NO",
                     "do_ssh":"NO",
@@ -670,30 +769,37 @@ def main():
                     "do_files":"NO",
                     "id_files":"NO"
                     }
-        
+        """
+        """
+        JED 8/21/2006
+        Don't know what this does, don't see this variable used anywhere else.
+        Commenting out for now.
         try:
             idexclude = parser.get("OPTIONS", "ID_EXCLUDE")
             idexclude = idexclude.split(",")
         except:
             pass
-        
-        for i in parser.items("OPTIONS"):
-            options[i[0]] = i[1]
+        """
 
         options["output_data_directory"] = outputdir
         options["tmp_file_directory"] = tmpdir
 
         nomatch = 0
 
-        files = os.listdir(inputdir)
-        for f in files:
-            if datemask == "0" and string.find(f, filestr) > 0:
-                processFile(honeypots, inputdir+"/" + f, options, dbargs)
-                nomatch = 1
+        if inputdir != "":
+            files = os.listdir(inputdir)
+        if inputdir:
+            for f in files:
+                if datemask == "0" and string.find(f, filestr) > 0:
+                    processFile(honeypots, inputdir+"/" + f, options, dbargs)
+                    nomatch = 1
 
-            elif dateregex.match(f) and string.find(f, filestr) > 0:
-                processFile(honeypots, inputdir+"/" + f, options, dbargs)
-                nomatch = 1
+                elif dateregex.match(f) and string.find(f, filestr) > 0:
+                    processFile(honeypots, inputdir+"/" + f, options, dbargs)
+                    nomatch = 1
+        else:
+            processFile(honeypots, values.files, options, dbargs)
+            nomatch = 1
 
         if nomatch != 1:
             print "No pcap files found!"
@@ -701,7 +807,7 @@ def main():
         cleanup(options)
 
     else:
-        usage()
+        cmdparser.print_help()
 
 if __name__ == "__main__":
     #import profile
