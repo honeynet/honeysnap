@@ -30,6 +30,7 @@ import os
 #import dataextractor
 from threading import Thread
 from ConfigParser import SafeConfigParser
+from dbconnect import *
 import tcpflow
 from ram import ram
 
@@ -735,7 +736,6 @@ def main():
         dbargs = None
         """
         if parser.has_section("DATABASE"):
-            from dbconnect import *
             dbargs = {}
             dbargs["host"] = parser.get("DATABASE", "host")
             dbargs["user"] = parser.get("DATABASE", "user")
