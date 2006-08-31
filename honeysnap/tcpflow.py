@@ -198,7 +198,7 @@ class tcpFlow:
         self.store_packet(this_flow, data, seq)
         
     def store_packet(self, flow, data, seq):
-        bytes_per_flow = 1000000
+        bytes_per_flow = 100000000
         length = len(data)
         state = self.states.find_flow_state(flow)
         if state is None:

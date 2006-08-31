@@ -497,10 +497,14 @@ def processFile(honeypots, file, options, dbargs=None):
             outfile.write("\nIRC SUMMARY\n")
             outfile.flush()
             p = pcapy.open_offline(fifo)
-            # XXX TODO: words should be moved into the config file
-            # should we have the config file point to a seperate word file
-            # or just store them in the config file?
             words = '0day access account admin auth bank bash #!/bin binaries binary bot card cash cc cent connect crack credit dns dollar ebay e-bay egg flood ftp hackexploit http leech login money /msg nologin owns ownz password paypal phish pirate pound probe prv putty remote resolved root rooted scam scan shell smtp sploit sterling sucess sysop sys-op trade uid uname uptime userid virus warez' 
+            if options["wordfile"]:
+                wfile = options["wordfile"]
+                if os.path.exists(wfile) and os.path.isfile(wfile):
+                    wfp = open(wfile, 'rb')
+                    words = wfp.readlines()
+                    words = [w.strip() for w in words]
+                    words = " ".join(words)
             ws = wordSearch()
             ws.setWords(words)
             ws.setOutput(outfile)
@@ -630,6 +634,8 @@ def configOptions(parser):
     parser.add_option("-r", "--read", dest="files", type="string",
                   help="Pcap file to be read. If this flag is set then honeysnap will not run in batch mode. Will also read from stdin.", metavar="FILE")
 
+    parser.add_option("-w", "--words", dest="wordfile", type="string",
+            help = "Pull wordlist from FILE", metavar="FILE")
     parser.add_option("--do-packets", dest="do_packets", action="store_const", const="YES",
             help = "Count outbound packets")
     parser.set_defaults(do_packets="NO")
@@ -700,22 +706,31 @@ def main():
             parser = SafeConfigParser()
             parser.read(values.config)
             config = values.config
-            try:
-                if values.outputdir == "/tmp/analysis":
+            if values.outputdir == "/tmp/analysis":
+                try:
                     outputdir = parser.get("IO", "OUTPUT_DATA_DIRECTORY")
-                else:
+                    values.outputdir = outputdir
+                except:
                     outputdir = values.outputdir
-                if values.tmpdir == "/tmp":
+            if values.tmpdir == "/tmp":
+                try:
                     tmpdir = parser.get("IO", "TMP_FILE_DIRECTORY")
-                else:
+                    values.tmpdir = tmpdir
+                except:
                     tmpdir = values.tmpdir
-                if not values.honeypots:
+            if not values.honeypots:
+                try:
                     honeypots = parser.get("IO", "HONEYPOTS")
                     honeypots = honeypots.split()
-                else:
+                    values.honeypots = honeypots
+                except:
                     honeypots = values.honeypots
-            except:
-                cmdparser.print_help()
+            if not values.wordfile:
+                try:
+                    wordfile = parser.get("IO", "WORDFILE")
+                    values.wordfile = wordfile
+                except:
+                    values.wordfile = None
         else:
             parser = None
         dbargs = None
@@ -775,9 +790,9 @@ def main():
         if values.honeypots is None:
             print "No honeypots specified. Please use either -h or config file to specify honeypots.\n"
             sys.exit(2)
-        if values.filename:
-            if os.path.exists(values.filename) and os.path.isfile(values.filename):
-                processFile(values.honeypots, values.filename, options, dbargs)
+        if values.files:
+            if os.path.exists(values.files) and os.path.isfile(values.files):
+                processFile(values.honeypots, values.files, options, dbargs)
             else:
                 print "File not found: %s" % values.filename
                 sys.exit(2)
