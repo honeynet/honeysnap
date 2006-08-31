@@ -78,9 +78,13 @@ class flow_state_manager:
 
     def __init__(self):
         self.current_time = 0
-        self.shelf = tempfile.mkstemp()[1]
-        os.unlink(self.shelf)
-        self.flow_hash = shelve.open(self.shelf)
+        # XXX Jed 8/30/06
+        # looks like shelving flow_hash totally nukes performance
+        # test runs tell me using a dict here doesn't use much ram
+        #self.shelf = tempfile.mkstemp()[1]
+        #os.unlink(self.shelf)
+        #self.flow_hash = shelve.open(self.shelf)
+        self.flow_hash = {}
         self.curent_time = 0
         self.outdir = None
         
@@ -98,10 +102,10 @@ class flow_state_manager:
         new_state.last_access = self.current_time+1
         self.current_time +=1
         index = self.fhash(new_state.flow)
-        if index in self.flow_hash.keys():
+        if index in self.flow_hash:
             tmp = self.flow_hash[index]
-            self.flow_hash[index] = new_state
             new_state.next = tmp
+            self.flow_hash[index] = new_state
         else:
             self.flow_hash[index] = new_state
         return new_state
@@ -110,7 +114,7 @@ class flow_state_manager:
     def find_flow_state(self, flow):
         index = self.fhash(flow)
         #print "index: " + str(index)
-        if index in self.flow_hash.keys():
+        if index in self.flow_hash:
             state = self.flow_hash[index]
         else:
             return None
@@ -245,7 +249,7 @@ class tcpFlow:
             #print "added %s data to NEW file %s size: %s\n" % (len(data), filename, state.size)
         
         # sync the shelf, just to be sure
-        self.flows.sync()
+        #self.flows.sync()
     
     def start(self):
         while 1:

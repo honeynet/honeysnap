@@ -30,7 +30,7 @@ import os
 #import dataextractor
 from threading import Thread
 from ConfigParser import SafeConfigParser
-from dbconnect import *
+#from dbconnect import *
 import tcpflow
 from ram import ram
 
@@ -620,21 +620,13 @@ def configOptions(parser):
     parser.add_option("-f", "--file", dest="filename",type="string",
                   help="Write report to FILE", metavar="FILE")
     parser.add_option("-o", "--output", dest="outputdir",type="string",
-                  help="Write output to DIR", metavar="DIR")
-    #parser.add_option("-i", "--input", dest="inputdir",type="string",
-    #              help="Read input from DIR, turns on batch mode. Set datemask and extension if you wish to filter which files will be read, otherwise honeysnap will try to parse every file in DIR", metavar="DIR")
+                  help="Write output to DIR, defaults to /tmp/analysis", metavar="DIR")
+    parser.set_defaults(outputdir="/tmp/analysis")
     parser.add_option("-t", "--tmpdir", dest="tmpdir",type="string",
                   help="Directory to use as a temporary directory, defaults to /tmp")
     parser.set_defaults(tmpdir="/tmp")
-    #parser.add_option("--filestr", dest="filestr",type="string",
-    #              help="String to use to to recognize pcap files")
     parser.add_option("-H", "--honeypots", dest="honeypots", action="extend", type="string",
                   help="Comma delimited list of honeypots")
-    #parser.add_option("-d", "--datemask", dest="datemask", type="int",
-                  #help="Datemask is a filename mask, if datemask is 0 all files match. If datemask is 200501 all files with 200501 at the front of their filename will be matched.")
-    #parser.set_defaults(datemask=0)
-    #parser.add_option("-e", "--extension", dest="filestr", type="string",
-    #              help="Sets the required file extension when doing a batch of files")
     parser.add_option("-r", "--read", dest="files", type="string",
                   help="Pcap file to be read. If this flag is set then honeysnap will not run in batch mode. Will also read from stdin.", metavar="FILE")
 
@@ -696,7 +688,6 @@ class MyOption(Option):
         if action == "extend":
             lvalue = value.split(",")
             values.ensure_value(dest, []).extend(lvalue)
-            print dest
         else:
             Option.take_action(
                 self, action, dest, opt, value, values, parser)
@@ -709,30 +700,24 @@ def main():
             parser = SafeConfigParser()
             parser.read(values.config)
             config = values.config
+            try:
+                if values.outputdir == "/tmp/analysis":
+                    outputdir = parser.get("IO", "OUTPUT_DATA_DIRECTORY")
+                else:
+                    outputdir = values.outputdir
+                if values.tmpdir == "/tmp":
+                    tmpdir = parser.get("IO", "TMP_FILE_DIRECTORY")
+                else:
+                    tmpdir = values.tmpdir
+                if not values.honeypots:
+                    honeypots = parser.get("IO", "HONEYPOTS")
+                    honeypots = honeypots.split()
+                else:
+                    honeypots = values.honeypots
+            except:
+                cmdparser.print_help()
         else:
             parser = None
-        try:
-            if not values.inputdir:
-                inputdir = parser.get("IO", "INPUT_DATA_DIRECTORY")
-            else:
-                inputdir = values.inputdir
-            if not values.outputdir:
-                outputdir = parser.get("IO", "OUTPUT_DATA_DIRECTORY")
-            else:
-                outputdir = values.outputdir
-            if not values.outputdir:
-                tmpdir = parser.get("IO", "TMP_FILE_DIRECTORY")
-            else:
-                tmpdir = values.tmpdir
-            if not values.honeypots:
-                honeypots = parser.get("IO", "HONEYPOTS")
-                honeypots = honeypots.split()
-            else:
-                honeypots = values.honeypots
-            #datemask = values.datemask
-            filestr = values.filestr
-        except:
-            cmdparser.print_help()
         dbargs = None
         """
         if parser.has_section("DATABASE"):
@@ -741,19 +726,18 @@ def main():
             dbargs["user"] = parser.get("DATABASE", "user")
             dbargs["password"] = parser.get("DATABASE", "password")
             dbargs["db"] = parser.get("DATABASE", "db")
-
-        if datemask != "0":
-            dateregex = re.compile(datemask)
-        else:
-            dateregex = re.compile(".*")
         """
 
-        # pull in the vaules from the option parser
+        # pull in the values from the option parser
         options = values.__dict__
+        options["summarize_incoming"]="NO"
+        options["summarize_outgoing"]="NO"
         if options['config'] is not None:
             for i in parser.items("OPTIONS"):
                 options[i[0]] = i[1]
         """
+        JED 8/30/2006
+        XXXX These should all get set in configOptions
         options = {"do_packets":"NO",
                     "do_telnet":"NO",
                     "do_ssh":"NO",
@@ -780,32 +764,26 @@ def main():
         except:
             pass
         """
-
-        options["output_data_directory"] = outputdir
-        options["tmp_file_directory"] = tmpdir
-
-        nomatch = 0
-
-        if inputdir != "":
-            files = os.listdir(inputdir)
-        if inputdir:
-            for f in files:
-                if datemask == "0" and string.find(f, filestr) > 0:
-                    processFile(honeypots, inputdir+"/" + f, options, dbargs)
-                    nomatch = 1
-
-                elif dateregex.match(f) and string.find(f, filestr) > 0:
-                    processFile(honeypots, inputdir+"/" + f, options, dbargs)
-                    nomatch = 1
+        options["output_data_directory"] = values.outputdir
+        options["tmp_file_directory"] = values.tmpdir
+        if not os.path.exists(values.outputdir):
+            try:
+                os.mkdir(values.outputdir)
+            except OSError:
+                print "Unable to create output dir: %s. Check permissions." % values.outputdir
+                
+        if values.honeypots is None:
+            print "No honeypots specified. Please use either -h or config file to specify honeypots.\n"
+            sys.exit(2)
+        if values.filename:
+            if os.path.exists(values.filename) and os.path.isfile(values.filename):
+                processFile(values.honeypots, values.filename, options, dbargs)
+            else:
+                print "File not found: %s" % values.filename
+                sys.exit(2)
         else:
-            processFile(honeypots, values.files, options, dbargs)
-            nomatch = 1
-
-        if nomatch != 1:
-            print "No pcap files found!"
-    
+            cmdparser.print_help()
         cleanup(options)
-
     else:
         cmdparser.print_help()
 

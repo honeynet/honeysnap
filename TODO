@@ -2,24 +2,24 @@ Honeysnap TODO list
 $Id$
 $URL$
 
-    * Add $Id$ to all files
+* Add $Id$ to all files
 
-    * Remove all the gzip and fifo related code
+* Remove all the gzip and fifo related code
 
-    * Remove the input data directory etc stuff
+* Remove the input data directory etc stuff
 
-        * Usage: honeysnap.py configfile pcapfile
+* Usage: honeysnap.py configfile pcapfile
 
-    * irc wordlist moved to the config file
+* irc wordlist moved to the config file
 
-    * change honeynet IPs in sample config file to 192.168 address rather than
-      being live UK honeypots
+* change honeynet IPs in sample config file to 192.168 address rather than
+being live UK honeypots
 
-    * The flow extraction grinds my machine into the ground on a real dataset
+* The flow extraction grinds my machine into the ground on a real dataset
 
-    * The output format of the flows isn't that useful. Maybe write a general
-      output class/fn that prints out the top N talkers, ordered by traffic
-      count. N would be defined in the config file
+* The output format of the flows isn't that useful. Maybe write a general
+output class/fn that prints out the top N talkers, ordered by traffic
+count. N would be defined in the config file
 
     * Filename extraction from FTP/HTTP needs porting from the final UK sh
       version
