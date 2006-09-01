@@ -163,10 +163,10 @@ class tcpFlow:
         else:
             raise Exception("Datalink type mkstemp(not supported: " % datalink)
         
-    def destroy(self):
+    def __del__(self):
         # take care of some cleanup
         # delete shelf file
-        pass
+        os.unlink(self.shelf)
 
     def packetHandler(self, hdr, data):
         try:
@@ -352,10 +352,20 @@ class tcpFlow:
                     type = "irc-extract/"
                 elif e.dport == 25:
                     type = "smtp-extract/"
-
-                mfp = open(options["output_data_directory"] + "/"+ type + e.realname,"a")
+                
+                filename = options["output_data_directory"]+"/"+type+e.realname+".1"
+                if os.path.exists(filename):
+                    name, ext = filename.rsplit(".", 1)
+                    ext = int(ext)+1
+                    filename = filename +"."+str(ext)
+                mfp = open(filename,"wb")
             else:
-                mfp = open(f,"a")
+                filename = f+".1"
+                if os.path.exists(filename):
+                    filename, ext = filename.rsplit(".", 1)
+                    ext = int(ext)+1
+                    filename = filename +"."+str(ext)
+                mfp = open(filename,"a")
 
             for y in e.data:
                 #print "writing data to: %s" % e

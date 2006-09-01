@@ -27,6 +27,8 @@ import re
 import string
 import gzip
 import os
+import StringIO
+import tempfile
 #import dataextractor
 from threading import Thread
 from ConfigParser import SafeConfigParser
@@ -57,7 +59,7 @@ class Output:
     in text, html, whatever.
     """
     def write():
-        x = 1
+        pass
 
 class OutputSTDOUT(Output):
     
@@ -365,40 +367,6 @@ class wordSearch(Base):
         #f.close()
     
         
-
-#class gzToPipe(Thread):
-class gzToPipe:
-    """
-    My original intention was to use a threaded fifo so multiple modules could access
-    the unzipped data at the same time.
-    fifo's are giving me trouble, so for now this will just use plain old files
-    XXX if we stick with plain tmp files, we need to use tmpfile module to make it secure
-    and cross platform
-    """
-    def __init__(self, zipfile, pipefile):
-        #Thread.__init__(self)
-        self.pipefile = pipefile
-        self.zipfile = gzip.open(zipfile, 'rb')
-        #self.fifo = os.mkfifo(pipe)
-        #self.pipe = open(pipe, "w+")
-        self.pipe = open(self.pipefile, "wb")
-
-    def run(self) :
-        while 1:
-            chunk = self.zipfile.read(1024)
-            if not chunk:
-                break
-            self.pipe.write(chunk)
-        self.zipfile.close()
-        self.pipe.close()
-
-    def getFile(self):
-        return self.pipefile
-
-    def destroy(self):
-        os.unlink(self.pipefile)
-        
-
 def processFile(honeypots, file, options, dbargs=None):
         """
         Process a pcap file.
@@ -406,9 +374,21 @@ def processFile(honeypots, file, options, dbargs=None):
         file is the pcap file to parse
         This function will run any enabled options for each pcap file
         """
-        fifo = options["tmp_file_directory"] + "/pipefile"
-        gz = gzToPipe(file, fifo)
-        gz.run()
+        try:
+            # This sucks. pcapy wants a path to a file, not a file obj
+            # so we have to uncompress the gzipped data into 
+            # a tmp file, and pass the path of that file to pcapy
+            tmph, tmpf = tempfile.mkstemp()
+            tmph = open(tmpf, 'wb')
+            gfile = gzip.open(file)
+            tmph.writelines(gfile.readlines())
+            gfile.close()
+            del gfile
+            tmph.close()
+        except IOError:
+            # got an error, must not be gzipped
+            # should probably do a better check here
+            tmpf = file
         try:
             outfile = sys.stdout
             #outfile = open(options["output_data_directory"] + "/results", 'a+')
@@ -444,7 +424,7 @@ def processFile(honeypots, file, options, dbargs=None):
             for name, val in options.items():
                 if name in FILTERS and val == "YES":
                     filt = FILTERS[name]
-                    p = pcapy.open_offline(fifo)
+                    p = pcapy.open_offline(tmpf)
                     #p = open_offline("/tmp/fifo")
                     c = Counter(p)
                     c.setOutput(outfile)
@@ -459,7 +439,7 @@ def processFile(honeypots, file, options, dbargs=None):
             #print "INCOMING CONNECTIONS"
             outfile.write("INCOMING CONNECTIONS\n")
             outfile.flush()
-            p = pcapy.open_offline(fifo)
+            p = pcapy.open_offline(tmpf)
             if dbargs:
                 db = dbConnection(dbargs)
             else:
@@ -477,7 +457,7 @@ def processFile(honeypots, file, options, dbargs=None):
             #print "\nOUTGOING CONNECTIONS"
             outfile.write("\nOUTGOING CONNECTIONS\n")
             outfile.flush()
-            p = pcapy.open_offline(fifo)
+            p = pcapy.open_offline(tmpf)
             s = Summarize(p, db)
             filt = 'src host ' + string.join(honeypots, ' or src host ')
             s.setFilter(filt, file)
@@ -496,7 +476,7 @@ def processFile(honeypots, file, options, dbargs=None):
             #print "\nIRC SUMMARY"
             outfile.write("\nIRC SUMMARY\n")
             outfile.flush()
-            p = pcapy.open_offline(fifo)
+            p = pcapy.open_offline(tmpf)
             words = '0day access account admin auth bank bash #!/bin binaries binary bot card cash cc cent connect crack credit dns dollar ebay e-bay egg flood ftp hackexploit http leech login money /msg nologin owns ownz password paypal phish pirate pound probe prv putty remote resolved root rooted scam scan shell smtp sploit sterling sucess sysop sys-op trade uid uname uptime userid virus warez' 
             if options["wordfile"]:
                 wfile = options["wordfile"]
@@ -522,7 +502,7 @@ def processFile(honeypots, file, options, dbargs=None):
             #outfile.write("\nIRC DETAIL\n")
             outfile.write("Extracting from IRC\n")
             outfile.flush()
-            p = pcapy.open_offline(fifo)
+            p = pcapy.open_offline(tmpf)
             de = tcpflow.tcpFlow(p)
             de.setFilter("port 6667")
             de.setOutput(outfile)
@@ -533,7 +513,7 @@ def processFile(honeypots, file, options, dbargs=None):
         
         if options["do_http"] == "YES" and options["do_files"] == "YES":
             print "Extracting from http"
-            p = pcapy.open_offline(fifo)
+            p = pcapy.open_offline(tmpf)
             de = tcpflow.tcpFlow(p)
             de.setFilter("port 80")
             de.setOutdir(options["output_data_directory"]+ "/http-extract")
@@ -547,7 +527,7 @@ def processFile(honeypots, file, options, dbargs=None):
 """
         if options["do_ftp"] == "YES" and options["do_files"] == "YES":
             print "Extracting from ftp"
-            p = pcapy.open_offline(fifo)
+            p = pcapy.open_offline(tmpf)
             de = tcpflow.tcpFlow(p)
             de.setFilter("port 20")
             de.setOutdir(options["output_data_directory"] + "/ftp-extract")
@@ -558,7 +538,7 @@ def processFile(honeypots, file, options, dbargs=None):
 
         if options["do_smtp"] == "YES" and options["do_files"] == "YES":
             print "Extracting from smtp"
-            p = pcapy.open_offline(fifo)
+            p = pcapy.open_offline(tmpf)
             de = tcpflow.tcpFlow(p)
             de.setFilter("port 25")
             de.setOutdir(options["output_data_directory"] + "/smtp-extract")
@@ -602,6 +582,8 @@ def processFile(honeypots, file, options, dbargs=None):
                 space = ' ' *slen
                 tfile = OutputSTDOUT()
                 tfile.write(type + ":%s%s\n" % (space,typehash[type]))  
+        # delete the tmp file we used to hold unzipped data
+        os.unlink(tmpf)
 
 def cleanup(options):
     """
