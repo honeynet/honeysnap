@@ -25,123 +25,10 @@ import pcapy
 from pcapy import *
 from impacket.ImpactDecoder import EthDecoder, LinuxSLLDecoder
 import traceback
+from flow import flow, flow_state, flow_state_manager
 
-NUM_RESERVED_FDS=25
-HASH_SIZE=1009
 FLOW_FINISHED=(1 << 0)
 FLOW_FILE_EXISTS=(1 << 1)
-
-def ipnum(ip) :
-    "Return a numeric address for an ip string"
-    v = 0L
-    for x in ip.split(".") :
-        v = (v << 8) | int(x);
-    return v
-
-class flow:
-    def __init__(self):
-        self.src = None
-        self.dst = None
-        self.sport = None
-        self.dport = None
-
-    def __eq__(self, other):
-        return self.sport==other.sport and self.dport==other.dport and self.src==other.src and self.dst==other.dst
-
-    def __ne__(self, other):
-        return self.sport!=other.sport or self.dport!=other.dport or self.src!=other.src or self.dst!=other.dst
-    
-    
-class flow_state:
-    
-    def __init__(self):
-        self.next = None # link to next flow state
-        self.flow = None # Description of the flow
-        self.isn = None  # Initial Seq Number
-        self.fp = None   # file pointer for this flows data
-        self.pos = 0
-        self.flags = 0
-        self.last_access = 0 # time of last access
-        self.size  = 0
-        self.dport = 0
-        self.lname = ""
-        self.filetype = ""
-        self.realname = ""
-        self.data = []
-        self.fname = []
-
-    def __cmp__(self, other):
-        # to facilitate sorting a list of states by last_access
-        return cmp(self.last_access, other.last_access)
-
-class flow_state_manager:
-
-    def __init__(self):
-        self.current_time = 0
-        # XXX Jed 8/30/06
-        # looks like shelving flow_hash totally nukes performance
-        # test runs tell me using a dict here doesn't use much ram
-        #self.shelf = tempfile.mkstemp()[1]
-        #os.unlink(self.shelf)
-        #self.flow_hash = shelve.open(self.shelf)
-        self.flow_hash = {}
-        self.curent_time = 0
-        self.outdir = None
-        
-    def setOutdir(self, outdir):
-        self.outdir = outdir
-
-    def fhash(self, flow):
-        hash =  (((flow.sport & 0xff) | ((flow.dport & 0xff) << 8) | ((ipnum(flow.src) & 0xff) << 16) | ((ipnum(flow.dst) & 0xff) << 24) ) % HASH_SIZE)
-        return str(hash)
-
-    def create_state(self, flow, isn):
-        new_state = flow_state()
-        new_state.flow = flow
-        new_state.isn = isn
-        new_state.last_access = self.current_time+1
-        self.current_time +=1
-        index = self.fhash(new_state.flow)
-        if index in self.flow_hash:
-            tmp = self.flow_hash[index]
-            new_state.next = tmp
-            self.flow_hash[index] = new_state
-        else:
-            self.flow_hash[index] = new_state
-        return new_state
-
-    
-    def find_flow_state(self, flow):
-        index = self.fhash(flow)
-        #print "index: " + str(index)
-        if index in self.flow_hash:
-            state = self.flow_hash[index]
-        else:
-            return None
-        if state.flow == flow:
-            state.last_access = self.current_time+1
-            self.current_time +=1
-            return state
-        else:
-            while state.next is not None:
-                #print "looking at state.next"
-                if state.next == state:
-                    #print "state.next = state, thats bad"
-                    return None
-                state = state.next
-                if state.flow == flow:
-                    state.last_access = self.current_time+1
-                    self.current_time +=1
-                    return state
-        return None
-
-    def flow_filename(self, flow):
-        """
-        filename should be:
-        "%03d.%03d.%03d.%03d.%05d-%03d.%03d.%03d.%03d.%05d"
-        """
-        name = "%s/%s.%s-%s.%s" % (self.outdir, flow.src, flow.sport, flow.dst, flow.dport)
-        return name
 
 class tcpFlow:
 
@@ -154,6 +41,7 @@ class tcpFlow:
         self.states = flow_state_manager()
         self.outdir = ""
         self.fname = []
+        self.plugins = []
         # Query the type of the link and instantiate a decoder accordingly.
         datalink = self.p.datalink()
         if pcapy.DLT_EN10MB == datalink:
@@ -167,6 +55,12 @@ class tcpFlow:
         # take care of some cleanup
         # delete shelf file
         os.unlink(self.shelf)
+
+    def registerPlugin(self, cb):
+        """
+        cb is a function that takes an instance of flow_state as an arg
+        """
+        self.plugins.append(cb)
 
     def packetHandler(self, hdr, data):
         try:
@@ -284,16 +178,6 @@ class tcpFlow:
     def setOutput(self, file):
         self.outfile = file
 
-    def idflows(self):
-        for fstr in self.flows.keys():
-            t = ram()
-            stream = ""
-            for line in self.flows[fstr].data:
-                stream = stream + line
-                
-            filetype = t.filetype(stream)
-            self.flows[fstr].filetype = filetype  
-
     def getnames(self):
         for z in self.flows.keys():
             if self.flows[z].dport == 80:
@@ -343,6 +227,8 @@ class tcpFlow:
     def dump_extract(self, options):
         type = ""
         for f, e in self.flows.items():
+            for func in self.plugins:
+                func(e, self.states)
             if e.realname:
                 if e.dport == 80:
                     type = "http-extract/"

@@ -20,21 +20,17 @@
 import pcapy, sys
 import socket
 from optparse import OptionParser, Option
-#from pcapy import *
-import impacket
 from impacket.ImpactDecoder import EthDecoder, LinuxSLLDecoder
 import re
 import string
 import gzip
 import os
-import StringIO
 import tempfile
-#import dataextractor
-from threading import Thread
+import httpDecode
 from ConfigParser import SafeConfigParser
-#from dbconnect import *
 import tcpflow
 from ram import ram
+from util import ipnum
 
 FILTERS = {'do_packets':'src host %s', 
             'do_ftp':'src host %s and dst port 21',
@@ -46,13 +42,6 @@ FILTERS = {'do_packets':'src host %s',
             'do_sebek':'src host %s and udp port 1101',
             'do_irc':'src host %s and dst port 6667'}
         
-def ipnum(ip) :
-    "Return a numeric address for an ip string"
-    v = 0L
-    for x in ip.split(".") :
-        v = (v << 8) | int(x);
-    return v
-
 class Output:
     """
     This class will provide a generic output interface so we can output
@@ -518,6 +507,8 @@ def processFile(honeypots, file, options, dbargs=None):
             de.setFilter("port 80")
             de.setOutdir(options["output_data_directory"]+ "/http-extract")
             de.setOutput(outfile)
+            decode = httpDecode.httpDecode()
+            de.registerPlugin(decode.decode)
             de.start()
             #de.getnames()
             de.dump_extract(options)
