@@ -374,10 +374,12 @@ def processFile(honeypots, file, options, dbargs=None):
             gfile.close()
             del gfile
             tmph.close()
+            deletetmp = 1
         except IOError:
             # got an error, must not be gzipped
             # should probably do a better check here
             tmpf = file
+            deletetmp = 0
         try:
             outfile = sys.stdout
             #outfile = open(options["output_data_directory"] + "/results", 'a+')
@@ -574,7 +576,8 @@ def processFile(honeypots, file, options, dbargs=None):
                 tfile = OutputSTDOUT()
                 tfile.write(type + ":%s%s\n" % (space,typehash[type]))  
         # delete the tmp file we used to hold unzipped data
-        os.unlink(tmpf)
+        if deletetmp:
+            os.unlink(tmpf)
 
 def cleanup(options):
     """

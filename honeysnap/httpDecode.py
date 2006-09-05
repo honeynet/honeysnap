@@ -41,9 +41,9 @@ class httpDecode:
         print '%s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)
         if not parsed:
             try:
+                print 'response:'
                 r = dpkt.http.Response(d)
                 #print `r`
-                print 'response:'
                 #print 'headers: ', r.headers
                 #print 'version: ', r.version
                 #print 'status: ', r.status
