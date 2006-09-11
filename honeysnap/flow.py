@@ -71,12 +71,58 @@ class flow_state:
         self.filetype = ""
         self.realname = ""
         self.data = []
-        self.fname = []
+        self.fname = ""
         self.decoded = None
 
     def __cmp__(self, other):
         # to facilitate sorting a list of states by last_access
         return cmp(self.last_access, other.last_access)
+
+    def __eq__(self, other):
+        return self.isn==other.isn and self.flow == other.flow
+
+    def __ne__(self, other):
+        return self.isn!=other.isn or self.flow != other.flow
+
+    def open(self, flag="ab"):
+        #print "in flow_state.open: %s" % self.fname
+        if self.fp is not None:
+            if self.fp.closed:
+                try:
+                    self.fp = open(self.fname, flag)
+                except IOError:
+                    # too many files open
+                    # lets toss an exception
+                    self.fp = None
+                    raise fileHandleError()
+        else:
+            try:
+                self.fp = open(self.fname, flag)
+            except IOError:
+                print "error opening %s" % self.fname
+                raise fileHandleError()
+        return self.fp
+
+    def close(self):
+        if self.fp is not None:
+            #self.fp.flush()
+            self.fp.close()
+            self.fp = None
+
+    def writeData(self, data):
+        if self.fp is None:
+            self.open()
+        if self.fp.closed:
+            self.open()
+
+        if self.fp.tell() != self.pos:
+            self.fp.seek(self.pos)
+        self.fp.writelines(data)
+        self.pos = self.fp.tell()
+        self.fp.flush()
+
+
+
 
 class flow_state_manager:
 
@@ -98,6 +144,8 @@ class flow_state_manager:
         new_state.flow = flow
         new_state.isn = isn
         new_state.last_access = self.current_time+1
+        new_state.outdir = self.outdir
+        new_state.fname = self.flow_filename(flow)
         self.current_time +=1
         index = self.fhash(new_state.flow)
         if index in self.flow_hash:
@@ -141,3 +189,31 @@ class flow_state_manager:
         name = "%s/%s.%s-%s.%s" % (self.outdir, flow.src, flow.sport, flow.dst, flow.dport)
         return name
 
+    def closeFiles(self):
+        d = {}
+        count = 0
+        for s in self.flow_hash.values():
+            if s.fp is not None:
+                if s.last_access not in d:
+                    d[s.last_access] = []
+                d[s.last_access] = s.fp
+                count += 1
+
+        print "found %d open files" % count
+        ds = d.keys()
+        ds.sort()
+        closed = 0
+        print "len: %d min: %d max: %d" % (len(ds), ds[0], ds[-1])
+        # close all but the last 2 access times
+        ds = ds[0:-2]
+        for i in ds:
+            for f in d[i]:
+                print f
+                if not f.closed():
+                    f.close()
+                    closed += 1
+        
+        print "closed %d files" % closed
+
+class fileHandleError(Exception):
+    pass

@@ -4,7 +4,6 @@ $URL$
 
 * Add $Id$ to all files
 
-* The flow extraction grinds my machine into the ground on a real dataset
 
 * The output format of the flows isn't that useful. Maybe write a general
 output class/fn that prints out the top N talkers, ordered by traffic
@@ -24,7 +23,8 @@ count. N would be defined in the config file
           run twice produces two files
             ./honeynetip/remoteip/fred-DIR-fred.tar.1 and fred-DIR-fred.tar.2
 
-* we strip the http header and store that as filename.hdr
+* we strip the http header and store that as filename.hdr -- this is mostly done
+BIG PROBLEM: http pipelined requests are broken!!!!!
 
 * md5 sum of file
 
@@ -96,3 +96,4 @@ and then create a regex from this that looks for all combinations for prefixes
 * change honeynet IPs in sample config file to 192.168 address rather than
 being live UK honeypots
 * Remove all the gzip and fifo related code
+* The flow extraction grinds my machine into the ground on a real dataset

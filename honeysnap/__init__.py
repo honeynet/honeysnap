@@ -516,7 +516,8 @@ def processFile(honeypots, file, options, dbargs=None):
             de.dump_extract(options)
         
         """
-              #_httpfile=`sed -e 's///g' "${_httpsource}.${_httpsourceport}-${_httpdest}.${_httpdestport}" | grep -i ^GET | awk '{ print $2 }' | sed -e 's#.*/##g'`
+              #_httpfile=`sed -e 's/
+//g' "${_httpsource}.${_httpsourceport}-${_httpdest}.${_httpdestport}" | grep -i ^GET | awk '{ print $2 }' | sed -e 's#.*/##g'`
 """
         if options["do_ftp"] == "YES" and options["do_files"] == "YES":
             print "Extracting from ftp"
