@@ -171,112 +171,11 @@ class tcpFlow:
     def setOutput(self, file):
         self.outfile = file
 
-##    def getnames(self):
-##        for z in self.flows.keys():
-##            if self.flows[z].dport == 80:
-##                #hreg = re.compile("^M")
-##                for line in self.flows[z].data:
-##                    line = re.sub("^M","",line)
-##                    match = re.search("^GET ",line)
-##                    if(match):
-##                        gline = line.split()
-##                        rn = re.sub(".*/+","",gline[1])
-##                        self.flows[self.reverseflow(z)].realname = rn
-##                        self.flows[self.reverseflow(z)].dport = self.flows[z].dport
-##                        self.adjustdataflow(self.reverseflow(z))
-##
-##    def adjustdataflow(self,flow):
-##        i = 0
-##        tstring = ""
-##
-##        for line in self.flows[flow].data:
-##            tstring = tstring + line
-##            
-##        #match = re.sub("\r\n\r\n","",tstring)
-##        match = string.find(tstring,"\r\n\r\n")
-##        if(match):
-##            match = match+4
-##            self.flows[flow].data = []
-##            self.flows[flow].data.append(tstring[match:len(tstring)])
-##            self.idflows(de)
-##            print "extracted file with name of: " + self.flows[flow].realname + " (" + self.flows[flow].filetype + ")"
-##            return
-##
-##        i = i + 1
-
     def dump_extract(self, options):
         for s in self.states.flow_hash.values():
             for func in self.plugins:
                 func(s, self.states)
                 
-##        # now we have processed all the captured data through the plugins
-##        # check the states to see if we have a real filename
-##        for s in self.states.flow_hash.values():
-##            if s.decoded is not None:
-##                if isinstance(s.decoded, dpkt.http.Request):
-##                    # in the case of http, the request uri
-##                    # will contain the filename of the response
-##                    # find the response, so we can rename it
-##                    realname = s.decoded.uri.rsplit("/", 1)[-1]
-##                    rf = reverse(s.flow)
-##                    rs = self.states.find_flow_state(rf)
-##                    if rs is not None:
-##                        rs.realname = realname
-##                        # make sure filename is't too long
-##                        if len(realname) > 15:
-##                            rs.realname = realname[0:15]
-##                        # rename the file
-##                        newfn = self.findName(rs.fname, realname)
-##                        #print "renaming %s to %s" %(rs.fname, newfn)
-##                        os.rename(rs.fname, newfn)
-##                        rs.fname = newfn
-##
-##    def findName(self, filename, realname):
-##            head, tail = os.path.split(filename)
-##            newfn = head+'/'+realname+".1"
-##            while 1:
-##                if os.path.exists(newfn):
-##                    newfn, ext = newfn.rsplit(".", 1)
-##                    ext = int(ext)+1
-##                    newfn = newfn + "." +str(ext)
-##                else:
-##                    return newfn
-##
-##    def dump_extractJED(self, options):
-##        type = ""
-##        for f, e in self.flows.items():
-##            for func in self.plugins:
-##                func(e, self.states)
-##            if e.realname:
-##                if e.dport == 80:
-##                    type = "http-extract/"
-##                elif e.dport == 20:
-##                    type = "ftp-extract/"
-##                elif e.dport == 6667:
-##                    type = "irc-extract/"
-##                elif e.dport == 25:
-##                    type = "smtp-extract/"
-##                
-##                filename = options["output_data_directory"]+"/"+type+e.realname+".1"
-##                if os.path.exists(filename):
-##                    name, ext = filename.rsplit(".", 1)
-##                    ext = int(ext)+1
-##                    filename = filename +"."+str(ext)
-##                mfp = open(filename,"wb")
-##            else:
-##                filename = f+".1"
-##                if os.path.exists(filename):
-##                    filename, ext = filename.rsplit(".", 1)
-##                    ext = int(ext)+1
-##                    filename = filename +"."+str(ext)
-##                mfp = open(filename,"a")
-##
-##            for y in e.data:
-##                #print "writing data to: %s" % e
-##                mfp.write(y)
-##
-##            mfp.flush()
-##            mfp.close()
 
 
     def writeResults(self):

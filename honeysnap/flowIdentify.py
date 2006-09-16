@@ -19,13 +19,16 @@
 ################################################################################
 import pyram
 class flowIdentify:
+    """
+    A class to determine the type of a file.
+    """
     def __init__(self):
         self.id = pyram.ram()
 
     def identify(self, state, data):
         """
-        state is an instance of tcpflow.flow_state
-        data is a list of data, as contained in tcpflow.flows{}
+        state: an instance of tcpflow.flow_state
+        data: captured data to be identified
         """
         stream = "".join(data)
         state.filetype = t.filetype(stream)

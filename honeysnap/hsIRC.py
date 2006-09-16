@@ -26,8 +26,12 @@ class HnyServerConnection(irclib.ServerConnection):
         self.pc = pcap.pcap(pcapfile, promisc=False)
         self.pc.setfilter(filter)
 
-    def process_data(self, pkt):
+    def process_data(self, ts, pkt):
         new_data = pkt.tcp.data
+        # save the packet
+        self.pkt = pkt
+        # save the timestamp
+        self.ts = ts
         """
         print "%s:%s -> %s:%s\n%s" % (dnet.addr(pkt.src), pkt.data.sport, 
                                       dnet.addr(pkt.dst), pkt.data.dport,
@@ -46,6 +50,7 @@ class HnyServerConnection(irclib.ServerConnection):
             if not line:
                 continue
 
+            line = line.lstrip()
             prefix = None
             command = None
             arguments = None
@@ -57,6 +62,7 @@ class HnyServerConnection(irclib.ServerConnection):
             m = _rfc_1459_command_regexp.match(line)
             if m.group("prefix"):
                 prefix = m.group("prefix")
+                #print "***********PREFIX**************: %s" % prefix
                 if not self.real_server_name:
                     self.real_server_name = prefix
 
@@ -73,8 +79,8 @@ class HnyServerConnection(irclib.ServerConnection):
             if command in numeric_events:
                 command = numeric_events[command]
 
-            if command == "nick":
-                print "***********PREFIX**************: %s" % prefix
+            if command == "nick" and prefix is not None:
+                #print "***********PREFIX**************: %s" % prefix
                 if nm_to_n(prefix) == self.real_nickname:
                     self.real_nickname = arguments[0]
             elif command == "welcome":
@@ -124,7 +130,7 @@ class HnyServerConnection(irclib.ServerConnection):
                     arguments = [arguments[0]]
                 elif command == "ping":
                     target = arguments[0]
-                else:
+                elif arguments is not None:
                     target = arguments[0]
                     arguments = arguments[1:]
 
@@ -150,15 +156,19 @@ class HnyIRC(irclib.IRC):
         self.connection = c
         return c
         
-    def process_data(self, data):
-        self.connection.process_data(data)
+    def process_data(self, ts, data):
+        self.connection.process_data(ts, data)
 
     def process_once(self, timeout=0):
         for ts, pkt in self.connection.pc:
             ip = dpkt.ip.IP(pkt[self.connection.pc.dloff:])
             try:
-                self.process_data(ip)
+                self.process_data(ts, ip)
             except:
+                # uncomment the next 3 lines to debug irc decode errors
+                import pdb, traceback
+                traceback.print_exc(file=sys.stdout)
+                pdb.post_mortem(sys.exc_traceback)
                 print "ERROR on:\n%s" % dpkt.hexdump(str(ip.tcp.data))
                 continue
 
@@ -170,7 +180,7 @@ class HoneySnapIRC(irclib.SimpleIRCClient):
         self.ircobj = HnyIRC()
         self.connection = self.ircobj.server()
         self.ircobj.add_global_handler("all_events", self._dispatcher, -10)
-        self.ircobj.add_global_handler("all_events", self.on_global, -1)
+        #self.ircobj.add_global_handler("all_events", self.on_global, -1)
 
     def connect(self, pcapfile, filter=''):
         if not filter or filter == '':
@@ -182,6 +192,15 @@ class HoneySnapIRC(irclib.SimpleIRCClient):
             print "%s\t%s\t%s\t%s\t%s" % (long(math.ceil(time.time())),
                                           e.eventtype(), e.source(),
                                           e.target(), ' '.join(e.arguments()))
+                                          
+    def addHandler(self, type, func, priority):
+        """
+        arguments:
+        type: string specifying the eventtype
+        func: the callback function, takes 2 args: connection object and irclib.Event
+        priority: an integer the higher the number, the higher the priority
+        """
+        self.ircobj.add_global_handler(type, func, priority)
 
 
 if __name__ == '__main__':

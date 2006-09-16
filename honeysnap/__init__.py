@@ -29,6 +29,8 @@ import tempfile
 import httpDecode
 from ConfigParser import SafeConfigParser
 import tcpflow
+from hsIRC import HoneySnapIRC
+from ircDecode import ircDecode
 from ram import ram
 from util import ipnum
 
@@ -501,7 +503,14 @@ def processFile(honeypots, file, options, dbargs=None):
             de.start()
             #de.getnames()
             de.dump_extract(options)
-        
+            #p = pcapy.open_offline(tmpf)
+            hirc = HoneySnapIRC()
+            hirc.connect(tmpf)
+            hd = ircDecode()
+            hirc.addHandler("all_events", hd.decodeCB, -1)
+            hirc.ircobj.process_once()
+            hd.printSummary()
+            
         if options["do_http"] == "YES" and options["do_files"] == "YES":
             print "Extracting from http"
             p = pcapy.open_offline(tmpf)
