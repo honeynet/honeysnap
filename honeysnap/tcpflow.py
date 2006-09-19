@@ -38,7 +38,7 @@ class tcpFlow:
         #self.shelf = tempfile.mkstemp()[1]
         #os.unlink(self.shelf)
         #self.flows = shelve.open(self.shelf)
-        self.flows = {}
+        #self.flows = {}
         self.p = pcapObj
         self.states = flow_state_manager()
         self.outdir = ""

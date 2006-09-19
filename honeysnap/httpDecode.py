@@ -22,6 +22,7 @@ import dpkt
 from flow import reverse as freverse
 import cStringIO
 import os
+from util import findName, renameFile
 
 class httpDecode(object):
 
@@ -172,23 +173,8 @@ class httpDecode(object):
                 if len(realname) > 15:
                     realname = realname[0:15]
                 # rename the file
-                state.realname = realname
-                newfn = self.findName(state.fname, realname)
-                # print "renaming %s to %s" %(state.fname, newfn)
-                os.rename(state.fname, newfn)
-                state.fname = newfn
-        
-    def findName(self, filename, realname):
-        head, tail = os.path.split(filename)
-        newfn = head+'/'+realname+".1"
-        while 1:
-            if os.path.exists(newfn):
-                newfn, ext = newfn.rsplit(".", 1)
-                ext = int(ext)+1
-                newfn = newfn + "." +str(ext)
-            else:
-                return newfn
-    
+                renameFile(state, realname)
+                
     def extractHeaders(self, state, d):
         """
         Pull the headers and body off the data,

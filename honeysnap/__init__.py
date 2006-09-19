@@ -27,12 +27,14 @@ import gzip
 import os
 import tempfile
 import httpDecode
+import ftpDecode
 from ConfigParser import SafeConfigParser
 import tcpflow
 from hsIRC import HoneySnapIRC
 from ircDecode import ircDecode
 from ram import ram
 from util import ipnum
+from singletonmixin import HoneysnapSingleton
 
 FILTERS = {'do_packets':'src host %s', 
             'do_ftp':'src host %s and dst port 21',
@@ -358,13 +360,15 @@ class wordSearch(Base):
         #f.close()
     
         
-def processFile(honeypots, file, options, dbargs=None):
+def processFile(honeypots, file, dbargs=None):
         """
         Process a pcap file.
         honeypots is a list of honeypot ip addresses
         file is the pcap file to parse
         This function will run any enabled options for each pcap file
         """
+        hs = HoneysnapSingleton.getInstance()
+        options = hs.getOptions()
         try:
             # This sucks. pcapy wants a path to a file, not a file obj
             # so we have to uncompress the gzipped data into 
@@ -382,6 +386,7 @@ def processFile(honeypots, file, options, dbargs=None):
             # should probably do a better check here
             tmpf = file
             deletetmp = 0
+        options["tmpf"] = tmpf
         try:
             outfile = sys.stdout
             #outfile = open(options["output_data_directory"] + "/results", 'a+')
@@ -524,17 +529,16 @@ def processFile(honeypots, file, options, dbargs=None):
             #de.getnames()
             de.dump_extract(options)
         
-        """
-              #_httpfile=`sed -e 's/
-//g' "${_httpsource}.${_httpsourceport}-${_httpdest}.${_httpdestport}" | grep -i ^GET | awk '{ print $2 }' | sed -e 's#.*/##g'`
-"""
+
         if options["do_ftp"] == "YES" and options["do_files"] == "YES":
             print "Extracting from ftp"
             p = pcapy.open_offline(tmpf)
             de = tcpflow.tcpFlow(p)
-            de.setFilter("port 20")
+            de.setFilter("port 20 or port 21")
             de.setOutdir(options["output_data_directory"] + "/ftp-extract")
             de.setOutput(outfile)
+            decode = ftpDecode.ftpDecode()
+            de.registerPlugin(decode.decode)
             de.start()
             #de.getnames()
             de.dump_extract(options)
@@ -561,6 +565,8 @@ def processFile(honeypots, file, options, dbargs=None):
             pass
 
         if options["id_files"] == "YES":
+            pass
+            """
             de = tcpflow.tcpFlow(p)
             de.setOutput(outfile)
             filelist =  de.fname
@@ -584,7 +590,8 @@ def processFile(honeypots, file, options, dbargs=None):
                 slen = 30 - tlen
                 space = ' ' *slen
                 tfile = OutputSTDOUT()
-                tfile.write(type + ":%s%s\n" % (space,typehash[type]))  
+                tfile.write(type + ":%s%s\n" % (space,typehash[type])) 
+            """
         # delete the tmp file we used to hold unzipped data
         if deletetmp:
             os.unlink(tmpf)
@@ -683,7 +690,8 @@ class MyOption(Option):
         else:
             Option.take_action(
                 self, action, dest, opt, value, values, parser)
-
+   
+    
 def main():
     cmdparser = OptionParser(option_class=MyOption)
     values, args = configOptions(cmdparser)
@@ -777,8 +785,9 @@ def main():
             print "No honeypots specified. Please use either -h or config file to specify honeypots.\n"
             sys.exit(2)
         if values.files:
+            hsingleton = HoneysnapSingleton.getInstance(options)
             if os.path.exists(values.files) and os.path.isfile(values.files):
-                processFile(values.honeypots, values.files, options, dbargs)
+                processFile(values.honeypots, values.files, dbargs)
             else:
                 print "File not found: %s" % values.filename
                 sys.exit(2)

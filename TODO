@@ -4,6 +4,8 @@ $URL$
 
 * Add $Id$ to all files
 
+* Fix TCPFlow to deal correctly with nasty things like duplicate ACKS...
+ these are corupting the data
 
 * The output format of the flows isn't that useful. Maybe write a general
 output class/fn that prints out the top N talkers, ordered by traffic

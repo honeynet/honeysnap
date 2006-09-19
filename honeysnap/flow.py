@@ -52,9 +52,13 @@ class flow:
 
     def __repr__(self):
         return "%s.%s-%s.%s" % (self.src, self.sport, self.dst, self.dport)
+        
+    def isSrcSport(self, src, sport):
+        if self.src == src and self.sport == sport:
+            return True
+        else:
+            return False
 
-    
-    
 class flow_state:
     
     def __init__(self):
@@ -214,6 +218,18 @@ class flow_state_manager:
                     closed += 1
         
         print "closed %d files" % closed
+        
+    def getFlows(self):
+        f = []
+        for s in self.flow_hash.values():
+            f.append(s.flow)
+            while 1:
+                if s.next is not None:
+                    f.append(s.flow)
+                    s = s.next
+                else:
+                    break
+        return f
 
 class fileHandleError(Exception):
     pass
