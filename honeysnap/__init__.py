@@ -28,6 +28,7 @@ import os
 import tempfile
 import httpDecode
 import ftpDecode
+import smtpDecode
 from ConfigParser import SafeConfigParser
 import tcpflow
 from hsIRC import HoneySnapIRC
@@ -550,6 +551,8 @@ def processFile(honeypots, file, dbargs=None):
             de.setFilter("port 25")
             de.setOutdir(options["output_data_directory"] + "/smtp-extract")
             de.setOutput(outfile)
+            decode = smtpDecode.smtpDecode()
+            de.registerPlugin(decode.decode)
             de.start()
             #de.getnames()
             de.dump_extract(options)

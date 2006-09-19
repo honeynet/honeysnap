@@ -18,37 +18,31 @@
 #
 ################################################################################
 
-import os
-import md5
+from util import renameFile
 
-def ipnum(ip) :
-    "Return a numeric address for an ip string"
-    v = 0L
-    for x in ip.split(".") :
-        v = (v << 8) | int(x);
-    return v
-
-def findName(filename, realname):
-    head, tail = os.path.split(filename)
-    newfn = head+'/'+realname+".1"
-    while 1:
-        if os.path.exists(newfn):
-            newfn, ext = newfn.rsplit(".", 1)
-            ext = int(ext)+1
-            newfn = newfn + "." +str(ext)
-        else:
-            return newfn
-            
-def renameFile(state, realname):
-    state.realname = realname
-    newfn = findName(state.fname, realname)
-    print "renaming %s to %s" %(state.fname, newfn)
-    os.rename(state.fname, newfn)
-    state.fname = newfn   
-
-def mdsum(file):
-    m = md5.new()
-    f = open(file, "r")
-    m.update("".join(f.readlines()))
-    return m.digest()
-    
+class smtpDecode(object):
+    def __init__(self):
+        self.statemgr = None
+        self.count = 0
+        
+    def decode(self, state, statemgr):
+        self.statemgr = statemgr
+        f = state.flow
+        if f.dport == 25:
+            state.close()
+            state.open("rb")
+            d = state.fp.readlines()
+            dlow = [l.lower() for l in d]
+            to = [l for l in dlow if l.find("rcpt to") >= 0]
+            subj = [l for l in dlow if l.find("subject") >=0]
+            if len(to) == 0:
+                return
+            if len(subj) == 0:
+                subj.append("")
+            realname = "mail-message-%d" % self.count
+            self.count +=1 
+            renameFile(state, realname)
+            # assume the first entry in each list is the correct one
+            print "file: %s" % realname
+            print "\t" + to[0]
+            print "\t" + subj[0]
