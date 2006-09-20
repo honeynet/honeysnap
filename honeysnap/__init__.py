@@ -17,6 +17,7 @@
 #   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 ################################################################################
+
 import pcapy, sys
 import socket
 from optparse import OptionParser, Option
@@ -25,17 +26,27 @@ import re
 import string
 import gzip
 import os
+from ConfigParser import SafeConfigParser
 import tempfile
+
+# all the honeysnap imports
+# eventually all these will become UDAF modules
+# and you will get them all by importing DA
 import httpDecode
 import ftpDecode
 import smtpDecode
-from ConfigParser import SafeConfigParser
 import tcpflow
 from hsIRC import HoneySnapIRC
 from ircDecode import ircDecode
 from ram import ram
 from util import ipnum
 from singletonmixin import HoneysnapSingleton
+from pcapinfo import pcapInfo
+from packetSummary import Summarize
+from base import Base
+from output import OutputSTDOUT
+from packetCounter import Counter
+from pcapRE import pcapRE
 
 FILTERS = {'do_packets':'src host %s', 
             'do_ftp':'src host %s and dst port 21',
@@ -46,261 +57,24 @@ FILTERS = {'do_packets':'src host %s',
             'do_https':'src host %s and dst port 443',
             'do_sebek':'src host %s and udp port 1101',
             'do_irc':'src host %s and dst port 6667'}
-        
-class Output:
+
+class MyOption(Option):
     """
-    This class will provide a generic output interface so we can output
-    in text, html, whatever.
+    A class that extends option to allow us to have comma delimited command line args.
+    Taken from the documentation for optparse.
     """
-    def write():
-        pass
+    ACTIONS = Option.ACTIONS + ("extend",)
+    STORE_ACTIONS = Option.STORE_ACTIONS + ("extend",)
+    TYPED_ACTIONS = Option.TYPED_ACTIONS + ("extend",)
 
-class OutputSTDOUT(Output):
-    
-    filehandle = sys.stdout
-    def __init__(self):
-        self.filehandle = None
-
-    def write(self,text):
-        self.filehandle.write(text)   
-                    
-
-class Base:
-    """
-    This should be a base class that provides commonly used functions.
-    I decided to add this late in the game.  There are replicated functions
-    in the below classes that should be put in here.
-    """
-    def setOutput(self, file):
-        self.outfile = file
-        
-class Counter(Base):
-    """ Generic counting class 
-        Args are:
-        pcapObj: a pcap obj, a result of open_live() or open_offline()
-    """
-    def __init__(self, pcapObj):
-        self.total = 0
-        self.p = pcapObj
-
-    def setFilter(self, filter):
-        self.filter = filter
-        self.p.setfilter(filter)
-
-    def count(self):
-        self.p.dispatch(-1, self.counter)
-
-    def counter(self, hdr, data):
-        self.total += 1
-
-    def getCount(self):
-        return self.total
-
-    def resetCount(self):
-        self.total = 0
-
-    def writeResults(self):
-        f = sys.stdout
-        #f = open(self.outfile, "a")
-        f.write("%-40s %10d\n" % (self.filter, self.total))
-        #f.close()
-
-class Summarize(Base):
-    """
-    Summarize takes a pcapObj, and an optional dbObj that is a mysql db connection.
-    This class reads the pcap data, hands it to a decoder, and then keys each packet
-    by (srcip, dstip, dport).  The count of each tuple is kept. 
-    Utimately you get a packet count for each outgoing connection.
-    This class works best if you use setFilter to filter by "src $HONEYPOT"
-    """
-    def __init__(self, pcapObj, dbObj):
-        self.tcpports = {}
-        self.udpports = {}
-        self.icmp = {}
-        self.p = pcapObj
-        if dbObj:
-            self.db = summaryTable(dbObj)
+    def take_action(self, action, dest, opt, value, values, parser):
+        if action == "extend":
+            lvalue = value.split(",")
+            values.ensure_value(dest, []).extend(lvalue)
         else:
-            self.db =None
-        # Query the type of the link and instantiate a decoder accordingly.
-        datalink = self.p.datalink()
-        if pcapy.DLT_EN10MB == datalink:
-            self.decoder = EthDecoder()
-        elif pcapy.DLT_LINUX_SLL == datalink:
-            self.decoder = LinuxSLLDecoder()
-        else:
-            raise Exception("Datalink type not supported: " % datalink)
-
-    def setFilter(self, filter, file):
-        self.filter = filter
-        self.file = file
-        self.p.setfilter(filter)
-
-    def start(self):
-        self.p.dispatch(-1, self.packetHandler)
-        #self.printResults()
-
-    def packetHandler(self, hdr, data):
-        #print self.decoder.decode(data)
-        try:
-            pkt = self.decoder.decode(data)
-        except:
-            return
-        try:
-            proto = pkt.child().child().protocol
-            shost = pkt.child().get_ip_src()
-            dhost = pkt.child().get_ip_dst()
-        except: 
-            return
-
-        try:
-            if proto == socket.IPPROTO_TCP:
-                dport = pkt.child().child().get_th_dport()
-                sport = pkt.child().child().get_th_sport()
-                key = (shost, dhost, dport)
-                if key not in self.tcpports:
-                    self.tcpports[key] = 0
-                self.tcpports[key] += 1
-                if self.db:
-                    self.db.queueInsert((proto, ipnum(shost), sport, ipnum(dhost), dport, self.filter, self.file, hdr.getts()[0], self.tcpports[key])) 
-            if proto == socket.IPPROTO_UDP:
-                dport = pkt.child().child().get_uh_dport()
-                sport = pkt.child().child().get_uh_sport()
-                key = (shost, dhost, dport)
-                if key not in self.udpports:
-                    self.udpports[key] = 0
-                self.udpports[key] += 1
-                if self.db:
-                    self.db.queueInsert((proto, ipnum(shost), sport, ipnum(dhost), dport, self.filter, self.file, hdr.getts()[0], self.udpports[key])) 
-        except:
-            return
-
-    def printResults(self):
-        print "TCP TRAFFIC SUMMARY:"
-        print "%-15s %-15s %8s %10s" % ("SOURCE", "DEST", "DPORT", "COUNT")
-        for key, val in self.tcpports.items():
-            if val > 10:
-                print "%-15s %-15s %8s %10s" % (key[0], key[1], key[2], val)
-        if len(self.udpports) > 0:
-            print "UDP TRAFFIC SUMMARY:"
-            print "%-15s %-15s %8s %10s" % ("SOURCE", "DEST", "DPORT", "COUNT")
-            for key, val in self.udpports.items():
-                if val > 10:
-                    print "%-15s %-15s %8s %10s" % (key[0], key[1], key[2], val)
-    
-    def writeResults(self):
-        f = sys.stdout
-        #f = open(self.outfile, 'a')
-        f.write("TCP TRAFFIC SUMMARY:\n")
-        f.write("%-15s %-15s %8s %10s\n" % ("SOURCE", "DEST", "DPORT", "COUNT"))
-        for key, val in self.tcpports.items():
-            #if val > 10:
-            f.write("%-15s %-15s %8s %10s\n" % (key[0], key[1], key[2], val))
-        if len(self.udpports) > 0:
-            f.write("UDP TRAFFIC SUMMARY:\n")
-            f.write("%-15s %-15s %8s %10s\n" % ("SOURCE", "DEST", "DPORT", "COUNT"))
-            for key, val in self.udpports.items():
-                #if val > 10:
-                f.write("%-15s %-15s %8s %10s\n" % (key[0], key[1], key[2], val))
-        #f.close()
-        if self.db:
-            self.db.doInserts()
-                
-
-class PcapRE(Base):
-    """
-    Takes a pcapObj as an argument.
-    
-    """
-    def __init__(self, pcapObj):
-        self.exp = None
-        self.p = pcapObj
-        self.results = {}
-        self.doWordSearch = 0
-        # Query the type of the link and instantiate a decoder accordingly.
-        datalink = self.p.datalink()
-        if pcapy.DLT_EN10MB == datalink:
-            self.decoder = EthDecoder()
-        elif pcapy.DLT_LINUX_SLL == datalink:
-            self.decoder = LinuxSLLDecoder()
-        else:
-            raise Exception("Datalink type not supported: " % datalink)
-
-    def setRE(self, pattern):
-        """
-        Arg is a string that will be treated as a regular expression
-        """
-        self.exp = re.compile(pattern)
-        self.pattern = pattern
-
-    def setFilter(self, filter):
-        self.p.setfilter(filter)
-
-    def setWordSearch(self, searcher):
-        """ Takes an instance of class wordSearch as arg"""
-        self.doWordSearch = 1
-        self.searcher = searcher
-        
-    def start(self):
-        self.p.dispatch(-1, self.packetHandler)
-        #self.printResults()
-
-    def packetHandler(self, hdr, data):
-        pay = None
-        m = None
-        try:
-            pkt = self.decoder.decode(data)
-        except:
-            return
-        try:
-            proto = pkt.child().child().protocol
-        except:
-            return
-        try:
-            if proto == socket.IPPROTO_TCP:
-                ip = pkt.child()
-                shost = ip.get_ip_src()
-                dhost = ip.get_ip_dst()
-                tcp = pkt.child().child()
-                pay = tcp.child().get_buffer_as_string()
-                dport = tcp.get_th_dport()
-                key = (proto, shost, dhost, dport)
-            if proto == socket.IPPROTO_UDP:
-                ip = pkt.child()
-                shost = ip.get_ip_src()
-                dhost = ip.get_ip_dst()
-                udp = pkt.child().child()
-                pay = udp.child().get_buffer_as_string()
-                dport = udp.get_uh_dport()
-                key = (proto, shost, dhost, dport)
-        except:
-            return
-        if pay is not None and self.exp is not None:
-            m = self.exp.search(pay)
-            if m:
-                if key not in self.results:
-                    self.results[key] = 0
-                self.results[key] += 1
-                if self.doWordSearch:
-                    self.searcher.findWords(pkt, pay)
-    
-    def printResults(self):
-        for key, val in self.results.items():
-            print "Pattern: %-10s %-5s %-15s %-15s %-5s %10s" % (self.pattern, key[0], key[1], key[2], key[3], val)
-        if self.doWordSearch:
-            #self.searcher.printResults()
-            self.searcher.writeResults()
-
-    def writeResults(self):
-        f = sys.stdout
-        #f = open(self.outfile, 'a')
-        f.write("%-10s %-5s %-15s %-15s %-5s %10s\n" % ("PATTERN", "PROTO", "SOURCE", "DEST", "DPORT", "COUNT"))
-        for key, val in self.results.items():
-            f.write("%-10s %-5s %-15s %-15s %-5s %10s\n" % (self.pattern, key[0], key[1], key[2], key[3], val))
-        if self.doWordSearch:
-            self.searcher.writeResults()
-        #f.close()
-
+            Option.take_action(
+                self, action, dest, opt, value, values, parser)
+            
 class wordSearch(Base):
     """
     wordSeach is an auxillary of pcapRE. It allows you to pass a list of words 
@@ -400,7 +174,7 @@ def processFile(honeypots, file, dbargs=None):
                     os.mkdir(options["output_data_directory"])
                     # now we can create the output file
                     outfile = sys.stdout                    
-#outfile = open(options["output_data_directory"] + "/results", 'a+')
+                    #outfile = open(options["output_data_directory"] + "/results", 'a+')
                 except:
                     print "Error creating output directory"
                     sys.exit(1)
@@ -414,7 +188,9 @@ def processFile(honeypots, file, dbargs=None):
 
             
             
-        outfile.write("Processing file: %s\n" % file)
+        outfile.write("Pcap file information:\n")
+        pi = pcapInfo(tmpf)
+        outfile.write(pi.getStats())
         outfile.write("\n\nResults for file: %s\n" % file)
         outfile.write("Outgoing Packet Counts\n")
         outfile.write("%-40s %10s\n" % ("Filter", "Packets"))
@@ -450,6 +226,7 @@ def processFile(honeypots, file, dbargs=None):
             #s.setOutput(options["output_data_directory"] + "/results")
             s.start()
             s.writeResults()
+            del p
 
 
         if options["summarize_outgoing"] == "YES":
@@ -464,6 +241,7 @@ def processFile(honeypots, file, dbargs=None):
             #s.setOutput(options["output_data_directory"] + "/results")
             s.start()
             s.writeResults()
+            del p
 
 
         if options["do_irc_summary"] == "YES":
@@ -488,7 +266,7 @@ def processFile(honeypots, file, dbargs=None):
             ws.setWords(words)
             ws.setOutput(outfile)
             #ws.setOutput(options["output_data_directory"] + "/results")
-            r = PcapRE(p)
+            r = pcapRE(p)
             r.setFilter("port 6667")
             r.setRE('PRIVMSG')
             r.setWordSearch(ws)
@@ -496,6 +274,7 @@ def processFile(honeypots, file, dbargs=None):
             #r.setOutput(options["output_data_directory"] + "/results")
             r.start()
             r.writeResults()
+            del p
 
         if options["do_irc_detail"] == "YES":
             #outfile.write("\nIRC DETAIL\n")
@@ -516,6 +295,7 @@ def processFile(honeypots, file, dbargs=None):
             hirc.addHandler("all_events", hd.decodeCB, -1)
             hirc.ircobj.process_once()
             hd.printSummary()
+            del p
             
         if options["do_http"] == "YES" and options["do_files"] == "YES":
             print "Extracting from http"
@@ -529,6 +309,7 @@ def processFile(honeypots, file, dbargs=None):
             de.start()
             #de.getnames()
             de.dump_extract(options)
+            del p
         
 
         if options["do_ftp"] == "YES" and options["do_files"] == "YES":
@@ -543,6 +324,7 @@ def processFile(honeypots, file, dbargs=None):
             de.start()
             #de.getnames()
             de.dump_extract(options)
+            del p
 
         if options["do_smtp"] == "YES" and options["do_files"] == "YES":
             print "Extracting from smtp"
@@ -556,6 +338,7 @@ def processFile(honeypots, file, dbargs=None):
             de.start()
             #de.getnames()
             de.dump_extract(options)
+            del p
 
         if options["do_rrd"] == "YES":
             print "RRD not currently supported"
@@ -677,22 +460,7 @@ def configOptions(parser):
 
     return parser.parse_args()
 
-class MyOption(Option):
-    """
-    A class that extends option to allow us to have comma delimited command line args.
-    Taken from the documentation for optparse.
-    """
-    ACTIONS = Option.ACTIONS + ("extend",)
-    STORE_ACTIONS = Option.STORE_ACTIONS + ("extend",)
-    TYPED_ACTIONS = Option.TYPED_ACTIONS + ("extend",)
 
-    def take_action(self, action, dest, opt, value, values, parser):
-        if action == "extend":
-            lvalue = value.split(",")
-            values.ensure_value(dest, []).extend(lvalue)
-        else:
-            Option.take_action(
-                self, action, dest, opt, value, values, parser)
    
     
 def main():
@@ -747,35 +515,7 @@ def main():
         if options['config'] is not None:
             for i in parser.items("OPTIONS"):
                 options[i[0]] = i[1]
-        """
-        JED 8/30/2006
-        XXXX These should all get set in configOptions
-        options = {"do_packets":"NO",
-                    "do_telnet":"NO",
-                    "do_ssh":"NO",
-                    "do_http":"NO",
-                    "do_https":"NO",
-                    "do_ftp":"NO",
-                    "do_smtp":"NO",
-                    "do_irc":"NO",
-                    "do_irc_summary":"NO",
-                    "do_irc_detail":"NO",
-                    "do_sebek":"NO",
-                    "do_rrd":"NO",
-                    "do_files":"NO",
-                    "id_files":"NO"
-                    }
-        """
-        """
-        JED 8/21/2006
-        Don't know what this does, don't see this variable used anywhere else.
-        Commenting out for now.
-        try:
-            idexclude = parser.get("OPTIONS", "ID_EXCLUDE")
-            idexclude = idexclude.split(",")
-        except:
-            pass
-        """
+
         options["output_data_directory"] = values.outputdir
         options["tmp_file_directory"] = values.tmpdir
         if not os.path.exists(values.outputdir):
