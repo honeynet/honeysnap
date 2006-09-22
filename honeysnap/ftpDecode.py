@@ -24,6 +24,7 @@ from flow import reverse as freverse
 import tcpflow
 import pcapy
 from singletonmixin import HoneysnapSingleton
+from flowIdentify import flowIdentify
 
 cmds = ['STOR', 'STOU', 'RETR', 'LIST', 'NLST', 'APPE']
 
@@ -40,6 +41,7 @@ class ftpDecode(object):
         # response code 227 is PASV
         # response code 229 is EPASV
         self._227re = re.compile("^227|^229", re.M)
+        self.id = flowIdentify()
         
         
     def decode(self, state, statemgr):
@@ -91,11 +93,10 @@ class ftpDecode(object):
                     rflow.sport = 20
                     # find the state that carries the data
                     rstate = self.statemgr.find_flow_state(rflow)
-                    print filename
-                    print rflow
                     # rename the data file
                     if rstate is not None:
                         renameFile(rstate, filename)
+                        self.id.identify(rstate)
                         
         
     def extractPassive(self, state, d):
@@ -147,10 +148,7 @@ class ftpDecode(object):
             else:
                 continue
             filename = p[1].split(" ")[1]
-            print filename
-            #rflow.dport = 
             rflow.sport = port 
-            print rflow
             # passive ftp transactions happen on high ports
             # so the stream extractor has not extracted the data
             # create a new stream extractor to pull the data
@@ -175,6 +173,7 @@ class ftpDecode(object):
             # rename the data file
             if rstate is not None:
                 renameFile(rstate, filename)
- 
+                self.id.identify(rstate)
+
                 
                 

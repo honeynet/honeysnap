@@ -42,7 +42,7 @@ def findName(filename, realname):
 def renameFile(state, realname):
     state.realname = realname
     newfn = findName(state.fname, realname)
-    print "renaming %s to %s" %(state.fname, newfn)
+    print "\n%s" %(newfn)
     os.rename(state.fname, newfn)
     state.fname = newfn   
 
@@ -50,5 +50,6 @@ def mdsum(file):
     m = md5.new()
     f = open(file, "r")
     m.update("".join(f.readlines()))
-    return m.digest()
-    
+    d = m.hexdigest()
+    print "md5: %s" % d
+    return d

@@ -23,6 +23,7 @@ from flow import reverse as freverse
 import cStringIO
 import os
 from util import findName, renameFile
+from flowIdentify import flowIdentify
 
 class httpDecode(object):
 
@@ -46,6 +47,7 @@ class httpDecode(object):
     
     def __init__(self):
         self.statemgr = None
+        self.id = flowIdentify()
         
     def determineType(self, data):
         """
@@ -174,6 +176,7 @@ class httpDecode(object):
                     realname = realname[0:15]
                 # rename the file
                 renameFile(state, realname)
+                self.id.identify(state)
                 
     def extractHeaders(self, state, d):
         """

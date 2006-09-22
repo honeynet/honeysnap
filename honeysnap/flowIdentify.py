@@ -17,21 +17,24 @@
 #   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 ################################################################################
-import pyram
+import magic
+from util import mdsum
+
 class flowIdentify:
     """
     A class to determine the type of a file.
     """
     def __init__(self):
-        self.id = pyram.ram()
+        self.id = magic.file
 
-    def identify(self, state, data):
+    def identify(self, state):
         """
         state: an instance of tcpflow.flow_state
         data: captured data to be identified
         """
-        stream = "".join(data)
-        state.filetype = t.filetype(stream)
+        state.filetype = self.id(state.fname)
+        print "filetype: %s" % state.filetype
+        mdsum(state.fname)
         
 
 

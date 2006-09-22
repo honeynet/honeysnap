@@ -48,15 +48,15 @@ from output import OutputSTDOUT
 from packetCounter import Counter
 from pcapRE import pcapRE
 
-FILTERS = {'do_packets':'src host %s', 
-            'do_ftp':'src host %s and dst port 21',
-            'do_ssh':'src host %s and dst port 22',
-            'do_telnet':'src host %s and dst port 23',
-            'do_smtp':'src host %s and dst port 25',
-            'do_http':'src host %s and dst port 80',
-            'do_https':'src host %s and dst port 443',
-            'do_sebek':'src host %s and udp port 1101',
-            'do_irc':'src host %s and dst port 6667'}
+FILTERS = {'Counting outbound IP packets:':'src host %s', 
+            'Counting outbound FTP packets:':'src host %s and dst port 21',
+            'Counting outbound SSH packets:':'src host %s and dst port 22',
+            'Counting outbound Telnet packets:':'src host %s and dst port 23',
+            'Counting outbound SMTP packets:':'src host %s and dst port 25',
+            'Counting outbound HTTP packets:':'src host %s and dst port 80',
+            'Counting outbound HTTPS packets:':'src host %s and dst port 443',
+            'Counting outbound Sebek packets:':'src host %s and udp port 1101',
+            'Counting outbound IRC packets:':'src host %s and dst port 6667'}
 
 class MyOption(Option):
     """
@@ -192,23 +192,23 @@ def processFile(honeypots, file, dbargs=None):
         pi = pcapInfo(tmpf)
         outfile.write(pi.getStats())
         outfile.write("\n\nResults for file: %s\n" % file)
-        outfile.write("Outgoing Packet Counts\n")
+        outfile.write("Counting outbound IP packets:\n")
         outfile.write("%-40s %10s\n" % ("Filter", "Packets"))
         outfile.flush()
-        for ipaddr in honeypots:
-            for name, val in options.items():
-                if name in FILTERS and val == "YES":
-                    filt = FILTERS[name]
-                    p = pcapy.open_offline(tmpf)
-                    #p = open_offline("/tmp/fifo")
-                    c = Counter(p)
-                    c.setOutput(outfile)
-                    #c.setOutput(options["output_data_directory"] + "/results")
-                    f = filt % ipaddr
-                    c.setFilter(f)
-                    c.count()
-                    count = c.getCount()
-                    c.writeResults()
+        for key, filt in FILTERS.items():
+            print key
+            for ipaddr in honeypots:
+                p = pcapy.open_offline(tmpf)
+                #p = open_offline("/tmp/fifo")
+                c = Counter(p)
+                c.setOutput(outfile)
+                #c.setOutput(options["output_data_directory"] + "/results")
+                f = filt % ipaddr
+                c.setFilter(f)
+                c.count()
+                count = c.getCount()
+                c.writeResults()
+            print "\n"
 
         if options["summarize_incoming"] == "YES":
             #print "INCOMING CONNECTIONS"
@@ -244,7 +244,7 @@ def processFile(honeypots, file, dbargs=None):
             del p
 
 
-        if options["do_irc_summary"] == "YES":
+        if options["do_irc_summary"] == "YES" or options["do_irc"] == "YES":
             """
             Here we will use PcapRE to find packets on port 6667 with "PRIVMSG"
             in the payload.  Matching packets will be handed to wordsearch 
@@ -276,9 +276,9 @@ def processFile(honeypots, file, dbargs=None):
             r.writeResults()
             del p
 
-        if options["do_irc_detail"] == "YES":
+        if options["do_irc_detail"] == "YES" or options["do_irc"] == "YES":
             #outfile.write("\nIRC DETAIL\n")
-            outfile.write("Extracting from IRC\n")
+            outfile.write("\nExtracting from IRC")
             outfile.flush()
             p = pcapy.open_offline(tmpf)
             de = tcpflow.tcpFlow(p)
@@ -297,8 +297,8 @@ def processFile(honeypots, file, dbargs=None):
             hd.printSummary()
             del p
             
-        if options["do_http"] == "YES" and options["do_files"] == "YES":
-            print "Extracting from http"
+        if options["do_http"] == "YES":
+            print "\nExtracting from http"
             p = pcapy.open_offline(tmpf)
             de = tcpflow.tcpFlow(p)
             de.setFilter("port 80")
@@ -312,8 +312,8 @@ def processFile(honeypots, file, dbargs=None):
             del p
         
 
-        if options["do_ftp"] == "YES" and options["do_files"] == "YES":
-            print "Extracting from ftp"
+        if options["do_ftp"] == "YES":
+            print "\nExtracting from ftp"
             p = pcapy.open_offline(tmpf)
             de = tcpflow.tcpFlow(p)
             de.setFilter("port 20 or port 21")
@@ -326,8 +326,8 @@ def processFile(honeypots, file, dbargs=None):
             de.dump_extract(options)
             del p
 
-        if options["do_smtp"] == "YES" and options["do_files"] == "YES":
-            print "Extracting from smtp"
+        if options["do_smtp"] == "YES":
+            print "\nExtracting from smtp"
             p = pcapy.open_offline(tmpf)
             de = tcpflow.tcpFlow(p)
             de.setFilter("port 25")
@@ -346,38 +346,6 @@ def processFile(honeypots, file, dbargs=None):
         if options["do_sebek"] == "YES":
             print "Sebek not currently supported"
 
-        if options["do_files"] == "YES":
-            #de.dump_extract(options)
-            pass
-
-        if options["id_files"] == "YES":
-            pass
-            """
-            de = tcpflow.tcpFlow(p)
-            de.setOutput(outfile)
-            filelist =  de.fname
-            typehash = {}
-            for fstr in de.flows.keys():
-                t = ram()
-                stream = ""
-                for line in de.flows[fstr].data:
-                    stream = stream + line
-            
-                filetype = t.filetype(stream)
-                de.flows[fstr].filetype = filetype  
-                if typehash.has_key(filetype):
-                    typehash[filetype] = typehash[filetype] + 1
-                else:
-                    typehash[filetype] = 1
-
-                #outfile.write(fstr + ":\t" + t.filetype(fstr) + "\n")
-            for type in typehash.keys():
-                tlen = len(type)
-                slen = 30 - tlen
-                space = ' ' *slen
-                tfile = OutputSTDOUT()
-                tfile.write(type + ":%s%s\n" % (space,typehash[type])) 
-            """
         # delete the tmp file we used to hold unzipped data
         if deletetmp:
             os.unlink(tmpf)
@@ -400,8 +368,8 @@ def cleanup(options):
 def configOptions(parser):
     parser.add_option("-c", "--config", dest="config",type="string",
                   help="Config file")
-    parser.add_option("-f", "--file", dest="filename",type="string",
-                  help="Write report to FILE", metavar="FILE")
+##    parser.add_option("-f", "--file", dest="filename",type="string",
+##                  help="Write report to FILE", metavar="FILE")
     parser.add_option("-o", "--output", dest="outputdir",type="string",
                   help="Write output to DIR, defaults to /tmp/analysis", metavar="DIR")
     parser.set_defaults(outputdir="/tmp/analysis")
@@ -415,29 +383,27 @@ def configOptions(parser):
 
     parser.add_option("-w", "--words", dest="wordfile", type="string",
             help = "Pull wordlist from FILE", metavar="FILE")
-    parser.add_option("--do-packets", dest="do_packets", action="store_const", const="YES",
-            help = "Count outbound packets")
-    parser.set_defaults(do_packets="NO")
-    parser.add_option("--do-telnet", dest="do_telnet", action="store_const", const="YES",
-            help = "Count outbound telnet")
+            
+##    parser.add_option("--do-telnet", dest="do_telnet", action="store_const", const="YES",
+##            help = "Count outbound telnet")
     parser.set_defaults(do_telnet="NO")
-    parser.add_option("--do-ssh", dest="do_ssh", action="store_const", const="YES",
-            help = "Count outbound ssh")
+##    parser.add_option("--do-ssh", dest="do_ssh", action="store_const", const="YES",
+##            help = "Count outbound ssh")
     parser.set_defaults(do_ssh="NO")
     parser.add_option("--do-http", dest="do_http", action="store_const", const="YES",
-            help = "Count outbound http")
+            help = "Extract http data")
     parser.set_defaults(do_http="NO")
-    parser.add_option("--do-https", dest="do_https", action="store_const", const="YES",
-            help = "Count outbound https")
+##    parser.add_option("--do-https", dest="do_https", action="store_const", const="YES",
+##            help = "Count outbound https")
     parser.set_defaults(do_https="NO")
     parser.add_option("--do-ftp", dest="do_ftp", action="store_const", const="YES",
-            help = "Count outbound FTP")
+            help = "Extract FTP data")
     parser.set_defaults(do_ftp="NO")
     parser.add_option("--do-smtp", dest="do_smtp", action="store_const", const="YES",
-            help = "Count outbound smtp")
+            help = "Extract smtp data")
     parser.set_defaults(do_smtp="NO")
     parser.add_option("--do-irc", dest="do_irc", action="store_const", const="YES",
-            help = "Count outbound IRC")
+            help = "Summarize IRC and do irc detail (same as --do-irc-detail and --do-irc-summary")
     parser.set_defaults(do_irc="NO")
     parser.add_option("--do-irc-summary", dest="do_irc_summary", action="store_const", const="YES",
             help = "Sumarize IRC message, providing a hit count for key words if --words is an argument")
@@ -451,12 +417,6 @@ def configOptions(parser):
     parser.add_option("--do-rrd", dest="do_rrd", action="store_const", const="YES",
             help = "Do RRD, not yet implemented")
     parser.set_defaults(do_rrd="NO")
-    parser.add_option("--do-files", dest="do_files", action="store_const", const="YES",
-            help = "Extract payloads for any enabled protocols")
-    parser.set_defaults(do_files="NO")
-    parser.add_option("--id-files", dest="id_files", action="store_const", const="YES",
-            help = "Attempt to identify types of extracted files")
-    parser.set_defaults(do_files="NO")
 
     return parser.parse_args()
 
