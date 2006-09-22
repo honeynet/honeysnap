@@ -403,13 +403,13 @@ def configOptions(parser):
             help = "Extract smtp data")
     parser.set_defaults(do_smtp="NO")
     parser.add_option("--do-irc", dest="do_irc", action="store_const", const="YES",
-            help = "Summarize IRC and do irc detail (same as --do-irc-detail and --do-irc-summary")
+            help = "Summarize IRC and do irc detail (same as --do-irc-detail and --do-irc-summary)")
     parser.set_defaults(do_irc="NO")
     parser.add_option("--do-irc-summary", dest="do_irc_summary", action="store_const", const="YES",
-            help = "Sumarize IRC message, providing a hit count for key words if --words is an argument")
+            help = "Sumarize IRC messages, providing a hit count for key words, use --words to supply a word file")
     parser.set_defaults(do_irc_summary="NO")
     parser.add_option("--do-irc-detail", dest="do_irc_detail", action="store_const", const="YES",
-            help = "Extract IRC sessions")
+            help = "Extract IRC sessions, do detailed IRC analysis")
     parser.set_defaults(do_irc_detail="NO")
     parser.add_option("--do-sebek", dest="do_sebek", action="store_const", const="YES",
             help = "Summarize Sebek, not yet supported")
