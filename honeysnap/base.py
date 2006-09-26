@@ -25,8 +25,23 @@ class Base(object):
     I decided to add this late in the game.  There are replicated functions
     in the below classes that should be put in here.
     """
+    
+    def __init__(self):
+        self.p = None
+        self.file = None
+        self.filter = None
+    
     def setOutput(self, file):
         self.outfile = file
+        
+    def setFilter(self, filter, file):
+        self.filter = filter
+        self.file = file
+        self.p.setfilter(filter)
+
+    def start(self):
+        self.p.dispatch(-1, self.packetHandler)
+        #self.printResults()
         
 class Output(Base):
     """

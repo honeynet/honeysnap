@@ -166,9 +166,9 @@ class HnyIRC(irclib.IRC):
                 self.process_data(ts, ip)
             except:
                 # uncomment the next 3 lines to debug irc decode errors
-                import pdb, traceback
-                traceback.print_exc(file=sys.stdout)
-                pdb.post_mortem(sys.exc_traceback)
+                #import pdb, traceback
+                #traceback.print_exc(file=sys.stdout)
+                #pdb.post_mortem(sys.exc_traceback)
                 print "ERROR on:\n%s" % dpkt.hexdump(str(ip.tcp.data))
                 continue
 

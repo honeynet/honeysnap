@@ -47,6 +47,7 @@ from base import Base
 from output import OutputSTDOUT
 from packetCounter import Counter
 from pcapRE import pcapRE
+from sebekDecode import sebekDecode
 
 FILTERS = {'Counting outbound IP packets:':'src host %s', 
             'Counting outbound FTP packets:':'src host %s and dst port 21',
@@ -344,7 +345,9 @@ def processFile(honeypots, file, dbargs=None):
             print "RRD not currently supported"
         
         if options["do_sebek"] == "YES":
-            print "Sebek not currently supported"
+            sbd = sebekDecode()
+            sbd.run()
+            
 
         # delete the tmp file we used to hold unzipped data
         if deletetmp:
@@ -412,7 +415,7 @@ def configOptions(parser):
             help = "Extract IRC sessions, do detailed IRC analysis")
     parser.set_defaults(do_irc_detail="NO")
     parser.add_option("--do-sebek", dest="do_sebek", action="store_const", const="YES",
-            help = "Summarize Sebek, not yet supported")
+            help = "Summarize Sebek")
     parser.set_defaults(do_sebek="NO")
     parser.add_option("--do-rrd", dest="do_rrd", action="store_const", const="YES",
             help = "Do RRD, not yet implemented")
