@@ -51,7 +51,7 @@ struct sbk_h{
 };
 """
 
-import struct, dpkt, dnet, time
+import struct, dpkt, dnet, time, re
 import base
 from singletonmixin import HoneysnapSingleton
 import pcap
@@ -60,6 +60,21 @@ sbk2 = "!IHHIIIIII12sI"
 sbk3 = "!IHHIIIIIIII12sI"
 size2 = struct.calcsize(sbk2)
 size3 = struct.calcsize(sbk3)
+
+# mapping of control characters
+controlmap = {"\x1b[A":"[U-ARROW]",
+            "\x1b[B":"[D-ARROW]",
+            "\x1b[C":"[R-ARROW]",
+            "\x1b[D":"[L-ARROW]",
+            "\x1b[3~":"[DEL]",
+            "\x1b[5~":"[PAGE-U]",
+            "\x1b[6~":"[PAGE-D]",
+            "\x7f":"[BS]",
+            "\x1b":"[ESC]"}
+
+controllist = ["\x1b[A", "\x1b[B","\x1b[C", "\x1b[D","\x1b[3~","\x1b[5~","\x1b[6~","\x7f","\x1b"]
+# regex for other nonascii values
+nonascii = re.compile("[\x80-\xFF]")
 
 tf = lambda x: time.asctime(time.localtime(x))
 
@@ -110,7 +125,14 @@ class sebekDecode(base.Base):
         if "\r" in data or "\n" in data:
             uids = "/".join([str(i) for i in self.log[k]["uid"].keys()])
             coms = "/".join([str(i) for i in self.log[k]["com"].keys()])
-            print "[%s %s %s %s] %s" % (tf(t), k, uids, coms, self.log[k]["data"])
+            # strip out junk
+            d = self.log[k]["data"]
+            for i in controllist:
+                # change control characters to something useful
+                d = d.replace(i, controlmap[i])
+                # strip out nonascii junk
+                d = nonascii.sub("", d)
+            print "[%s %s %s %s] %s" % (tf(t), k, uids, coms, d)
             del self.log[k]
         
     def run(self):
