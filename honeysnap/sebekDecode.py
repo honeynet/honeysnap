@@ -61,6 +61,8 @@ sbk3 = "!IHHIIIIIIII12sI"
 size2 = struct.calcsize(sbk2)
 size3 = struct.calcsize(sbk3)
 
+tf = lambda x: time.asctime(time.localtime(x))
+
 class sebekDecode(base.Base):
     
     def __init__(self):
@@ -70,12 +72,10 @@ class sebekDecode(base.Base):
         self.p.setfilter("udp port 1101")
         self.log = {}
         
-    def packetHandler(self, ts, pkt):
+    def packetHandler(self, ts, pkt, payload):
         #print pkt.udp.ulen
-##        import pdb
-##        pdb.set_trace()
-        if len(pkt.udp.data) > 5:
-            magic, version = struct.unpack("!IH", pkt.udp.data[0:6])
+        if len(payload) > 5:
+            magic, version = struct.unpack("!IH", payload[0:6])
             if version == 1:
                 sbk = sbk2
                 size = size2
@@ -87,9 +87,9 @@ class sebekDecode(base.Base):
             #print magic, version
         else:
             return
-        data = pkt.udp.data[0:size]
-        rest = pkt.udp.data[size:]
-        magic, version, typ, counter, t, tu, pid, uid, fd, com, length = struct.unpack(sbk, data)
+        sbkhdr = payload[0:size]
+        rest = payload[size:]
+        magic, version, typ, counter, t, tu, pid, uid, fd, com, length = struct.unpack(sbk, sbkhdr)
         ip = str(dnet.addr(pkt.src))
         if typ == 0 and length < 100:
             self.keystrokes(t, ip, pid, fd, uid, com, rest)
@@ -98,7 +98,8 @@ class sebekDecode(base.Base):
         """
         [$datetime  $addr $pid $com_str $uid_str]$log
         """
-        k = "-".join([ip, str(pid), str(fd)])
+        k = " ".join([ip, str(pid), str(fd)])
+        com = com.replace("\00", "")
         if k not in self.log:
             self.log[k] = {"data":data, "uid":{uid:1}, "com":{com:1}}
         else:
@@ -107,16 +108,20 @@ class sebekDecode(base.Base):
             self.log[k]["com"][com] = 1
             
         if "\r" in data or "\n" in data:
-            print "%s %s %s %s %s" % (time.asctime(time.localtime(t)), k, uid, com, self.log[k]["data"])
+            uids = "/".join([str(i) for i in self.log[k]["uid"].keys()])
+            coms = "/".join([str(i) for i in self.log[k]["com"].keys()])
+            print "[%s %s %s %s] %s" % (tf(t), k, uids, coms, self.log[k]["data"])
             del self.log[k]
-
-
         
     def run(self):
+        # since we set a filter on pcap, all the
+        # packets we pull should be handled
         for ts, pkt in self.p:
             ip = dpkt.ip.IP(pkt[self.p.dloff:])
+            # workaround for broken sebek packets
+            payload = pkt[self.p.dloff+20+8:]  #frame+iphdr+udphdr
             try:
-                self.packetHandler(ts, ip)
+                self.packetHandler(ts, ip, payload)
             except Exception, e:
                 print "sebekDecode caught error:"
                 print e
