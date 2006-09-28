@@ -85,11 +85,15 @@ class tcpFlow:
 
     def process_tcp(self, pkt, src, dst):
         tcp = pkt.child().child()
+        ip = pkt.child()
         this_flow = flow()
         this_flow.src = src
         this_flow.dst = dst
         this_flow.sport = tcp.get_th_sport()
         this_flow.dport = tcp.get_th_dport()
+        if ip.get_ip_len() == ip.get_header_size() + tcp.get_header_size():
+            # no data, return
+            return
         self.store_packet(this_flow, tcp)
         
     def store_packet(self, flow, tcp):
@@ -104,6 +108,7 @@ class tcpFlow:
         if state is None:
             #print "state not found, creating new"
             state = self.states.create_state(flow, seq)
+            state.open()
             #else:
             #print "state found"
 
@@ -120,6 +125,9 @@ class tcpFlow:
             # close the file
             # print "got RST or FIN"
             state.flags |= FLOW_FINISHED
+            state.fp.flush()
+            state.close()
+            return
 
 
         offset = seq - state.isn

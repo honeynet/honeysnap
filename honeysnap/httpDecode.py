@@ -81,6 +81,8 @@ class httpDecode(object):
         state.close()
         state.open(flag="rb")
         d = state.fp.readlines()
+        if len(d) == 0:
+            return
         t, req = self.determineType(d)
         d = "".join(d)
         state.close()
