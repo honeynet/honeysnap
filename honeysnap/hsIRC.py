@@ -1,4 +1,23 @@
-#!/usr/bin/env python2.4
+################################################################################
+# (c) 2006, The Honeynet Project
+#   Authors: Jeff Nathan and Arthur Clune
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
+################################################################################
+
 #from irclib import is_channel, ip_numstr_to_quad, ip_quad_to_numstr, nm_to_n
 #from irclib import nm_to_uh, nm_to_h, nm_to_u, parse_nick_modes
 #from irclib import parse_channel_modes, _linesep_regexp, _parse_modes
@@ -12,7 +31,21 @@ import math
 import optparse
 import pcap
 import time
-
+from datetime import datetime
+       
+       
+class HnyEvent(irclib.Event):
+    """
+    subclass Event so we can pass in pkt header info
+    and store timestamp + IP + TCP info
+    """ 
+    def __init__(self, ts, pkt, eventtype, source, target, arguments=None): 
+        irclib.Event.__init__(self, eventtype, source, target, arguments)
+        self.time  = datetime.fromtimestamp(ts)
+        self.src   = pkt.src
+        self.dst   = pkt.dst
+        self.dport = pkt.data.dport
+        self.sport = pkt.data.sport
 
 class HnyServerConnection(irclib.ServerConnection):
     def __init__(self, irclibobj):
@@ -31,10 +64,10 @@ class HnyServerConnection(irclib.ServerConnection):
         # save the packet
         self.pkt = pkt
         # save the timestamp
-        self.ts = ts
+        self.ts = ts                
         """
-        print "%s:%s -> %s:%s\n%s" % (dnet.addr(pkt.src), pkt.data.sport, 
-                                      dnet.addr(pkt.dst), pkt.data.dport,
+        print "%s %s:%s -> %s:%s\n%s" % (datetime.fromtimestamp(ts), dnet.addr(pkt.src), pkt.data.sport, 
+                                      dnet.addr(pkt.dst), pkt.data.dport)
                                       dpkt.hexdump(str(new_data)))
         """
         lines = _linesep_regexp.split(self.previous_buffer + str(new_data))
@@ -54,7 +87,7 @@ class HnyServerConnection(irclib.ServerConnection):
             prefix = None
             command = None
             arguments = None
-            self._handle_event(Event("all_raw_messages",
+            self._handle_event(HnyEvent(ts, self.pkt, "all_raw_messages",
                                      self.get_server_name(),
                                      None,
                                      [line]))
@@ -113,16 +146,16 @@ class HnyServerConnection(irclib.ServerConnection):
                             print "command: %s, source: %s, target: %s," \
                                   " arguments: %s" % (command, prefix, target, 
                                                       m)
-                        self._handle_event(Event(command, prefix, target, m))
+                        self._handle_event(HnyEvent(ts, self.pkt, command, prefix, target, m))
                         if command == "ctcp" and m[0] == "ACTION":
-                            self._handle_event(Event("action", prefix, target, 
+                            self._handle_event(HnyEvent(ts, self.pkt, "action", prefix, target, 
                                                      m[1:]))
                     else:
                         if DEBUG:
                             print "command: %s, source: %s, target: %s," \
                                   " arguments: %s" % (command, prefix, target, 
                                                       [m])
-                        self._handle_event(Event(command, prefix, target, [m]))
+                        self._handle_event(HnyEvent(ts, self.pkt, command, prefix, target, [m]))
             else:
                 target = None
 
@@ -142,7 +175,7 @@ class HnyServerConnection(irclib.ServerConnection):
                     print "command: %s, source: %s, target: %s," \
                           " arguments: %s" % (command, prefix, target, 
                                               arguments)
-                self._handle_event(Event(command, prefix, target, arguments))
+                self._handle_event(HnyEvent(ts, self.pkt, command, prefix, target, arguments))
 
 class HnyIRC(irclib.IRC):
     def __init__(self):
@@ -171,7 +204,6 @@ class HnyIRC(irclib.IRC):
                 #pdb.post_mortem(sys.exc_traceback)
                 print "ERROR on:\n%s" % dpkt.hexdump(str(ip.tcp.data))
                 continue
-
     def process_forever(self, timeout=0):
         return self.process_once()
     
@@ -189,7 +221,7 @@ class HoneySnapIRC(irclib.SimpleIRCClient):
 
     def on_global(self, c, e):
         if e.eventtype() != 'ping' and e.eventtype() != 'all_raw_messages':
-            print "%s\t%s\t%s\t%s\t%s" % (long(math.ceil(time.time())),
+            print "%s\t%s:%s -> %s:%s\t%s\t%s\t%s\t%s" % (e.time, e.src, e.sport, e.dst, e.dport,
                                           e.eventtype(), e.source(),
                                           e.target(), ' '.join(e.arguments()))
                                           
@@ -203,7 +235,8 @@ class HoneySnapIRC(irclib.SimpleIRCClient):
         self.ircobj.add_global_handler(type, func, priority)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__': 
+    """Quick demo to print out IRC"""
     op = optparse.OptionParser()
     op.add_option('-f', '--file', dest='file', help='pcap file to parse')
     opts, args = op.parse_args()
@@ -215,6 +248,7 @@ if __name__ == '__main__':
         filter = ' '.join(args)
     else:
         filter = ''
-    h = HoneySnapIRC()
+    h = HoneySnapIRC()    
+    h.ircobj.add_global_handler("all_events", h.on_global, -1)
     h.connect(opts.file, filter)
     h.ircobj.process_once()

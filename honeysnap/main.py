@@ -188,28 +188,30 @@ def processFile(honeypots, file, dbargs=None):
                 sys.exit(1)
 
             
-            
-        outfile.write("Pcap file information:\n")
-        pi = pcapInfo(tmpf)
-        outfile.write(pi.getStats())
-        outfile.write("\n\nResults for file: %s\n" % file)
-        outfile.write("Counting outbound IP packets:\n")
-        outfile.write("%-40s %10s\n" % ("Filter", "Packets"))
-        outfile.flush()
-        for key, filt in FILTERS.items():
-            print key
-            for ipaddr in honeypots:
-                p = pcapy.open_offline(tmpf)
-                #p = open_offline("/tmp/fifo")
-                c = Counter(p)
-                c.setOutput(outfile)
-                #c.setOutput(options["output_data_directory"] + "/results")
-                f = filt % ipaddr
-                c.setFilter(f)
-                c.count()
-                count = c.getCount()
-                c.writeResults()
-            print "\n"
+        if options["do_pcap"] == "YES":
+            outfile.write("Pcap file information:\n")
+            pi = pcapInfo(tmpf)
+            outfile.write(pi.getStats())
+        
+        if options["do_packets"] == "YES":
+            outfile.write("\n\nResults for file: %s\n" % file)
+            outfile.write("Counting outbound IP packets:\n")
+            outfile.write("%-40s %10s\n" % ("Filter", "Packets"))
+            outfile.flush()
+            for key, filt in FILTERS.items():
+                print key
+                for ipaddr in honeypots:
+                    p = pcapy.open_offline(tmpf)
+                    #p = open_offline("/tmp/fifo")
+                    c = Counter(p)
+                    c.setOutput(outfile)
+                    #c.setOutput(options["output_data_directory"] + "/results")
+                    f = filt % ipaddr
+                    c.setFilter(f)
+                    c.count()
+                    count = c.getCount()
+                    c.writeResults()
+                print "\n"
 
         if options["summarize_incoming"] == "YES":
             #print "INCOMING CONNECTIONS"
@@ -386,18 +388,24 @@ def configOptions(parser):
 
     parser.add_option("-w", "--words", dest="wordfile", type="string",
             help = "Pull wordlist from FILE", metavar="FILE")
-            
-##    parser.add_option("--do-telnet", dest="do_telnet", action="store_const", const="YES",
-##            help = "Count outbound telnet")
+
+    parser.add_option("--do-pcap", dest="do_pcap", action="store_const", const="YES",
+            help = "Summarise pcap info")
+    parser.set_defaults(do_pcap="YES")
+    parser.add_option("--do-packets", dest="do_packets", action="store_const", const="YES",
+            help = "Summarise packet counts")
+    parser.set_defaults(do_packets="YES")
+    parser.add_option("--do-telnet", dest="do_telnet", action="store_const", const="YES",
+            help = "Count outbound telnet")
     parser.set_defaults(do_telnet="NO")
-##    parser.add_option("--do-ssh", dest="do_ssh", action="store_const", const="YES",
-##            help = "Count outbound ssh")
+    parser.add_option("--do-ssh", dest="do_ssh", action="store_const", const="YES",
+            help = "Count outbound ssh")
     parser.set_defaults(do_ssh="NO")
     parser.add_option("--do-http", dest="do_http", action="store_const", const="YES",
             help = "Extract http data")
     parser.set_defaults(do_http="NO")
-##    parser.add_option("--do-https", dest="do_https", action="store_const", const="YES",
-##            help = "Count outbound https")
+    parser.add_option("--do-https", dest="do_https", action="store_const", const="YES",
+            help = "Count outbound https")
     parser.set_defaults(do_https="NO")
     parser.add_option("--do-ftp", dest="do_ftp", action="store_const", const="YES",
             help = "Extract FTP data")

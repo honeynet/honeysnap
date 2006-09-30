@@ -134,6 +134,7 @@ class ircDecode(object):
         cmd = e.eventtype()
         if cmd in ['privmsg', 'mode', 'quit', 'nick', 'join', 'pubmsg']:
             srcip = dnet.addr(c.pkt.src)
+            #srcip = e.src
             if srcip not in self.ips:
                 self.ips[srcip] = {}
             if e.source() is not None:
@@ -165,6 +166,7 @@ class ircDecode(object):
         else:
             fromuser = e.source()
         t = time.asctime(time.localtime(c.ts))
+        #t = e.time
         cmd = e.eventtype()
         if cmd == "pubmsg":
             channel = e.target()
@@ -172,6 +174,8 @@ class ircDecode(object):
             targetuser = e.target()
         srcip = dnet.addr(c.pkt.src)
         dstip = dnet.addr(c.pkt.dst)
+        #srcip = e.src
+        #dstip = e.dst
         rest = " ".join(e.arguments())
         # track channels
         if channel is not None:
