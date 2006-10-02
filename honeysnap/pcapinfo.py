@@ -18,7 +18,7 @@
 #
 ################################################################################
 
-from dpkt import pcap
+import dpkt
 import os, time
 import base
 
@@ -29,7 +29,7 @@ class pcapInfo(base.Base):
     
     def getStats(self):
         f = open(self.filename)
-        pr = pcap.Reader(f)
+        pr = dpkt.pcap.Reader(f)
         pktcount = 0
         dsize = 0
         duration = 0
@@ -53,7 +53,16 @@ class pcapInfo(base.Base):
         avg = float(dsize)/float(pktcount)
         f.close()
         return " \
-File name: %s\n \Number of packets: %d\n \File size: %d bytes \n \Data size: %d bytes \n \Capture duration: %s seconds \n \Start time: %s \n \End time: %s \n \Data rate: %s bytes/s \n \Data rate: %s bits/s \n \Average packet size: %s bytes \n \
+File name: %s\n \
+Number of packets: %d\n \
+File size: %d bytes \n \
+Data size: %d bytes \n \
+Capture duration: %s seconds \n \
+Start time: %s \n \
+End time: %s \n \
+Data rate: %s bytes/s \n \
+Data rate: %s bits/s \n \
+Average packet size: %s bytes \n \
         "   % (self.filename, pktcount, fsize, dsize, str(duration), start, end, str(bytes), str(bits), str(avg))
 
 if __name__ == "__main__":

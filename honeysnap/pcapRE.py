@@ -23,8 +23,68 @@ import pcapy
 import re
 import sys
 import socket
+import string
 
 import base
+
+class wordSearch(base.Base):
+    """
+    wordSeach is an auxillary of pcapRE. It allows you to pass a list of words 
+    you wish to search for to pcapRE.
+    """
+    def __init__(self):
+        self.results = {}
+        self.words = []
+
+    def _buildkey(self, pkt):
+        try:
+            proto = pkt.child().child().protocol
+            if proto == socket.IPPROTO_TCP:
+                ip = pkt.child()
+                shost = ip.get_ip_src()
+                dhost = ip.get_ip_dst()
+                tcp = pkt.child().child()
+                dport = tcp.get_th_dport()
+                key = (proto, shost, dhost, dport)
+            if proto == socket.IPPROTO_UDP:
+                ip = pkt.child()
+                shost = ip.get_ip_src()
+                udp = pkt.child().child()
+                dport = udp.get_uh_dport()
+                key = (proto, shost, dhost, dport)
+        except:
+            return
+        return key
+        
+    def findWords(self, pkt, data):
+        for w in self.words:
+            if string.find(data, w) >= 0:
+                key = self._buildkey(pkt)
+                if key is not None:
+                    if key not in self.results[w]:
+                        self.results[w][key] = 0 
+                    self.results[w][key] += 1
+                
+    def setWords(self, wordstr):
+        self.words = []
+        for w in wordstr.split(" "):
+            self.results[w] = {}
+            self.words.append(w)
+
+    def printResults(self):
+        for word, cons in self.results.items():
+            for k in cons:
+                print "%s: %s\t\t%s\t\t%s\t\t%s\t\t\t%s" % (word, k[0], k[1], k[2], k[3], self.results[word][k])
+
+    def writeResults(self):
+        f = sys.stdout
+        #f = open(self.outfile, 'a')
+        f.write("Word Matches\n")
+        f.write("%-10s %-5s %-17s %-17s %-7s %10s\n" % ("WORD", "PROTO", "SOURCE", "DEST", "DPORT", "COUNT"))
+        for word, cons in self.results.items():
+            for k in cons:
+                f.write("%-10s %-5s %-17s %-17s %-7s %10s\n" % (word, k[0], k[1], k[2], k[3], self.results[word][k]))
+        #f.close()
 
 
 class pcapRE(base.Base):

@@ -22,7 +22,7 @@ import math
 import time
 import re
 import dnet
-from operator import itemgetter
+from util import orderByValue
 
 botprefixes = [".", "-", "!", "\`",  "\\", "|"]
 botcoms = ["die", "esay", "flood", "m", "me", "part", "payment", "ping", "s", "say", "server",
@@ -116,7 +116,7 @@ class ircDecode(object):
         print "\tChannels %d" % len(self.channels)
         if len(self.botlines) > 0:
             print "\tPossible bot commands:"
-            vals = self._orderByValue(self.botlines)
+            vals = orderByValue(self.botlines)
             for i in vals:
                 print "\t\t%s => %d" % i
             
@@ -127,8 +127,7 @@ class ircDecode(object):
             for i in v.keys():
                 print "\t"+i
         """
-    def _orderByValue(self, d):
-        return sorted(d.iteritems(), key=itemgetter(1), reverse=True)
+
     
     def ipsearch(self, c, e):
         cmd = e.eventtype()
@@ -149,6 +148,10 @@ class ircDecode(object):
         return matches
         
     def keywords(self, c, e):
+        """
+        #TODO: Use wordSearch to search for keywords!
+        Doing so will deprecate the need for pcapRE in this scope
+        """
         pass
     
     def analyzePrivmsg(self, c, e):
@@ -193,8 +196,7 @@ class ircDecode(object):
         self.lines.setdefault(rest, 0)
         self.lines[rest] += 1
         # search for keywords
-        # XXX TODO
-        # Move this functionality here from main
+        # TODO: Move this functionality here from main
         self.keywords(c, e)
         self.botcmds(c, e)
         

@@ -26,6 +26,7 @@ import re
 import string
 import gzip
 import os
+from fnmatch import fnmatch
 from ConfigParser import SafeConfigParser
 import tempfile
 
@@ -46,7 +47,7 @@ from packetSummary import Summarize
 from base import Base
 from output import OutputSTDOUT
 from packetCounter import Counter
-from pcapRE import pcapRE
+from pcapRE import pcapRE, wordSearch
 from sebekDecode import sebekDecode
 
 FILTERS = {'Counting outbound IP packets:':'src host %s', 
@@ -76,66 +77,7 @@ class MyOption(Option):
             Option.take_action(
                 self, action, dest, opt, value, values, parser)
             
-class wordSearch(Base):
-    """
-    wordSeach is an auxillary of pcapRE. It allows you to pass a list of words 
-    you wish to search for to pcapRE.
-    """
-    def __init__(self):
-        self.results = {}
-        self.words = []
-
-    def _buildkey(self, pkt):
-        try:
-            proto = pkt.child().child().protocol
-            if proto == socket.IPPROTO_TCP:
-                ip = pkt.child()
-                shost = ip.get_ip_src()
-                dhost = ip.get_ip_dst()
-                tcp = pkt.child().child()
-                dport = tcp.get_th_dport()
-                key = (proto, shost, dhost, dport)
-            if proto == socket.IPPROTO_UDP:
-                ip = pkt.child()
-                shost = ip.get_ip_src()
-                udp = pkt.child().child()
-                dport = udp.get_uh_dport()
-                key = (proto, shost, dhost, dport)
-        except:
-            return
-        return key
-        
-    def findWords(self, pkt, data):
-        for w in self.words:
-            if string.find(data, w) >= 0:
-                key = self._buildkey(pkt)
-                if key is not None:
-                    if key not in self.results[w]:
-                        self.results[w][key] = 0 
-                    self.results[w][key] += 1
-                
-    def setWords(self, wordstr):
-        self.words = []
-        for w in wordstr.split(" "):
-            self.results[w] = {}
-            self.words.append(w)
-
-    def printResults(self):
-        for word, cons in self.results.items():
-            for k in cons:
-                print "%s: %s\t\t%s\t\t%s\t\t%s\t\t\t%s" % (word, k[0], k[1], k[2], k[3], self.results[word][k])
-
-    def writeResults(self):
-        f = sys.stdout
-        #f = open(self.outfile, 'a')
-        f.write("Word Matches\n")
-        f.write("%-10s %-5s %-17s %-17s %-7s %10s\n" % ("WORD", "PROTO", "SOURCE", "DEST", "DPORT", "COUNT"))
-        for word, cons in self.results.items():
-            for k in cons:
-                f.write("%-10s %-5s %-17s %-17s %-7s %10s\n" % (word, k[0], k[1], k[2], k[3], self.results[word][k]))
-        #f.close()
-    
-        
+            
 def processFile(honeypots, file, dbargs=None):
         """
         Process a pcap file.
@@ -385,6 +327,12 @@ def configOptions(parser):
                   help="Comma delimited list of honeypots")
     parser.add_option("-r", "--read", dest="files", type="string",
                   help="Pcap file to be read. If this flag is set then honeysnap will not run in batch mode. Will also read from stdin.", metavar="FILE")
+    parser.add_option("-d", "--dir", dest="files", type="string",
+                  help="Directory containing timestamped log directories. If this flag is set then honeysnap will run in batch mode. To limit which directories to parse, use -m (--mask)", metavar="FILE")
+
+    parser.add_option("-m", "--mask", dest="mask", type="string",
+            help = "Mask to limit which directories are recursed into.")
+    parser.set_defaults(mask="*")
 
     parser.add_option("-w", "--words", dest="wordfile", type="string",
             help = "Pull wordlist from FILE", metavar="FILE")
@@ -502,6 +450,17 @@ def main():
             hsingleton = HoneysnapSingleton.getInstance(options)
             if os.path.exists(values.files) and os.path.isfile(values.files):
                 processFile(values.honeypots, values.files, dbargs)
+            elif os.path.exists(values.files) and os.path.isdir(values.files):
+                for root, dirs, files in os.walk(values.files):
+                    #print root, dirs, files
+                    if fnmatch(root, values.mask):
+                        # this root matches the mask function
+                        # find all the log files
+                        f  = [j for j in files if fnmatch(j, "log*")]
+                        # process each log file
+                        if len(f):
+                            for i in f:
+                                processFile(values.honeypots, root+"/"+i, dbargs)
             else:
                 print "File not found: %s" % values.filename
                 sys.exit(2)

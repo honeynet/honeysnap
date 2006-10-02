@@ -20,6 +20,7 @@
 
 import os
 import md5
+from operator import itemgetter
 
 def ipnum(ip) :
     "Return a numeric address for an ip string"
@@ -53,3 +54,10 @@ def mdsum(file):
     d = m.hexdigest()
     print "md5: %s" % d
     return d
+
+def orderByValue(d, rev=True):
+    """
+    Given a dictionary, returns a list of tuples (key, value), sorted
+    by the value of each entry
+    """
+    return sorted(d.iteritems(), key=itemgetter(1), reverse=rev)

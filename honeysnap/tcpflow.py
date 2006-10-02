@@ -114,7 +114,7 @@ class tcpFlow:
 
         if state.flags&FLOW_FINISHED:
             # print "flow finished: %s" % state.flow
-            # XXX -TODO: Open a new state??
+            # TODO: Open a new state??
             if tcp.get_SYN():
                 print "new flow on prior state: %s" % state.flow
             state.close()
