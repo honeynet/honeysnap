@@ -51,7 +51,7 @@ class tcpFlow:
         elif pcapy.DLT_LINUX_SLL == datalink:
             self.decoder = LinuxSLLDecoder()
         else:
-            raise Exception("Datalink type mkstemp(not supported: " % datalink)
+            raise Exception("Datalink type %s not supported: " % datalink)
         
     def __del__(self):
         # take care of some cleanup

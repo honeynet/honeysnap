@@ -21,7 +21,7 @@ from hsIRC import HoneySnapIRC
 import math
 import time
 import re
-import dnet
+#import dnet
 from util import orderByValue
 
 botprefixes = [".", "-", "!", "\`",  "\\", "|"]
@@ -132,8 +132,8 @@ class ircDecode(object):
     def ipsearch(self, c, e):
         cmd = e.eventtype()
         if cmd in ['privmsg', 'mode', 'quit', 'nick', 'join', 'pubmsg']:
-            srcip = dnet.addr(c.pkt.src)
-            #srcip = e.src
+            #srcip = dnet.addr(c.pkt.src)
+            srcip = e.src
             if srcip not in self.ips:
                 self.ips[srcip] = {}
             if e.source() is not None:
@@ -168,17 +168,17 @@ class ircDecode(object):
             return
         else:
             fromuser = e.source()
-        t = time.asctime(time.localtime(c.ts))
-        #t = e.time
+        #t = time.asctime(time.localtime(c.ts))
+        t = e.time
         cmd = e.eventtype()
         if cmd == "pubmsg":
             channel = e.target()
         if cmd == "privmsg":
             targetuser = e.target()
-        srcip = dnet.addr(c.pkt.src)
-        dstip = dnet.addr(c.pkt.dst)
-        #srcip = e.src
-        #dstip = e.dst
+        #srcip = dnet.addr(c.pkt.src)
+        #dstip = dnet.addr(c.pkt.dst)
+        srcip = e.src
+        dstip = e.dst
         rest = " ".join(e.arguments())
         # track channels
         if channel is not None:

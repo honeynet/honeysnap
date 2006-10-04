@@ -25,7 +25,7 @@ from irclib import *
 from irclib import _linesep_regexp, _parse_modes, _rfc_1459_command_regexp
 from irclib import _ctcp_dequote
 import dpkt
-import dnet
+import dnet     
 import irclib
 import math
 import optparse
@@ -42,8 +42,8 @@ class HnyEvent(irclib.Event):
     def __init__(self, ts, pkt, eventtype, source, target, arguments=None): 
         irclib.Event.__init__(self, eventtype, source, target, arguments)
         self.time  = datetime.fromtimestamp(ts)
-        self.src   = pkt.src
-        self.dst   = pkt.dst
+        self.src   = dnet.ip_ntoa(pkt.src)
+        self.dst   = dnet.ip_ntoa(pkt.dst)
         self.dport = pkt.data.dport
         self.sport = pkt.data.sport
 
@@ -93,6 +93,9 @@ class HnyServerConnection(irclib.ServerConnection):
                                      [line]))
 
             m = _rfc_1459_command_regexp.match(line)
+            if not m:
+                raise IRCError
+            
             if m.group("prefix"):
                 prefix = m.group("prefix")
                 #print "***********PREFIX**************: %s" % prefix
@@ -197,13 +200,14 @@ class HnyIRC(irclib.IRC):
             ip = dpkt.ip.IP(pkt[self.connection.pc.dloff:])
             try:
                 self.process_data(ts, ip)
-            except:
+            except IRCError:
                 # uncomment the next 3 lines to debug irc decode errors
                 #import pdb, traceback
                 #traceback.print_exc(file=sys.stdout)
                 #pdb.post_mortem(sys.exc_traceback)
                 print "ERROR on:\n%s" % dpkt.hexdump(str(ip.tcp.data))
                 continue
+
     def process_forever(self, timeout=0):
         return self.process_once()
     
