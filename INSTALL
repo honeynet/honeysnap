@@ -21,8 +21,7 @@ cd into the pyram directecory and run:
 To make IRC functionality work you will need to install:
 irclib 0.4.6 or greater  			http://python-irclib.sourceforge.net/
 pypcap 1.1 or greater  				http://www.monkey.org/~dugsong/pypcap/
-libdnet 1.11 or greater + python wrappers 	http://libdnet.sourceforge.net/
-dpkt 						http://monkey.org/~dugsong/dpkt/
+dpkt		 						http://monkey.org/~dugsong/dpkt/
 
 The honeysnap script should be installed in some place like /usr/local/bin
 (the exact location depends on your OS) which is probably already in your path.

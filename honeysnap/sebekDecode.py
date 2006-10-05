@@ -51,10 +51,11 @@ struct sbk_h{
 };
 """
 
-import struct, dpkt, dnet, time, re
+import struct, dpkt, time, re
 import base
 from singletonmixin import HoneysnapSingleton
 import pcap
+from socket import inet_ntoa
 
 sbk2 = "!IHHIIIIII12sI"
 sbk3 = "!IHHIIIIIIII12sI"
@@ -105,7 +106,7 @@ class sebekDecode(base.Base):
         sbkhdr = payload[0:size]
         rest = payload[size:]
         magic, version, typ, counter, t, tu, pid, uid, fd, com, length = struct.unpack(sbk, sbkhdr)
-        ip = dnet.ip_ntoa(pkt.src)
+        ip = inet_ntoa(pkt.src)
         if typ == 0 and length < 100:
             self.keystrokes(t, ip, pid, fd, uid, com, rest)
     

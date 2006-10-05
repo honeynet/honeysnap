@@ -25,13 +25,14 @@ from irclib import *
 from irclib import _linesep_regexp, _parse_modes, _rfc_1459_command_regexp
 from irclib import _ctcp_dequote
 import dpkt
-import dnet     
+#import dnet     
 import irclib
 import math
 import optparse
 import pcap
 import time
 from datetime import datetime
+from socket import inet_ntoa
        
        
 class HnyEvent(irclib.Event):
@@ -42,8 +43,8 @@ class HnyEvent(irclib.Event):
     def __init__(self, ts, pkt, eventtype, source, target, arguments=None): 
         irclib.Event.__init__(self, eventtype, source, target, arguments)
         self.time  = datetime.fromtimestamp(ts)
-        self.src   = dnet.ip_ntoa(pkt.src)
-        self.dst   = dnet.ip_ntoa(pkt.dst)
+        self.src   = inet_ntoa(pkt.src)
+        self.dst   = inet_ntoa(pkt.dst)
         self.dport = pkt.data.dport
         self.sport = pkt.data.sport
 
