@@ -16,7 +16,9 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-################################################################################
+################################################################################ 
+
+# $Id$
 
 #from irclib import is_channel, ip_numstr_to_quad, ip_quad_to_numstr, nm_to_n
 #from irclib import nm_to_uh, nm_to_h, nm_to_u, parse_nick_modes

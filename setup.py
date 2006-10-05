@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+#
+# $Id$
+#
 
 import re, os
 from distutils.core import setup

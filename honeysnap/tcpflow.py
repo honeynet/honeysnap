@@ -18,6 +18,8 @@
 #
 ################################################################################
 
+# $Id$
+
 import os, sys, shelve, tempfile, re
 import impacket
 import socket

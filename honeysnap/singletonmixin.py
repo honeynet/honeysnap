@@ -1,3 +1,6 @@
+
+# $Id$
+
 """
 A Python Singleton mixin class that makes use of some of the ideas
 found at http://c2.com/cgi/wiki?PythonSingleton. Just inherit

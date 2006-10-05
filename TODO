@@ -2,8 +2,6 @@ Honeysnap TODO list
 $Id$
 $URL$
 
-* Add $Id$ to all files
-
 * Fix TCPFlow to deal correctly with nasty things like duplicate ACKS...
  these are corupting the data
 
