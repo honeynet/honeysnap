@@ -42,7 +42,6 @@ import smtpDecode
 import tcpflow
 from hsIRC import HoneySnapIRC
 from ircDecode import ircDecode
-from ram import ram
 from util import ipnum
 from singletonmixin import HoneysnapSingleton
 from pcapinfo import pcapInfo

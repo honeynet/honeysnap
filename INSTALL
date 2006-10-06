@@ -2,29 +2,24 @@ Installing Honeysnap
 --------------------
 Python 2.4 or greater is strongly recommended.
 
-To get the dependencies, install easy_install http://peak.telecommunity.com/DevCenter/EasyInstall, then
+Dependencies
 
-sudo easy_install pcapy
-sudo easy_install Impacket
-sudo easy_install 4Suite
-sudo easy_install pefile
-
-
-For pyram, install from
-
-svn+ssh://svn.honeynet.org/honeynet/pyram *
-
-cd into the pyram directecory and run:
-	python setup.py build
-	sudo python setup.py install
-
-To make IRC functionality work you will need to install:
-irclib 0.4.6 or greater  			http://python-irclib.sourceforge.net/
+irclib 0.4.6 or greater  			http://python-irclib.sourceforge.net/ 
 pypcap 1.1 or greater  				http://www.monkey.org/~dugsong/pypcap/
 dpkt		 						http://monkey.org/~dugsong/dpkt/
+                               
+For each of these, untar the distribution file, then cd into the directory and run
+sudo python setup.py install
 
-The honeysnap script should be installed in some place like /usr/local/bin
-(the exact location depends on your OS) which is probably already in your path.
+irclib can also be installed with easy_install
+                               
+sudo easy_install python-irclib
+
+To install honeysnap, run
+
+sudo python setup.py install
+
+from within the honeysnap directory.
 
 Try to execute 'honeysnap':
 
@@ -38,8 +33,19 @@ You should see:
 	Please see the accompanying documentation for instructions on
 	configuration.
 
-If not, run this to see where it got installed:
+If this fails, you may need to add the python bin directory to your PATH.
+          
+To find the prefix, use sys.prefix
 
-	find /usr -name honeysnap -print
+$ python  
+Python 2.4.3 (#1, Sep 26 2006, 19:00:44) 
+[GCC 4.0.0 20041026 (Apple Computer, Inc. build 4061)] on darwin
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import sys
+>>> sys.prefix
+'/opt/local/Library/Frameworks/Python.framework/Versions/2.4'
 
-(That command may take a while, but should print the full path of the script.)
+The add <prefix>/bin to your PATH.
+
+
+

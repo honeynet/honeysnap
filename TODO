@@ -9,14 +9,6 @@ $URL$
 output class/fn that prints out the top N talkers, ordered by traffic
 count. N would be defined in the config file
 
-* Filename extraction from FTP/HTTP needs porting from the final UK sh
-      version
-
-* The better IRC analysis from the final UK honeysnap also needs porting.
-      That bit is perl so isn't to hard to port I hope
-
-* file extraction from http/ftp with file naming
-
 * we drop files in a directory corresponding to the honeypot+remote ip,
           adding a postfix to every file name to ensure uniqueness so
             GET /fred/fred.tar
@@ -26,13 +18,12 @@ count. N would be defined in the config file
 * we strip the http header and store that as filename.hdr -- this is mostly done
 BIG PROBLEM: http pipelined requests are broken!!!!!
 
-* md5 sum of file
-
-* type of file as reported by 'file'
-
 * Putting the files into the db as a blob/whatever is good here, but
 the option to not put it into a DB is always useful for quick one-off
- runs and should be kept I feel.
+runs and should be kept I feel.
+
+[better - put the file location in the db, but keep the file on the
+filesystem? - AJC]
 
 * IRC analysis
     * number of messages
@@ -41,18 +32,7 @@ the option to not put it into a DB is always useful for quick one-off
           * regex patterns
           * possible bot commands
 
-    * spot lines repeated N times (N=100 seems to work well) to spot
-	  botnets reporting back
-
-    * number of users
-    * top N users
-
-    * number of channels
-    * top N channels
-
-    * IP addresses of irc talkers
-    * top N ips
-
+[How sh version works:]
 
 Currently our pattern lists are:
 
@@ -89,11 +69,3 @@ and then create a regex from this that looks for all combinations for prefixes
 + commands.
 
 
-**************** DONE ********************************
-* Remove the input data directory etc stuff
-* Usage: honeysnap.py configfile pcapfile
-* irc wordlist moved to the config file
-* change honeynet IPs in sample config file to 192.168 address rather than
-being live UK honeypots
-* Remove all the gzip and fifo related code
-* The flow extraction grinds my machine into the ground on a real dataset
