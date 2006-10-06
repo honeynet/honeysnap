@@ -108,7 +108,7 @@ class httpDecode(object):
                 # print 'len(body): ', len(r.body)
                 # print "\n"
                 parsed = True
-            except:
+            except dpkt.Error:
                 try:
                     state.open(flag="rb")
                     l = state.fp.readline()
@@ -121,7 +121,7 @@ class httpDecode(object):
                     state.decoded = r
                     state.close()
                     #print headers
-                except:
+                except dpkt.Error:
                     #print "response failed decode: %s " % state.fname
                     pass
 
@@ -143,7 +143,7 @@ class httpDecode(object):
                 #print 'uri:    ', r.uri
                 #print "\n"
                 parsed = True
-            except:
+            except dpkt.Error:
                 try:
                     state.open(flag="rb")
                     l = state.fp.readline()
@@ -156,7 +156,7 @@ class httpDecode(object):
                     state.decoded = r
                     state.close()
                     #print headers
-                except:
+                except dpkt.Error:
                     #print "request failed decode: %s " % state.fname
                     pass
                 
@@ -203,11 +203,11 @@ class httpDecode(object):
             body = state.decoded.body
             try:
                 request = state.decoded.request
-            except:
+            except dpkt.Error:
                 request = ""
             try:
                 data = state.decoded.data
-            except:
+            except dpkt.Error:
                 data = None
             
         else:

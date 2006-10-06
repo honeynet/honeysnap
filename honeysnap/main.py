@@ -121,7 +121,7 @@ def processFile(honeypots, file, dbargs=None):
                     # now we can create the output file
                     outfile = sys.stdout                    
                     #outfile = open(options["output_data_directory"] + "/results", 'a+')
-                except:
+                except OSError:
                     print "Error creating output directory"
                     sys.exit(1)
             else:
@@ -395,26 +395,26 @@ def main():
                 try:
                     outputdir = parser.get("IO", "OUTPUT_DATA_DIRECTORY")
                     values.outputdir = outputdir
-                except:
+                except ConfigParser.Error:
                     outputdir = values.outputdir
             if values.tmpdir == "/tmp":
                 try:
                     tmpdir = parser.get("IO", "TMP_FILE_DIRECTORY")
                     values.tmpdir = tmpdir
-                except:
+                except ConfigParser.Error:
                     tmpdir = values.tmpdir
             if not values.honeypots:
                 try:
                     honeypots = parser.get("IO", "HONEYPOTS")
                     honeypots = honeypots.split()
                     values.honeypots = honeypots
-                except:
+                except ConfigParser.Error:
                     honeypots = values.honeypots
             if not values.wordfile:
                 try:
                     wordfile = parser.get("IO", "WORDFILE")
                     values.wordfile = wordfile
-                except:
+                except ConfigParser.Error:
                     values.wordfile = None
         else:
             parser = None
