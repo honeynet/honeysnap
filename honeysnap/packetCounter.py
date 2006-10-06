@@ -28,7 +28,8 @@ class Counter(base.Base):
         Args are:
         pcapObj: a pcap obj, a result of open_live() or open_offline()
     """
-    def __init__(self, pcapObj):
+    def __init__(self, pcapObj):    
+        """pcap = pcap file name"""
         self.total = 0
         self.p = pcapObj
 
@@ -37,10 +38,8 @@ class Counter(base.Base):
         self.p.setfilter(filter)
 
     def count(self):
-        self.p.dispatch(-1, self.counter)
-
-    def counter(self, hdr, data):
-        self.total += 1
+        for ts, buf in self.p:
+            self.total += 1
 
     def getCount(self):
         return self.total

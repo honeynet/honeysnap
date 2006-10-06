@@ -20,10 +20,9 @@
 
 # $Id$
 
-import pcapy, sys
+import sys
 import socket
 from optparse import OptionParser, Option
-from impacket.ImpactDecoder import EthDecoder, LinuxSLLDecoder
 import re
 import string
 import gzip
@@ -31,6 +30,8 @@ import os
 from fnmatch import fnmatch
 from ConfigParser import SafeConfigParser
 import tempfile
+import dpkt
+import pcap
 
 # all the honeysnap imports
 # eventually all these will become UDAF modules
@@ -145,8 +146,7 @@ def processFile(honeypots, file, dbargs=None):
             for key, filt in FILTERS.items():
                 print key
                 for ipaddr in honeypots:
-                    p = pcapy.open_offline(tmpf)
-                    #p = open_offline("/tmp/fifo")
+                    p = pcap.pcap(tmpf)
                     c = Counter(p)
                     c.setOutput(outfile)
                     #c.setOutput(options["output_data_directory"] + "/results")
@@ -161,7 +161,7 @@ def processFile(honeypots, file, dbargs=None):
             #print "INCOMING CONNECTIONS"
             outfile.write("INCOMING CONNECTIONS\n")
             outfile.flush()
-            p = pcapy.open_offline(tmpf)
+            p = pcap.pcap(tmpf)
             if dbargs:
                 db = dbConnection(dbargs)
             else:
@@ -180,7 +180,7 @@ def processFile(honeypots, file, dbargs=None):
             #print "\nOUTGOING CONNECTIONS"
             outfile.write("\nOUTGOING CONNECTIONS\n")
             outfile.flush()
-            p = pcapy.open_offline(tmpf)
+            p = pcap.pcap(tmpf)
             s = Summarize(p, db)
             filt = 'src host ' + string.join(honeypots, ' or src host ')
             s.setFilter(filt, file)
@@ -200,7 +200,7 @@ def processFile(honeypots, file, dbargs=None):
             #print "\nIRC SUMMARY"
             outfile.write("\nIRC SUMMARY\n")
             outfile.flush()
-            p = pcapy.open_offline(tmpf)
+            p = pcap.pcap(tmpf)
             words = '0day access account admin auth bank bash #!/bin binaries binary bot card cash cc cent connect crack credit dns dollar ebay e-bay egg flood ftp hackexploit http leech login money /msg nologin owns ownz password paypal phish pirate pound probe prv putty remote resolved root rooted scam scan shell smtp sploit sterling sucess sysop sys-op trade uid uname uptime userid virus warez' 
             if options["wordfile"]:
                 wfile = options["wordfile"]
@@ -227,7 +227,7 @@ def processFile(honeypots, file, dbargs=None):
             #outfile.write("\nIRC DETAIL\n")
             outfile.write("\nExtracting from IRC")
             outfile.flush()
-            p = pcapy.open_offline(tmpf)
+            p = pcap.pcap(tmpf)
             de = tcpflow.tcpFlow(p)
             de.setFilter("port 6667")
             de.setOutput(outfile)
@@ -235,7 +235,6 @@ def processFile(honeypots, file, dbargs=None):
             de.start()
             #de.getnames()
             de.dump_extract(options)
-            #p = pcapy.open_offline(tmpf)
             hirc = HoneySnapIRC()
             hirc.connect(tmpf)
             hd = ircDecode()
@@ -246,7 +245,7 @@ def processFile(honeypots, file, dbargs=None):
             
         if options["do_http"] == "YES":
             print "\nExtracting from http"
-            p = pcapy.open_offline(tmpf)
+            p = pcap.pcap(tmpf)
             de = tcpflow.tcpFlow(p)
             de.setFilter("port 80")
             de.setOutdir(options["output_data_directory"]+ "/http-extract")
@@ -261,7 +260,7 @@ def processFile(honeypots, file, dbargs=None):
 
         if options["do_ftp"] == "YES":
             print "\nExtracting from ftp"
-            p = pcapy.open_offline(tmpf)
+            p = pcap.pcap(tmpf)
             de = tcpflow.tcpFlow(p)
             de.setFilter("port 20 or port 21")
             de.setOutdir(options["output_data_directory"] + "/ftp-extract")
@@ -275,7 +274,7 @@ def processFile(honeypots, file, dbargs=None):
 
         if options["do_smtp"] == "YES":
             print "\nExtracting from smtp"
-            p = pcapy.open_offline(tmpf)
+            p = pcap.pcap(tmpf)
             de = tcpflow.tcpFlow(p)
             de.setFilter("port 25")
             de.setOutdir(options["output_data_directory"] + "/smtp-extract")

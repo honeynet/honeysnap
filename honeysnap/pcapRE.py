@@ -20,12 +20,12 @@
 
 # $Id$
 
-from impacket.ImpactDecoder import EthDecoder, LinuxSLLDecoder
-import pcapy
 import re
 import sys
 import socket
 import string
+import dpkt
+import pcap
 
 import base
 
@@ -38,30 +38,9 @@ class wordSearch(base.Base):
         self.results = {}
         self.words = []
 
-    def _buildkey(self, pkt):
-        try:
-            proto = pkt.child().child().protocol
-            if proto == socket.IPPROTO_TCP:
-                ip = pkt.child()
-                shost = ip.get_ip_src()
-                dhost = ip.get_ip_dst()
-                tcp = pkt.child().child()
-                dport = tcp.get_th_dport()
-                key = (proto, shost, dhost, dport)
-            if proto == socket.IPPROTO_UDP:
-                ip = pkt.child()
-                shost = ip.get_ip_src()
-                udp = pkt.child().child()
-                dport = udp.get_uh_dport()
-                key = (proto, shost, dhost, dport)
-        except:
-            return
-        return key
-        
-    def findWords(self, pkt, data):
+    def findWords(self, data, key):
         for w in self.words:
             if string.find(data, w) >= 0:
-                key = self._buildkey(pkt)
                 if key is not None:
                     if key not in self.results[w]:
                         self.results[w][key] = 0 
@@ -73,20 +52,15 @@ class wordSearch(base.Base):
             self.results[w] = {}
             self.words.append(w)
 
-    def printResults(self):
-        for word, cons in self.results.items():
-            for k in cons:
-                print "%s: %s\t\t%s\t\t%s\t\t%s\t\t\t%s" % (word, k[0], k[1], k[2], k[3], self.results[word][k])
+    def printResults(self, f=sys.stdout):
+        self.writeResults(sys.stdout)
 
-    def writeResults(self):
-        f = sys.stdout
-        #f = open(self.outfile, 'a')
+    def writeResults(self, f=sys.stdout):
         f.write("Word Matches\n")
         f.write("%-10s %-5s %-17s %-17s %-7s %10s\n" % ("WORD", "PROTO", "SOURCE", "DEST", "DPORT", "COUNT"))
         for word, cons in self.results.items():
             for k in cons:
                 f.write("%-10s %-5s %-17s %-17s %-7s %10s\n" % (word, k[0], k[1], k[2], k[3], self.results[word][k]))
-        #f.close()
 
 
 class pcapRE(base.Base):
@@ -98,14 +72,6 @@ class pcapRE(base.Base):
         self.p = pcapObj
         self.results = {}
         self.doWordSearch = 0
-        # Query the type of the link and instantiate a decoder accordingly.
-        datalink = self.p.datalink()
-        if pcapy.DLT_EN10MB == datalink:
-            self.decoder = EthDecoder()
-        elif pcapy.DLT_LINUX_SLL == datalink:
-            self.decoder = LinuxSLLDecoder()
-        else:
-            raise Exception("Datalink type not supported: " % datalink)
 
     def setRE(self, pattern):
         """
@@ -123,38 +89,37 @@ class pcapRE(base.Base):
         self.searcher = searcher
         
     def start(self):
-        self.p.dispatch(-1, self.packetHandler)
-        #self.printResults()
+        """Iterate over a pcap object"""
+        for ts, buf in self.p:
+            self.packetHandler(ts, buf)
 
-    def packetHandler(self, hdr, data):
+    def packetHandler(self, ts, buf):   
+        """Process a pcap packet buffer""" 
         pay = None
         m = None
         try:
-            pkt = self.decoder.decode(data)
-        except:
-            return
-        try:
-            proto = pkt.child().child().protocol
-        except:
+            pkt = dpkt.ethernet.Ethernet(buf)
+            subpkt = pkt.data
+            if type(subpkt) != type(dpkt.ip.IP()):
+                # skip non IP packets
+                return
+            proto = subpkt.p
+            shost = socket.inet_ntoa(subpkt.src)
+            dhost = socket.inet_ntoa(subpkt.dst)
+        except dpkt.Error:
             return
         try:
             if proto == socket.IPPROTO_TCP:
-                ip = pkt.child()
-                shost = ip.get_ip_src()
-                dhost = ip.get_ip_dst()
-                tcp = pkt.child().child()
-                pay = tcp.child().get_buffer_as_string()
-                dport = tcp.get_th_dport()
+                tcp = subpkt.data
+                pay = tcp.data
+                dport = tcp.dport
                 key = (proto, shost, dhost, dport)
             if proto == socket.IPPROTO_UDP:
-                ip = pkt.child()
-                shost = ip.get_ip_src()
-                dhost = ip.get_ip_dst()
-                udp = pkt.child().child()
-                pay = udp.child().get_buffer_as_string()
-                dport = udp.get_uh_dport()
+                udp = subpkt.data
+                pay = udp.data
+                dport = udp.dport
                 key = (proto, shost, dhost, dport)
-        except:
+        except dpkt.Error:
             return
         if pay is not None and self.exp is not None:
             m = self.exp.search(pay)
@@ -163,21 +128,15 @@ class pcapRE(base.Base):
                     self.results[key] = 0
                 self.results[key] += 1
                 if self.doWordSearch:
-                    self.searcher.findWords(pkt, pay)
+                    self.searcher.findWords(pay, key)
     
     def printResults(self):
-        for key, val in self.results.items():
-            print "Pattern: %-10s %-5s %-15s %-15s %-5s %10s" % (self.pattern, key[0], key[1], key[2], key[3], val)
-        if self.doWordSearch:
-            #self.searcher.printResults()
-            self.searcher.writeResults()
+        self.writeResults(sys.stdout)
 
-    def writeResults(self):
-        f = sys.stdout
-        #f = open(self.outfile, 'a')
+    def writeResults(self, f=sys.stdout):
+        """Write results to a given filehandle"""
         f.write("%-10s %-5s %-15s %-15s %-5s %10s\n" % ("PATTERN", "PROTO", "SOURCE", "DEST", "DPORT", "COUNT"))
         for key, val in self.results.items():
             f.write("%-10s %-5s %-15s %-15s %-5s %10s\n" % (self.pattern, key[0], key[1], key[2], key[3], val))
         if self.doWordSearch:
             self.searcher.writeResults()
-        #f.close()

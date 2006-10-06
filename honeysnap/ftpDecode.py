@@ -24,7 +24,7 @@ import re
 from util import renameFile
 from flow import reverse as freverse
 import tcpflow
-import pcapy
+import pcap
 from singletonmixin import HoneysnapSingleton
 from flowIdentify import flowIdentify
 
@@ -158,7 +158,7 @@ class ftpDecode(object):
             hs = HoneysnapSingleton.getInstance()
             # configure the flow extractor
             options = hs.getOptions()
-            p = pcapy.open_offline(options["tmpf"])
+            p = pcap.pcap(options["tmpf"])
             de = tcpflow.tcpFlow(p)
             filter = "src host %s and src port %d" % (rflow.src, rflow.sport)
             de.setFilter(filter)
