@@ -29,7 +29,7 @@ from flow import flow, flow_state, flow_state_manager, reverse, fileHandleError
 FLOW_FINISHED=(1 << 0)
 FLOW_FILE_EXISTS=(1 << 1)
 
-class tcpFlow:
+class tcpFlow(object):
 
     def __init__(self, pcapObj):
         """Initialise the flow. Assume ethernet for now"""

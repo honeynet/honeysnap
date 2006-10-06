@@ -39,7 +39,7 @@ def reverse(f):
     nf.sport = f.dport
     return nf
 
-class flow:
+class flow(object):
     def __init__(self):
         self.src = None
         self.dst = None
@@ -61,7 +61,7 @@ class flow:
         else:
             return False
 
-class flow_state:
+class flow_state(object):
     
     def __init__(self):
         self.next = None # link to next flow state
@@ -130,7 +130,7 @@ class flow_state:
 
 
 
-class flow_state_manager:
+class flow_state_manager(object):
 
     def __init__(self):
         self.current_time = 0

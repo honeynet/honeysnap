@@ -58,7 +58,7 @@ class httpDecode(object):
         or a response.
         """
         line = data[0]
-        #print line
+        #print "determineType:line %s" % line
         l = line.strip().split()
         # is it a request?
         if len(l) == 3 and l[0] in self.__methods and l[2].startswith(self.__proto):
@@ -67,8 +67,9 @@ class httpDecode(object):
         # is it a response?
         if len(l) >= 2 and l[0].startswith(self.__proto) and l[1].isdigit():
             return('response', line)
-            
-        return None, line
+         
+        #print "determineType:unknown type, probably binary "
+        return None, None
         
         
     def decode(self, state, statemgr):
@@ -82,32 +83,35 @@ class httpDecode(object):
         #d = "".join(state.data)
         state.close()
         state.open(flag="rb")
-        d = state.fp.readlines()
+        d = state.fp.readlines()    
+        #print "decode:state ", state.fname
         if len(d) == 0:
             return
-        t, req = self.determineType(d)
+        t, req = self.determineType(d)  
+        if (t, req) == (None, None):
+            # binary data
+            return
         d = "".join(d)
         state.close()
         r = None
         f = state.flow
-        #print '%s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)
+        #print 'decode: %s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)
         if t =='response':
             try:
-                # print 'response:'
-                # print '%s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)
+                #print 'decode:response:'
+                #print 'decode:%s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)
                 r = dpkt.http.Response(d)
                 r.request = req
                 if not getattr(r, "data"):
                     r.data = None
                 state.decoded = r
-                #print `r`
-                #print 'headers: ', r.headers
-                #print 'version: ', r.version
-                #print 'status: ', r.status
-                #print 'reason: ', r.reason
-                # print 'len(body): ', len(r.body)
-                # print "\n"
-                parsed = True
+                #print 'decode: %s' % `r`
+                #print 'decode:headers: ', r.headers
+                #print 'decode:version: ', r.version
+                #print 'decode:status: ', r.status
+                #print 'decode:reason: ', r.reason
+                #print 'decode:len(body): ', len(r.body)
+                #print "\n"
             except dpkt.Error:
                 try:
                     state.open(flag="rb")
@@ -120,29 +124,27 @@ class httpDecode(object):
                     r.request = req
                     state.decoded = r
                     state.close()
-                    #print headers
+                    #print 'decode:headers %s' % headers
                 except dpkt.Error:
-                    #print "response failed decode: %s " % state.fname
+                    print "response failed to decode: %s " % state.fname
                     pass
 
             if r:
-                state.decoded = r
-            self._renameFlow(state)
+                state.decoded = r    
 
         if t == 'request':
             try:
-                #print 'request:'
-                #print '%s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)
+                #print 'decode:request:'
+                #print 'decode: %s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)
                 # The following line does essentially all the work:
                 r = dpkt.http.Request(d)
                 state.decoded = r                
                 r.request = req
                 if not getattr(r, "data"):
                     r.data = None
-                #print 'method: ', r.method
-                #print 'uri:    ', r.uri
+                #print 'decode:method: ', r.method
+                #print 'decode:uri:    ', r.uri    
                 #print "\n"
-                parsed = True
             except dpkt.Error:
                 try:
                     state.open(flag="rb")
@@ -152,35 +154,40 @@ class httpDecode(object):
                     r.headers = headers
                     r.body = fp.readlines()
                     r.request = req
-                    r.data = None
+                    r.data = None   
                     state.decoded = r
                     state.close()
-                    #print headers
+                    #print 'decode:headers ', headers
                 except dpkt.Error:
-                    #print "request failed decode: %s " % state.fname
+                    print "request failed to decode: %s " % state.fname
                     pass
                 
             if r:
-                state.decoded = r
+                state.decoded = r  
         if t is not None:
             self.extractHeaders(state, d)
+        self._renameFlow(state, t)                                     
 
-    def _renameFlow(self, state):
-        #print "******************"
+    def _renameFlow(self, state, t):
+        """state is a honeysnap.flow.flow_state object, t = response or request"""
+        #print "_renameFlow:state", state
         rflow = freverse(state.flow)
-        #print rflow
-        rs = self.statemgr.find_flow_state(rflow)
-        if rs is not None:
-            if rs.decoded is not None:
-                r1 = rs.decoded
-                realname = r1.uri.rsplit("/", 1)[-1]
-                #print realname
-                # make sure filename is't too long
-                if len(realname) > 15:
-                    realname = realname[0:15]
-                # rename the file
-                renameFile(state, realname)
-                self.id.identify(state)
+        #print '_renameFlow:rflow   ', rflow
+        rs = self.statemgr.find_flow_state(rflow) 
+        if rs is not None: 
+            if rs.decoded is not None and state.decoded is not None:
+                #print "Both halves decoded"
+                r1 = rs.decoded                       
+                if t == 'request':            
+                    realname = state.decoded.uri.rsplit("/", 1)[-1]       
+                    #print "_renameFlow:request: ", realname
+                    renameFile(rs, realname)   
+                    self.id.identify(rs)
+                if t == 'response':                        
+                    realname = r1.uri.rsplit("/", 1)[-1]
+                    #print "_renameFlow:response: ", realname   
+                    renameFile(state, realname)       
+                    self.id.identify(state)
                 
     def extractHeaders(self, state, d):
         """

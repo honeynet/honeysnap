@@ -23,7 +23,7 @@
 import magic
 from util import mdsum
 
-class flowIdentify:
+class flowIdentify(object):
     """
     A class to determine the type of a file.
     """
