@@ -40,10 +40,6 @@ class Base(object):
         self.file = file
         self.p.setfilter(filter)
 
-    def start(self):
-        self.p.dispatch(-1, self.packetHandler)
-        #self.printResults()
-        
 class Output(Base):
     """
     This class will provide a generic output interface so we can output
