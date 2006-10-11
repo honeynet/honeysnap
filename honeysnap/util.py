@@ -45,16 +45,17 @@ def findName(filename, realname):
 def renameFile(state, realname):
     state.realname = realname
     newfn = findName(state.fname, realname)
-    print "\n%s" %(newfn)
+    #print "\n%s" %(newfn)
     os.rename(state.fname, newfn)
-    state.fname = newfn   
+    state.fname = newfn
+    return newfn  
 
 def mdsum(file):
     m = md5.new()
     f = open(file, "r")
     m.update("".join(f.readlines()))
     d = m.hexdigest()
-    print "md5: %s" % d
+    #print "md5: %s" % d
     return d
 
 def orderByValue(d, rev=True):

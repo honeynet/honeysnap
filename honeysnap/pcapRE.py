@@ -27,17 +27,21 @@ import string
 import dpkt
 import pcap
 
-import base
+from base import Base
+from output import stringFormatMessage
 
-class wordSearch(base.Base):
+class wordSearch(Base):
     """
     wordSeach is an auxillary of pcapRE. It allows you to pass a list of words 
     you wish to search for to pcapRE.
     """
     def __init__(self):
+        Base.__init__(self)
         self.results = {}
         self.words = []
-
+        format = "%-10(word)s %-5(proto)s %-17(source)s %-17(dest)s %-7(dport)s %10(count)s\n"
+        self.msg = stringFormatMessage(format=format)
+        
     def findWords(self, data, key):
         for w in self.words:
             if string.find(data, w) >= 0:
@@ -56,23 +60,26 @@ class wordSearch(base.Base):
         self.writeResults(sys.stdout)
 
     def writeResults(self, f=sys.stdout):
-        f.write("Word Matches\n")
-        f.write("%-10s %-5s %-17s %-17s %-7s %10s\n" % ("WORD", "PROTO", "SOURCE", "DEST", "DPORT", "COUNT"))
+        self.doOutput("Word Matches\n")
+        self.doOutput("%-10s %-5s %-17s %-17s %-7s %10s\n" % ("WORD", "PROTO", "SOURCE", "DEST", "DPORT", "COUNT"))
         for word, cons in self.results.items():
             for k in cons:
-                f.write("%-10s %-5s %-17s %-17s %-7s %10s\n" % (word, k[0], k[1], k[2], k[3], self.results[word][k]))
+                self.doOutput("%-10s %-5s %-17s %-17s %-7s %10s\n" % (word, k[0], k[1], k[2], k[3], self.results[word][k]))
 
 
-class pcapRE(base.Base):
+class pcapRE(Base):
     """
     Takes a pcapObj as an argument.
     """
     def __init__(self, pcapObj):
+        Base.__init__(self)
         self.exp = None
         self.p = pcapObj
         self.results = {}
         self.doWordSearch = 0
-
+        format = "%-10(pattern)s %-5(proto)s %-15(source)s %-15(dest)s %-5(dport)s %10(count)s\n"
+        self.msg = stringFormatMessage(format=format)
+        
     def setRE(self, pattern):
         """
         Arg is a string that will be treated as a regular expression
@@ -135,8 +142,8 @@ class pcapRE(base.Base):
 
     def writeResults(self, f=sys.stdout):
         """Write results to a given filehandle"""
-        f.write("%-10s %-5s %-15s %-15s %-5s %10s\n" % ("PATTERN", "PROTO", "SOURCE", "DEST", "DPORT", "COUNT"))
+        self.doOutput("%-10s %-5s %-15s %-15s %-5s %10s\n" % ("PATTERN", "PROTO", "SOURCE", "DEST", "DPORT", "COUNT"))
         for key, val in self.results.items():
-            f.write("%-10s %-5s %-15s %-15s %-5s %10s\n" % (self.pattern, key[0], key[1], key[2], key[3], val))
+            self.doOutput("%-10s %-5s %-15s %-15s %-5s %10s\n" % (self.pattern, key[0], key[1], key[2], key[3], val))
         if self.doWordSearch:
             self.searcher.writeResults()

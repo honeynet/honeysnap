@@ -36,8 +36,8 @@ class flowIdentify(object):
         data: captured data to be identified
         """
         state.filetype = self.id(state.fname)
-        print "filetype: %s" % state.filetype
-        mdsum(state.fname)
+        #print "filetype: %s" % state.filetype
+        return state.filetype, mdsum(state.fname)
         
 
 

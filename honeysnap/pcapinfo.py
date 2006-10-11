@@ -23,11 +23,26 @@
 import dpkt
 import os, time
 import base
+from output import stringFormatMessage
 
 class pcapInfo(base.Base):
 
     def __init__(self, filename):
-        self.filename = filename
+        base.Base.__init__(self)
+        self.filename = filename        
+        format =  " \
+File name: %(filename)s\n \
+Number of packets: %(pktcount)d\n \
+File size: %(fsize)d bytes \n \
+Data size: %(dsize)d bytes \n \
+Capture duration: %(duration)s seconds \n \
+Start time: %(start)s \n \
+End time: %(end)s \n \
+Data rate: %(bytes)s bytes/s \n \
+Data rate: %(bits)s bits/s \n \
+Average packet size: %(avg)s bytes \n \
+        "
+        self.msg = stringFormatMessage(format = format)
     
     def getStats(self):
         f = open(self.filename)
@@ -54,18 +69,9 @@ class pcapInfo(base.Base):
         bits = bytes*8
         avg = float(dsize)/float(pktcount)
         f.close()
-        return " \
-File name: %s\n \
-Number of packets: %d\n \
-File size: %d bytes \n \
-Data size: %d bytes \n \
-Capture duration: %s seconds \n \
-Start time: %s \n \
-End time: %s \n \
-Data rate: %s bytes/s \n \
-Data rate: %s bits/s \n \
-Average packet size: %s bytes \n \
-        "   % (self.filename, pktcount, fsize, dsize, str(duration), start, end, str(bytes), str(bits), str(avg))
+        d = dict(filename=self.filename, pktcount=pktcount, fsize=fsize, dsize=dsize, duration=str(duration), start=start, end=end, bytes=str(bytes), bits=str(bits), avg=str(avg))
+        self.msg.msg = d
+        self.doOutput(self.msg)
 
 if __name__ == "__main__":
     i = pcapInfo('/Users/jed/src/honeynet/roo/20050227')

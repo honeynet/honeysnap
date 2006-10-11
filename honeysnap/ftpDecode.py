@@ -27,12 +27,15 @@ import tcpflow
 import pcap
 from singletonmixin import HoneysnapSingleton
 from flowIdentify import flowIdentify
+from base import Base
+from output import stringMessage
 
 cmds = ['STOR', 'STOU', 'RETR', 'LIST', 'NLST', 'APPE']
 
-class ftpDecode(object):
+class ftpDecode(Base):
 
     def __init__(self):
+        Base.__init__(self)
         self.statemgr = None
         # for some reason the data samples I'm using
         # often have UUUUUUPORT, compensate for that in the RE 
@@ -44,6 +47,7 @@ class ftpDecode(object):
         # response code 229 is EPASV
         self._227re = re.compile("^227|^229", re.M)
         self.id = flowIdentify()
+        self.msg = stringMessage()
         
         
     def decode(self, state, statemgr):
@@ -97,8 +101,10 @@ class ftpDecode(object):
                     rstate = self.statemgr.find_flow_state(rflow)
                     # rename the data file
                     if rstate is not None:
-                        renameFile(rstate, filename)
-                        self.id.identify(rstate)
+                        fn = renameFile(rstate, filename)
+                        id, m5 = self.id.identify(rstate)
+                        self.msg.msg = "extracted: %s\nfiletype: %s\nmd5 sum: %s\n" %(fn,id,m5)
+                        self.doOutput(self.msg)
                         
         
     def extractPassive(self, state, d):
@@ -174,8 +180,10 @@ class ftpDecode(object):
             rstate = de.states.find_flow_state(rflow)
             # rename the data file
             if rstate is not None:
-                renameFile(rstate, filename)
-                self.id.identify(rstate)
+                fn = renameFile(rstate, filename)
+                id, m5 = self.id.identify(rstate)
+                self.msg.msg = "extracted: %s\nfiletype: %s\nmd5 sum: %s\n" %(fn,id,m5)
+                self.doOutput(self.msg)
 
                 
                 

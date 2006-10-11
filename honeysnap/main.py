@@ -47,7 +47,7 @@ from singletonmixin import HoneysnapSingleton
 from pcapinfo import pcapInfo
 from packetSummary import Summarize
 from base import Base
-from output import OutputSTDOUT
+from output import outputSTDOUT
 from packetCounter import Counter
 from pcapRE import pcapRE, wordSearch
 from sebekDecode import sebekDecode
@@ -108,7 +108,8 @@ def processFile(honeypots, file, dbargs=None):
             deletetmp = 0
         options["tmpf"] = tmpf
         try:
-            outfile = sys.stdout
+            #outfile = sys.stdout
+            out = outputSTDOUT()
             #outfile = open(options["output_data_directory"] + "/results", 'a+')
         except IOError:
             # we have some error opening the file
@@ -133,33 +134,34 @@ def processFile(honeypots, file, dbargs=None):
 
             
         if options["do_pcap"] == "YES":
-            outfile.write("Pcap file information:\n")
+            out("\n\nResults for file: %s\n" % file)
+            out("Pcap file information:\n")
             pi = pcapInfo(tmpf)
-            outfile.write(pi.getStats())
+            pi.setOutput(out)
+            pi.getStats()
+            
+            #outfile.write(pi.getStats())
         
         if options["do_packets"] == "YES":
-            outfile.write("\n\nResults for file: %s\n" % file)
-            outfile.write("Counting outbound IP packets:\n")
-            outfile.write("%-40s %10s\n" % ("Filter", "Packets"))
-            outfile.flush()
+            out("Counting outbound IP packets:\n")
+            out("%-40s %10s\n" % ("Filter", "Packets"))
+            #outfile.flush()
             for key, filt in FILTERS.items():
-                print key
+                out(key+"\n")
                 for ipaddr in honeypots:
                     p = pcap.pcap(tmpf)
                     c = Counter(p)
-                    c.setOutput(outfile)
+                    c.setOutput(out)
                     #c.setOutput(options["output_data_directory"] + "/results")
                     f = filt % ipaddr
                     c.setFilter(f)
                     c.count()
-                    count = c.getCount()
-                    c.writeResults()
-                print "\n"
+                    #count = c.getCount()
+                    #c.writeResults()
+                out("\n")
 
         if options["summarize_incoming"] == "YES":
-            #print "INCOMING CONNECTIONS"
-            outfile.write("INCOMING CONNECTIONS\n")
-            outfile.flush()
+            out("\nINCOMING CONNECTIONS\n")
             p = pcap.pcap(tmpf)
             if dbargs:
                 db = dbConnection(dbargs)
@@ -168,7 +170,7 @@ def processFile(honeypots, file, dbargs=None):
             s = Summarize(p, db)
             filt = 'dst host ' + string.join(honeypots, ' or dst host ')
             s.setFilter(filt, file)
-            s.setOutput(outfile)
+            s.setOutput(out)
             #s.setOutput(options["output_data_directory"] + "/results")
             s.start()
             s.writeResults()
@@ -176,14 +178,12 @@ def processFile(honeypots, file, dbargs=None):
 
 
         if options["summarize_outgoing"] == "YES":
-            #print "\nOUTGOING CONNECTIONS"
-            outfile.write("\nOUTGOING CONNECTIONS\n")
-            outfile.flush()
+            out("\nOUTGOING CONNECTIONS\n")
             p = pcap.pcap(tmpf)
             s = Summarize(p, db)
             filt = 'src host ' + string.join(honeypots, ' or src host ')
             s.setFilter(filt, file)
-            s.setOutput(outfile)
+            s.setOutput(out)
             #s.setOutput(options["output_data_directory"] + "/results")
             s.start()
             s.writeResults()
@@ -196,9 +196,7 @@ def processFile(honeypots, file, dbargs=None):
             in the payload.  Matching packets will be handed to wordsearch 
             to hunt for any matching words.
             """
-            #print "\nIRC SUMMARY"
-            outfile.write("\nIRC SUMMARY\n")
-            outfile.flush()
+            out("\nIRC SUMMARY\n")
             p = pcap.pcap(tmpf)
             words = '0day access account admin auth bank bash #!/bin binaries binary bot card cash cc cent connect crack credit dns dollar ebay e-bay egg flood ftp hackexploit http leech login money /msg nologin owns ownz password paypal phish pirate pound probe prv putty remote resolved root rooted scam scan shell smtp sploit sterling sucess sysop sys-op trade uid uname uptime userid virus warez' 
             if options["wordfile"]:
@@ -210,78 +208,76 @@ def processFile(honeypots, file, dbargs=None):
                     words = " ".join(words)
             ws = wordSearch()
             ws.setWords(words)
-            ws.setOutput(outfile)
+            ws.setOutput(out)
             #ws.setOutput(options["output_data_directory"] + "/results")
             r = pcapRE(p)
             r.setFilter("port 6667")
             r.setRE('PRIVMSG')
             r.setWordSearch(ws)
-            r.setOutput(outfile)
+            r.setOutput(out)
             #r.setOutput(options["output_data_directory"] + "/results")
             r.start()
             r.writeResults()
             del p
 
         if options["do_irc_detail"] == "YES" or options["do_irc"] == "YES":
-            #outfile.write("\nIRC DETAIL\n")
-            outfile.write("\nExtracting from IRC")
-            outfile.flush()
+            out("\nExtracting from IRC\n")
             p = pcap.pcap(tmpf)
             de = tcpflow.tcpFlow(p)
             de.setFilter("port 6667")
-            de.setOutput(outfile)
+            de.setOutput(out)
             de.setOutdir(options["output_data_directory"]+ "/irc-extract")
             de.start()
-            #de.getnames()
             de.dump_extract(options)
             hirc = HoneySnapIRC()
             hirc.connect(tmpf)
             hd = ircDecode()
+            hd.setOutput(out)
             hirc.addHandler("all_events", hd.decodeCB, -1)
             hirc.ircobj.process_once()
             hd.printSummary()
             del p
             
         if options["do_http"] == "YES":
-            print "\nExtracting from http"
+            out("\nExtracting from http\n")
             p = pcap.pcap(tmpf)
             de = tcpflow.tcpFlow(p)
             de.setFilter("port 80")
             de.setOutdir(options["output_data_directory"]+ "/http-extract")
-            de.setOutput(outfile)
+            de.setOutput(out)
             decode = httpDecode.httpDecode()
+            decode.setOutput(out)
             de.registerPlugin(decode.decode)
             de.start()
-            #de.getnames()
             de.dump_extract(options)
             del p
         
 
         if options["do_ftp"] == "YES":
-            print "\nExtracting from ftp"
+            out("\nExtracting from ftp\n")
             p = pcap.pcap(tmpf)
             de = tcpflow.tcpFlow(p)
             de.setFilter("port 20 or port 21")
             de.setOutdir(options["output_data_directory"] + "/ftp-extract")
-            de.setOutput(outfile)
+            de.setOutput(out)
             decode = ftpDecode.ftpDecode()
+            decode.setOutput(out)
             de.registerPlugin(decode.decode)
             de.start()
-            #de.getnames()
             de.dump_extract(options)
             del p
 
         if options["do_smtp"] == "YES":
-            print "\nExtracting from smtp"
+            out("\nExtracting from smtp\n")
             p = pcap.pcap(tmpf)
             de = tcpflow.tcpFlow(p)
             de.setFilter("port 25")
             de.setOutdir(options["output_data_directory"] + "/smtp-extract")
-            de.setOutput(outfile)
+            de.setOutput(out)
             decode = smtpDecode.smtpDecode()
+            decode.setOutput(out)
             de.registerPlugin(decode.decode)
             de.start()
-            #de.getnames()
             de.dump_extract(options)
             del p
 
@@ -290,10 +286,11 @@ def processFile(honeypots, file, dbargs=None):
         
         if options["do_sebek"] == "YES":
             sbd = sebekDecode()
+            sbd.setOutput(out)
             sbd.run()
             
 
-        # delete the tmp file we used to hold unzipped data
+        # delete the tmp file we used to hold unzipped data        
         if deletetmp:
             os.unlink(tmpf)
 
@@ -444,7 +441,7 @@ def main():
                 print "Unable to create output dir: %s. Check permissions." % values.outputdir
                 
         if values.honeypots is None:
-            print "No honeypots specified. Please use either -h or config file to specify honeypots.\n"
+            print "No honeypots specified. Please use either -H or config file to specify honeypots.\n"
             sys.exit(2)
         if values.files:
             hsingleton = HoneysnapSingleton.getInstance(options)

@@ -26,6 +26,8 @@ import time
 import re
 #import dnet
 from util import orderByValue
+from base import Base
+from output import stringMessage
 
 botprefixes = [".", "-", "!", "\`",  "\\", "|"]
 botcoms = ["die", "esay", "flood", "m", "me", "part", "payment", "ping", "s", "say", "server",
@@ -42,7 +44,7 @@ for i in botprefixes:
 botwords = set(botwords)
 
     
-class ircDecode(object):
+class ircDecode(Base):
     """
     IRC analysis:
     * number of messages
@@ -65,6 +67,7 @@ class ircDecode(object):
     """
 
     def __init__(self):
+        Base.__init__(self)
         self.cmds = {}
         self.sources = {}
         self.targets = {}
@@ -103,25 +106,27 @@ class ircDecode(object):
                 self.analyzePrivmsg(c, e)
             
     def printSummary(self):
-        print "\n****** command count *******"
+##        import pdb
+##        pdb.set_trace()
+        self.doOutput("\n****** command count *******\n")
         for k,v in self.cmds.items():
-            print "%s: %d" % (k, v)
-        print "\n****** source count *******"
+            self.doOutput("%s: %d\n" % (k, v))
+        self.doOutput("\n****** source count *******\n")
         for k,v in self.sources.items():
-            print "%s : %d" % (k, v)
-        print "\n****** target count ******"
+            self.doOutput("%s : %d\n" % (k, v))
+        self.doOutput("\n****** target count ******\n")
         for k,v in self.targets.items():
-            print "%s : %d" % (k, v)
-        print "Detailed report for IRC keyword matches:"
-        print "\tRepeated Lines %d" % len(self.lines)
-        print "\tIPs %d" % len(self.ips)
-        print "\tUsers %d" % len(self.users)
-        print "\tChannels %d" % len(self.channels)
+            self.doOutput("%s : %d\n" % (k, v))
+        self.doOutput("Detailed report for IRC keyword matches:\n")
+        self.doOutput("\tRepeated Lines %d\n" % len(self.lines))
+        self.doOutput("\tIPs %d\n" % len(self.ips))
+        self.doOutput("\tUsers %d\n" % len(self.users))
+        self.doOutput("\tChannels %d\n" % len(self.channels))
         if len(self.botlines) > 0:
-            print "\tPossible bot commands:"
+            self.doOutput("\tPossible bot commands:\n")
             vals = orderByValue(self.botlines)
             for i in vals:
-                print "\t\t%s => %d" % i
+                self.doOutput("\t\t%s => %d\n" % i)
             
         """
         print "\n****** talking ips ******"

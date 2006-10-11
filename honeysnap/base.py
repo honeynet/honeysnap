@@ -31,19 +31,33 @@ class Base(object):
         self.p = None
         self.file = None
         self.filter = None
-    
-    def setOutput(self, file):
-        self.outfile = file
+        self.out = lambda x: str(x)
+        #self.out = None
+
+    def setOutput(self, obj):
+        """
+        obj needs to be callable, taking 1 arg
+        #TODO: check that obj isinstance of Output??
+        """
+        self.out = obj
+        
+    def doOutput(self, m):
+        self.out(m)
         
     def setFilter(self, filter, file):
         self.filter = filter
         self.file = file
         self.p.setfilter(filter)
 
-class Output(Base):
+class Output(object):
     """
     This class will provide a generic output interface so we can output
     in text, html, whatever.
     """
     def write():
         pass
+        
+class Message(object):
+    """
+    Base class for messages that would be passed between modules.
+    """

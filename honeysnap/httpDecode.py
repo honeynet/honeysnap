@@ -26,8 +26,9 @@ import cStringIO
 import os
 from util import findName, renameFile
 from flowIdentify import flowIdentify
+from base import Base
 
-class httpDecode(object):
+class httpDecode(Base):
 
     # this part stolen from dpkt.  Thanks Dug!
     __methods = dict.fromkeys((
@@ -48,6 +49,7 @@ class httpDecode(object):
     __msgtypes = ['response', 'request']
     
     def __init__(self):
+        Base.__init__(self)
         self.statemgr = None
         self.id = flowIdentify()
         
@@ -119,7 +121,7 @@ class httpDecode(object):
                     headers = dpkt.http.parse_headers(state.fp)
                     r = dpkt.http.Message()
                     r.headers = headers
-                    r.body = fp.readlines()
+                    r.body = state.fp.readlines()
                     r.data = None
                     r.request = req
                     state.decoded = r
@@ -152,7 +154,7 @@ class httpDecode(object):
                     headers = dpkt.http.parse_headers(state.fp)                    
                     r = dpkt.http.Message()
                     r.headers = headers
-                    r.body = fp.readlines()
+                    r.body = state.fp.readlines()
                     r.request = req
                     r.data = None   
                     state.decoded = r
@@ -181,13 +183,15 @@ class httpDecode(object):
                 if t == 'request':            
                     realname = state.decoded.uri.rsplit("/", 1)[-1]       
                     #print "_renameFlow:request: ", realname
-                    renameFile(rs, realname)   
-                    self.id.identify(rs)
+                    fn = renameFile(rs, realname)
+                    id, m5 = self.id.identify(rs)
+                    self.doOutput("extracted: %s\nfiletype: %s\nmd5 sum: %s\n" %(fn,id,m5))
                 if t == 'response':                        
                     realname = r1.uri.rsplit("/", 1)[-1]
                     #print "_renameFlow:response: ", realname   
-                    renameFile(state, realname)       
-                    self.id.identify(state)
+                    fn = renameFile(state, realname) 
+                    id, m5 = self.id.identify(state)
+                    self.doOutput("extracted: %s\nfiletype: %s\nmd5 sum: %s\n" %(fn,id,m5))
                 
     def extractHeaders(self, state, d):
         """

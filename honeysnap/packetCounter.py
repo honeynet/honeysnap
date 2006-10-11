@@ -20,18 +20,22 @@
 
 # $Id$
 
-import base
+from base import Base
 import sys
+from output import stringFormatMessage
 
-class Counter(base.Base):
+class Counter(Base):
     """ Generic counting class 
         Args are:
         pcapObj: a pcap obj, a result of open_live() or open_offline()
     """
     def __init__(self, pcapObj):    
         """pcap = pcap file name"""
+        Base.__init__(self)
         self.total = 0
         self.p = pcapObj
+        format = "%(filter)-40s %(total)10d\n"
+        self.msg = stringFormatMessage(format=format)
 
     def setFilter(self, filter):
         self.filter = filter
@@ -40,6 +44,8 @@ class Counter(base.Base):
     def count(self):
         for ts, buf in self.p:
             self.total += 1
+        self.msg.msg = dict(filter=self.filter, total=self.total)
+        self.doOutput(self.msg)
 
     def getCount(self):
         return self.total
@@ -47,8 +53,3 @@ class Counter(base.Base):
     def resetCount(self):
         self.total = 0
 
-    def writeResults(self):
-        f = sys.stdout
-        #f = open(self.outfile, "a")
-        f.write("%-40s %10d\n" % (self.filter, self.total))
-        #f.close()

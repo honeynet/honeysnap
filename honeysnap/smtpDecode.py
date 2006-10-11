@@ -21,9 +21,11 @@
 # $Id$
 
 from util import renameFile
+from base import Base
 
-class smtpDecode(object):
+class smtpDecode(Base):
     def __init__(self):
+        Base.__init__(self)
         self.statemgr = None
         self.count = 0
         
@@ -43,8 +45,8 @@ class smtpDecode(object):
                 subj.append("")
             realname = "mail-message-%d" % self.count
             self.count +=1 
-            renameFile(state, realname)
+            fn = renameFile(state, realname)
             # assume the first entry in each list is the correct one
-            print "file: %s" % realname
-            print "\t" + to[0]
-            print "\t" + subj[0]
+            self.doOutput("file: %s\n" % fn)
+            self.doOutput("\t%s\n" % to[0])
+            self.doOutput("\t%s\n" % subj[0])
