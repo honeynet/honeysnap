@@ -451,9 +451,9 @@ def main():
         if values.honeypots is None:
             print "No honeypots specified. Please use either -H or config file to specify honeypots.\n"
             sys.exit(2)
+        hsingleton = HoneysnapSingleton.getInstance(options)
         # by default treat args as files to be processed
-        if len(args) > 0:
-            hsingleton = HoneysnapSingleton.getInstance(options)
+        if len(args):
             for f in args:
                 if f == "-":
                     # can't really do true stdin input, since we repeatedly parse
