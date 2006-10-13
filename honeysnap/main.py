@@ -324,8 +324,8 @@ def configOptions(parser):
     parser.set_defaults(tmpdir="/tmp")
     parser.add_option("-H", "--honeypots", dest="honeypots", action="extend", type="string",
                   help="Comma delimited list of honeypots")
-    parser.add_option("-r", "--read", dest="files", type="string",
-                  help="Pcap file to be read. If this flag is set then honeysnap will not run in batch mode. Will also read from stdin.", metavar="FILE")
+##    parser.add_option("-r", "--read", dest="files", type="string",
+##                  help="Pcap file to be read. If this flag is set then honeysnap will not run in batch mode. Will also read from stdin.", metavar="FILE")
     parser.add_option("-d", "--dir", dest="files", type="string",
                   help="Directory containing timestamped log directories. If this flag is set then honeysnap will run in batch mode. To limit which directories to parse, use -m (--mask)", metavar="FILE")
 
@@ -451,11 +451,29 @@ def main():
         if values.honeypots is None:
             print "No honeypots specified. Please use either -H or config file to specify honeypots.\n"
             sys.exit(2)
-        if values.files:
+        # by default treat args as files to be processed
+        if len(args) > 0:
             hsingleton = HoneysnapSingleton.getInstance(options)
-            if os.path.exists(values.files) and os.path.isfile(values.files):
-                processFile(values.honeypots, values.files, dbargs)
-            elif os.path.exists(values.files) and os.path.isdir(values.files):
+            for f in args:
+                print f
+                if f == "-":
+                    # can't really do true stdin input, since we repeatedly parse
+                    # the file, so create a tempfile that is read from stdin
+                    # pass it to processFile
+                    fh = sys.stdin
+                    tmph, tmpf = tempfile.mkstemp()
+                    tmph = open(tmpf, 'wb')
+                    for l in fh:
+                        tmph.write(l)
+                    tmph.close()
+                    processFile(values.honeypots, tmpf, dbargs)
+                    # all done, delete the tmp file
+                    os.unlink(tmpf)
+                elif os.path.exists(f) and os.path.isfile(f):
+                    processFile(values.honeypots, f, dbargs)
+        # -d was an option
+        elif values.files:
+            if os.path.exists(values.files) and os.path.isdir(values.files):
                 for root, dirs, files in os.walk(values.files):
                     #print root, dirs, files
                     if fnmatch(root, values.mask):
