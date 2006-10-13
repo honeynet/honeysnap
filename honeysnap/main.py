@@ -47,7 +47,7 @@ from singletonmixin import HoneysnapSingleton
 from pcapinfo import pcapInfo
 from packetSummary import Summarize
 from base import Base
-from output import outputSTDOUT
+from output import outputSTDOUT, rawPathOutput
 from packetCounter import Counter
 from pcapRE import pcapRE, wordSearch
 from sebekDecode import sebekDecode
@@ -108,9 +108,10 @@ def processFile(honeypots, file, dbargs=None):
             deletetmp = 0
         options["tmpf"] = tmpf
         try:
-            #outfile = sys.stdout
-            out = outputSTDOUT()
-            #outfile = open(options["output_data_directory"] + "/results", 'a+')
+            if options["filename"] is not None:
+                out = rawPathOutput(options["filename"], mode="a+")
+            else:
+                out = outputSTDOUT()
         except IOError:
             # we have some error opening the file
             # first we check if the output dir exists
@@ -312,8 +313,9 @@ def cleanup(options):
 def configOptions(parser):
     parser.add_option("-c", "--config", dest="config",type="string",
                   help="Config file")
-##    parser.add_option("-f", "--file", dest="filename",type="string",
-##                  help="Write report to FILE", metavar="FILE")
+    parser.add_option("-f", "--file", dest="filename",type="string",
+                  help="Write report to FILE", metavar="FILE")
+    parser.set_defaults(filename=None)
     parser.add_option("-o", "--output", dest="outputdir",type="string",
                   help="Write output to DIR, defaults to /tmp/analysis", metavar="DIR")
     parser.set_defaults(outputdir="/tmp/analysis")
@@ -412,6 +414,12 @@ def main():
                     values.wordfile = wordfile
                 except ConfigParser.Error:
                     values.wordfile = None
+            if values.filename is None:
+                try:
+                    fn = parser.get("IO", "OUTPUTFILE")
+                    values.filename = fn
+                except ConfigParser.Error:
+                    pass
         else:
             parser = None
         dbargs = None
@@ -459,7 +467,7 @@ def main():
                             for i in f:
                                 processFile(values.honeypots, root+"/"+i, dbargs)
             else:
-                print "File not found: %s" % values.filename
+                print "File not found: %s" % values.files
                 sys.exit(2)
         else:
             cmdparser.print_help()
