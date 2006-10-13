@@ -453,23 +453,14 @@ def main():
             sys.exit(2)
         hsingleton = HoneysnapSingleton.getInstance(options)
         # by default treat args as files to be processed
+        # handle multiple files being passed as args
         if len(args):
             for f in args:
-                if f == "-":
-                    # can't really do true stdin input, since we repeatedly parse
-                    # the file, so create a tempfile that is read from stdin
-                    # pass it to processFile
-                    fh = sys.stdin
-                    tmph, tmpf = tempfile.mkstemp()
-                    tmph = open(tmpf, 'wb')
-                    for l in fh:
-                        tmph.write(l)
-                    tmph.close()
-                    processFile(values.honeypots, tmpf, dbargs)
-                    # all done, delete the tmp file
-                    os.unlink(tmpf)
-                elif os.path.exists(f) and os.path.isfile(f):
+                if os.path.exists(f) and os.path.isfile(f):
                     processFile(values.honeypots, f, dbargs)
+                else:
+                    print "File not found: %s" % values.files
+                    sys.exit(2)
         # -d was an option
         elif values.files:
             if os.path.exists(values.files) and os.path.isdir(values.files):
@@ -486,8 +477,22 @@ def main():
             else:
                 print "File not found: %s" % values.files
                 sys.exit(2)
+        # no args indicating files, read from stdin
         else:
-            cmdparser.print_help()
+            # can't really do true stdin input, since we repeatedly parse
+            # the file, so create a tempfile that is read from stdin
+            # pass it to processFile
+            fh = sys.stdin
+            tmph, tmpf = tempfile.mkstemp()
+            tmph = open(tmpf, 'wb')
+            for l in fh:
+                tmph.write(l)
+            tmph.close()
+            processFile(values.honeypots, tmpf, dbargs)
+            # all done, delete the tmp file
+            os.unlink(tmpf)
+##        else:
+##            cmdparser.print_help()
         cleanup(options)
     else:
         cmdparser.print_help()
