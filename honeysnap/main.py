@@ -455,7 +455,6 @@ def main():
         if len(args) > 0:
             hsingleton = HoneysnapSingleton.getInstance(options)
             for f in args:
-                print f
                 if f == "-":
                     # can't really do true stdin input, since we repeatedly parse
                     # the file, so create a tempfile that is read from stdin
