@@ -174,20 +174,20 @@ def processFile(honeypots, file, dbargs=None):
             s.setOutput(out)
             #s.setOutput(options["output_data_directory"] + "/results")
             s.start()
-            s.writeResults()
+            s.writeResults(limit=10)
             del p
 
 
         if options["summarize_outgoing"] == "YES":
             out("\nOUTGOING CONNECTIONS\n")
             p = pcap.pcap(tmpf)
-            s = Summarize(p, db)
+            s = Summarize(p, None)
             filt = 'src host ' + string.join(honeypots, ' or src host ')
             s.setFilter(filt, file)
             s.setOutput(out)
             #s.setOutput(options["output_data_directory"] + "/results")
             s.start()
-            s.writeResults()
+            s.writeResults(limit=10)
             del p
 
 
@@ -282,8 +282,8 @@ def processFile(honeypots, file, dbargs=None):
             de.dump_extract(options)
             del p
 
-        if options["do_rrd"] == "YES":
-            print "RRD not currently supported"
+##        if options["do_rrd"] == "YES":
+##            print "RRD not currently supported"
         
         if options["do_sebek"] == "YES":
             sbd = sebekDecode()
@@ -336,24 +336,33 @@ def configOptions(parser):
     parser.add_option("-w", "--words", dest="wordfile", type="string",
             help = "Pull wordlist from FILE", metavar="FILE")
 
+    # summary options
     parser.add_option("--do-pcap", dest="do_pcap", action="store_const", const="YES",
             help = "Summarise pcap info")
     parser.set_defaults(do_pcap="YES")
     parser.add_option("--do-packets", dest="do_packets", action="store_const", const="YES",
             help = "Summarise packet counts")
-    parser.set_defaults(do_packets="YES")
-    parser.add_option("--do-telnet", dest="do_telnet", action="store_const", const="YES",
-            help = "Count outbound telnet")
-    parser.set_defaults(do_telnet="NO")
-    parser.add_option("--do-ssh", dest="do_ssh", action="store_const", const="YES",
-            help = "Count outbound ssh")
-    parser.set_defaults(do_ssh="NO")
+    parser.set_defaults(do_packets="NO")
+    parser.add_option("--do-incoming", dest="summarize_incoming", action="store_const", const="YES",
+            help = "Summarise incoming traffic flows")
+    parser.set_defaults(summarize_incoming="NO")
+    parser.add_option("--do-outgoing", dest="summarize_outgoing", action="store_const", const="YES",
+            help = "Summarise packet counts")
+    parser.set_defaults(summarize_outgoing="NO")
+
+    # protocol options
+##    parser.add_option("--do-telnet", dest="do_telnet", action="store_const", const="YES",
+##            help = "Count outbound telnet")
+##    parser.set_defaults(do_telnet="NO")
+##    parser.add_option("--do-ssh", dest="do_ssh", action="store_const", const="YES",
+##            help = "Count outbound ssh")
+##    parser.set_defaults(do_ssh="NO")
     parser.add_option("--do-http", dest="do_http", action="store_const", const="YES",
             help = "Extract http data")
     parser.set_defaults(do_http="NO")
-    parser.add_option("--do-https", dest="do_https", action="store_const", const="YES",
-            help = "Count outbound https")
-    parser.set_defaults(do_https="NO")
+##    parser.add_option("--do-https", dest="do_https", action="store_const", const="YES",
+##            help = "Count outbound https")
+##    parser.set_defaults(do_https="NO")
     parser.add_option("--do-ftp", dest="do_ftp", action="store_const", const="YES",
             help = "Extract FTP data")
     parser.set_defaults(do_ftp="NO")
@@ -372,9 +381,9 @@ def configOptions(parser):
     parser.add_option("--do-sebek", dest="do_sebek", action="store_const", const="YES",
             help = "Summarize Sebek")
     parser.set_defaults(do_sebek="NO")
-    parser.add_option("--do-rrd", dest="do_rrd", action="store_const", const="YES",
-            help = "Do RRD, not yet implemented")
-    parser.set_defaults(do_rrd="NO")
+##    parser.add_option("--do-rrd", dest="do_rrd", action="store_const", const="YES",
+##            help = "Do RRD, not yet implemented")
+##    parser.set_defaults(do_rrd="NO")
 
     return parser.parse_args()
 
@@ -434,8 +443,7 @@ def main():
 
         # pull in the values from the option parser
         options = values.__dict__
-        options["summarize_incoming"]="NO"
-        options["summarize_outgoing"]="NO"
+
         if options['config'] is not None:
             for i in parser.items("OPTIONS"):
                 options[i[0]] = i[1]

@@ -92,21 +92,21 @@ class Summarize(base.Base):
             return
 
     def printResults(self):
-        self.writeResults(sys.stdout, limit=10)
+        self.writeResults(limit=10)
     
-    def writeResults(self, f=sys.stdout, limit=0):
+    def writeResults(self, limit=0):
         """Write results to a given filehandle. Optionally only print more significant options"""
-        f.write("TCP TRAFFIC SUMMARY:\n")
-        f.write("%-15s %-15s %8s %10s\n" % ("SOURCE", "DEST", "DPORT", "COUNT"))
+        self.doOutput("TCP TRAFFIC SUMMARY:\n")
+        self.doOutput("%-15s %-15s %8s %10s\n" % ("SOURCE", "DEST", "DPORT", "COUNT"))
         for key, val in self.tcpports.items():
             if val > limit:
-                f.write("%-15s %-15s %8s %10s\n" % (key[0], key[1], key[2], val))
+                self.doOutput("%-15s %-15s %8s %10s\n" % (key[0], key[1], key[2], val))
         if len(self.udpports) > 0:
-            f.write("UDP TRAFFIC SUMMARY:\n")
-            f.write("%-15s %-15s %8s %10s\n" % ("SOURCE", "DEST", "DPORT", "COUNT"))
+            self.doOutput("UDP TRAFFIC SUMMARY:\n")
+            self.doOutput("%-15s %-15s %8s %10s\n" % ("SOURCE", "DEST", "DPORT", "COUNT"))
             for key, val in self.udpports.items():
                 if val > limit:
-                    f.write("%-15s %-15s %8s %10s\n" % (key[0], key[1], key[2], val))
+                    self.doOutput("%-15s %-15s %8s %10s\n" % (key[0], key[1], key[2], val))
         if self.db:
             self.db.doInserts()
                 
