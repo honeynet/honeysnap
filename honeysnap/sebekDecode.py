@@ -147,10 +147,10 @@ class sebekDecode(base.Base):
         # packets we pull should be handled
         for ts, buf in self.p:
             ip = dpkt.ethernet.Ethernet(buf).data
-            payload = ip.data.data  
+            #payload = ip.data.data  
             # workaround for broken sebek packets
             # udp length and ip length are set incorrectly in v2 and v3 < 3.1
-            #payload = pkt[self.p.dloff+20+8:]  #frame+iphdr+udphdr
+            payload = buf[self.p.dloff+20+8:]  #frame+iphdr+udphdr
             try:
                 self.packetHandler(ts, ip, payload)
             except Exception, e:
