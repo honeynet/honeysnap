@@ -59,9 +59,10 @@ import base
 from singletonmixin import HoneysnapSingleton
 import pcap
 from socket import inet_ntoa
-
+             
 sbk2 = "!IHHIIIIII12sI"
-sbk3 = "!IHHIIIIIIII12sI"
+#sbk3 = "!IHHIIIIIIII12sI" 
+sbk3 = "!IHHIIIIIII12sI"
 size2 = struct.calcsize(sbk2)
 size3 = struct.calcsize(sbk3)
 
@@ -91,33 +92,35 @@ class sebekDecode(base.Base):
         self.p.setfilter("udp port 1101")
         self.log = {}
         
-    def packetHandler(self, ts, pkt, payload):
-        #print pkt.udp.ulen
+    def packetHandler(self, ts, ip, payload): 
+        """ts timestamp, ip dpkt.ip.IP, payload = sebek udp data"""   
+        
         if len(payload) > 5:
-            magic, version = struct.unpack("!IH", payload[0:6])
-            if version == 1:
-                sbk = sbk2
+            magic, version = struct.unpack("!IH", payload[0:6]) 
+            if version == 1:   
                 size = size2
             elif version == 3:
-                sbk = sbk3
                 size = size3
-            else:
+            else:    
+                print "sebekDecode:packetHandler:unknown sebek version number"
                 return
-            #print magic, version
         else:
             return
         sbkhdr = payload[0:size]
-        rest = payload[size:]
-        magic, version, typ, counter, t, tu, pid, uid, fd, com, length = struct.unpack(sbk, sbkhdr)
-        ip = inet_ntoa(pkt.src)
-        if typ == 0 and length < 100:
-            self.keystrokes(t, ip, pid, fd, uid, com, rest)
+        rest = payload[size:] 
+        if version == 1:       
+            magic, version, type, counter, t, tu, pid, uid, fd, com, length = struct.unpack(sbk2, sbkhdr)
+        else:   
+            magic, version, type, counter, t, tu, pid, uid, fd, inode, com, length = struct.unpack(sbk3, sbkhdr) 
+        src = inet_ntoa(ip.src)
+        if type == 0:
+            self.keystrokes(t, src, pid, fd, uid, com, rest)
     
-    def keystrokes(self, t, ip, pid, fd, uid, com, data):
+    def keystrokes(self, t, srcip, pid, fd, uid, com, data):
         """
         [$datetime  $addr $pid $com_str $uid_str]$log
-        """
-        k = " ".join([ip, str(pid), str(fd)])
+        """                                           
+        k = " ".join([srcip, str(pid), str(fd)])
         com = com.replace("\00", "")
         if k not in self.log:
             self.log[k] = {"data":data, "uid":{uid:1}, "com":{com:1}}
@@ -142,16 +145,18 @@ class sebekDecode(base.Base):
     def run(self):
         # since we set a filter on pcap, all the
         # packets we pull should be handled
-        for ts, pkt in self.p:
-            ip = dpkt.ip.IP(pkt[self.p.dloff:])
+        for ts, buf in self.p:
+            ip = dpkt.ethernet.Ethernet(buf).data
+            payload = ip.data.data  
             # workaround for broken sebek packets
-            payload = pkt[self.p.dloff+20+8:]  #frame+iphdr+udphdr
+            # udp length and ip length are set incorrectly in v2 and v3 < 3.1
+            #payload = pkt[self.p.dloff+20+8:]  #frame+iphdr+udphdr
             try:
                 self.packetHandler(ts, ip, payload)
             except Exception, e:
                 print "sebekDecode caught error:"
                 print e
-                print dpkt.dpkt.hexdump(ip.udp.data)
+                print dpkt.dpkt.hexdump(buf)
                 continue
 
         

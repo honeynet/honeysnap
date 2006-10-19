@@ -27,10 +27,10 @@ import re
 import string
 import gzip
 import os
-from fnmatch import fnmatch
+from fnmatch import fnmatch   
+import ConfigParser
 from ConfigParser import SafeConfigParser
 import tempfile
-import dpkt
 import pcap
 
 # all the honeysnap imports
@@ -42,7 +42,6 @@ import smtpDecode
 import tcpflow
 from hsIRC import HoneySnapIRC
 from ircDecode import ircDecode
-from util import ipnum
 from singletonmixin import HoneysnapSingleton
 from pcapinfo import pcapInfo
 from packetSummary import Summarize
