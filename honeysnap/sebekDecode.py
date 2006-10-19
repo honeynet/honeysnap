@@ -61,8 +61,7 @@ import pcap
 from socket import inet_ntoa
              
 sbk2 = "!IHHIIIIII12sI"
-#sbk3 = "!IHHIIIIIIII12sI" 
-sbk3 = "!IHHIIIIIII12sI"
+sbk3 = "!IHHIIIIIIII12sI"
 size2 = struct.calcsize(sbk2)
 size3 = struct.calcsize(sbk3)
 
@@ -79,7 +78,7 @@ controlmap = {"\x1b[A":"[U-ARROW]",
 
 controllist = ["\x1b[A", "\x1b[B","\x1b[C", "\x1b[D","\x1b[3~","\x1b[5~","\x1b[6~","\x7f","\x1b"]
 # regex for other nonascii values
-nonascii = re.compile("[\x80-\xFF]")
+nonascii = re.compile("[^\x20-\x7e]")
 
 tf = lambda x: time.asctime(time.localtime(x))
 
@@ -107,39 +106,51 @@ class sebekDecode(base.Base):
         else:
             return
         sbkhdr = payload[0:size]
-        rest = payload[size:] 
+        rest = payload[size:]                                                          
+        # next two bits of info not in ver2 sebek data
+        parent_pid = 0
+        inode = 0
         if version == 1:       
             magic, version, type, counter, t, tu, pid, uid, fd, com, length = struct.unpack(sbk2, sbkhdr)
         else:   
-            magic, version, type, counter, t, tu, pid, uid, fd, inode, com, length = struct.unpack(sbk3, sbkhdr) 
+            magic, version, type, counter, t, tu, parent_pid, pid, uid, fd, inode, com, length = struct.unpack(sbk3, sbkhdr) 
         src = inet_ntoa(ip.src)
         if type == 0:
-            self.keystrokes(t, src, pid, fd, uid, com, rest)
+            self.keystrokes(version, t, src, pid, fd, uid, com, rest, parent_pid, inode)
     
-    def keystrokes(self, t, srcip, pid, fd, uid, com, data):
+    def keystrokes(self, version, t, srcip, pid, fd, uid, com, data, parent_pid, inode):
         """
         [$datetime  $addr $pid $com_str $uid_str]$log
-        """                                           
+        """                                            
         k = " ".join([srcip, str(pid), str(fd)])
         com = com.replace("\00", "")
-        if k not in self.log:
-            self.log[k] = {"data":data, "uid":{uid:1}, "com":{com:1}}
+        if k not in self.log:                                       
+            self.log[k] = {"data":data, "uid":{uid:1}, "com":{com:1}, "pid":pid, "fd":fd, "ip":srcip} 
+            if version == 3:
+                self.log[k]["parent_pid"] = parent_pid
+                self.log[k]["inode"] = inode
         else:
             self.log[k]["data"] += data
             self.log[k]["uid"][uid] = 1
-            self.log[k]["com"][com] = 1
+            self.log[k]["com"][com] = 1 
             
         if "\r" in data or "\n" in data:
             uids = "/".join([str(i) for i in self.log[k]["uid"].keys()])
             coms = "/".join([str(i) for i in self.log[k]["com"].keys()])
+            coms = nonascii.sub("", coms)
             # strip out junk
             d = self.log[k]["data"]
             for i in controllist:
                 # change control characters to something useful
                 d = d.replace(i, controlmap[i])
                 # strip out nonascii junk
-                d = nonascii.sub("", d)
-            print "[%s %s %s %s] %s" % (tf(t), k, uids, coms, d)
+                d = nonascii.sub("", d) 
+            if version == 3: 
+                print  "[%s ip:%s parent:%s pid:%s uid:%s fd:%s inode:%s com:%s] %s" % (tf(t), self.log[k]["ip"], self.log[k]["parent_pid"],
+                        self.log[k]["pid"], uids, self.log[k]["fd"], self.log[k]["inode"], coms, d)
+            else:
+                print "[%s ip:%s pid:%s uid:%s fd:%s com:%s] %s" % (tf(t), self.log[k]["ip"], self.log[k]["pid"], 
+                       uids,  self.log[k]["fd"], coms, d)
             del self.log[k]
         
     def run(self):
