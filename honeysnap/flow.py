@@ -100,6 +100,14 @@ class flow_state(object):
                     # too many files open
                     # lets toss an exception
                     self.fp = None
+                    raise fileHandleError() 
+            elif self.fp.mode != flag:    # must handle case where file is opened 'a' and we want to read
+                try:
+                    self.fp.close()
+                    self.fp = open(self.fname, flag)
+                except IOError:   
+                    print "Can't re-open %s in mode %s" % (self.fname, flag)
+                    self.fp = None
                     raise fileHandleError()
         else:
             try:
