@@ -453,9 +453,13 @@ def main():
         # pull in the values from the option parser
         options = values.__dict__
 
-        if options['config'] is not None:
-            for i in parser.items("OPTIONS"):
-                options[i[0]] = i[1]
+        if options['config'] is not None: 
+            if os.path.isfile(options['config']):
+                for i in parser.items("OPTIONS"):
+                    options[i[0]] = i[1]
+            else:
+                print "Config file not found!"
+                sys.exit(1)
 
         options["output_data_directory"] = values.outputdir
         options["tmp_file_directory"] = values.tmpdir
