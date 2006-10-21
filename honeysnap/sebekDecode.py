@@ -88,7 +88,7 @@ class sebekDecode(base.Base):
         hs = HoneysnapSingleton.getInstance()
         options = hs.getOptions()
         self.p = pcap.pcap(options["tmpf"], promisc=False)
-        self.p.setfilter("udp port 1101")
+        self.p.setfilter("udp port %s" % options["sebek_port"])
         self.log = {}
         
     def packetHandler(self, ts, ip, payload): 

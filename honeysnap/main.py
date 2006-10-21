@@ -51,16 +51,6 @@ from packetCounter import Counter
 from pcapRE import pcapRE, wordSearch
 from sebekDecode import sebekDecode
 
-FILTERS = {'Counting outbound IP packets:':'src host %s', 
-            'Counting outbound FTP packets:':'src host %s and dst port 21',
-            'Counting outbound SSH packets:':'src host %s and dst port 22',
-            'Counting outbound Telnet packets:':'src host %s and dst port 23',
-            'Counting outbound SMTP packets:':'src host %s and dst port 25',
-            'Counting outbound HTTP packets:':'src host %s and dst port 80',
-            'Counting outbound HTTPS packets:':'src host %s and dst port 443',
-            'Counting outbound Sebek packets:':'src host %s and udp port 1101',
-            'Counting outbound IRC packets:':'src host %s and dst port 6667'}
-
 class MyOption(Option):
     """
     A class that extends option to allow us to have comma delimited command line args.
@@ -77,6 +67,18 @@ class MyOption(Option):
         else:
             Option.take_action(
                 self, action, dest, opt, value, values, parser)
+    
+def setFilters(options):
+       """Set filters for packet counts"""
+       return { 'Counting outbound IP packets:':'src host %s', 
+                'Counting outbound FTP packets:':'src host %s and dst port 21',
+                'Counting outbound SSH packets:':'src host %s and dst port 22',
+                'Counting outbound Telnet packets:':'src host %s and dst port 23',
+                'Counting outbound SMTP packets:':'src host %s and dst port 25',
+                'Counting outbound HTTP packets:':'src host %s and dst port 80',
+                'Counting outbound HTTPS packets:':'src host %s and dst port 443',
+                'Counting outbound Sebek packets:':'src host %s and udp port %s' % ('%s', options["sebek_port"]),
+                'Counting outbound IRC packets:':'src host %s and dst port %s' % ('%s', options["irc_port"])}
             
             
 def processFile(honeypots, file, dbargs=None):
@@ -144,9 +146,10 @@ def processFile(honeypots, file, dbargs=None):
         
         if options["do_packets"] == "YES":
             out("Counting outbound IP packets:\n")
-            out("%-40s %10s\n" % ("Filter", "Packets"))
+            out("%-40s %10s\n" % ("Filter", "Packets"))  
+            filters = setFilters(options)
             #outfile.flush()
-            for key, filt in FILTERS.items():
+            for key, filt in filters.items():
                 out(key+"\n")
                 for ipaddr in honeypots:
                     p = pcap.pcap(tmpf)
@@ -192,7 +195,7 @@ def processFile(honeypots, file, dbargs=None):
 
         if options["do_irc_summary"] == "YES" or options["do_irc"] == "YES":
             """
-            Here we will use PcapRE to find packets on port 6667 with "PRIVMSG"
+            Here we will use PcapRE to find packets on irc_port with "PRIVMSG"
             in the payload.  Matching packets will be handed to wordsearch 
             to hunt for any matching words.
             """
@@ -211,7 +214,7 @@ def processFile(honeypots, file, dbargs=None):
             ws.setOutput(out)
             #ws.setOutput(options["output_data_directory"] + "/results")
             r = pcapRE(p)
-            r.setFilter("port 6667")
+            r.setFilter("port %s" % options["irc_port"])
             r.setRE('PRIVMSG')
             r.setWordSearch(ws)
             r.setOutput(out)
@@ -224,13 +227,13 @@ def processFile(honeypots, file, dbargs=None):
             out("\nExtracting from IRC\n")
             p = pcap.pcap(tmpf)
             de = tcpflow.tcpFlow(p)
-            de.setFilter("port 6667")
+            de.setFilter("port %s" % options["irc_port"])
             de.setOutput(out)
             de.setOutdir(options["output_data_directory"]+ "/irc-extract")
             de.start()
             de.dump_extract(options)
             hirc = HoneySnapIRC()
-            hirc.connect(tmpf)
+            hirc.connect(tmpf, "tcp and port %s" % options["irc_port"])
             hd = ircDecode()
             hd.setOutput(out)
             hirc.addHandler("all_events", hd.decodeCB, -1)
@@ -284,7 +287,8 @@ def processFile(honeypots, file, dbargs=None):
 ##        if options["do_rrd"] == "YES":
 ##            print "RRD not currently supported"
         
-        if options["do_sebek"] == "YES":
+        if options["do_sebek"] == "YES": 
+            out("\nExtracting Sebek data\n")
             sbd = sebekDecode()
             sbd.setOutput(out)
             sbd.run()
@@ -376,10 +380,16 @@ def configOptions(parser):
     parser.set_defaults(do_irc_summary="NO")
     parser.add_option("--do-irc-detail", dest="do_irc_detail", action="store_const", const="YES",
             help = "Extract IRC sessions, do detailed IRC analysis")
-    parser.set_defaults(do_irc_detail="NO")
+    parser.set_defaults(do_irc_detail="NO")        
+    parser.add_option("--irc-port", dest="irc_port", action="store_const", const="YES", 
+            help = "Port to analyse for IRC traffic")
+    parser.set_defaults(irc_port=6667)            
     parser.add_option("--do-sebek", dest="do_sebek", action="store_const", const="YES",
             help = "Summarize Sebek")
-    parser.set_defaults(do_sebek="NO")
+    parser.set_defaults(do_sebek="NO") 
+    parser.add_option("--sebek-port", dest="sebek_port", action="store_const", const="YES",
+            help = "Port for sebek traffic")
+    parser.set_defaults(sebek_port=1101)    
 ##    parser.add_option("--do-rrd", dest="do_rrd", action="store_const", const="YES",
 ##            help = "Do RRD, not yet implemented")
 ##    parser.set_defaults(do_rrd="NO")
