@@ -101,7 +101,7 @@ class flow_state(object):
                     # lets toss an exception
                     self.fp = None
                     raise fileHandleError() 
-            elif self.fp.mode != flag:    # must handle case where file is opened 'a' and we want to read
+            elif self.fp.mode != flag:    # must handle case where file is opened 'a' and we want to read
                 try:
                     self.fp.close()
                     self.fp = open(self.fname, flag)

@@ -5,9 +5,17 @@ $URL$
 * Fix TCPFlow to deal correctly with nasty things like duplicate ACKS...
  these are corupting the data
 
+* We need to change the flow of program execution so each packet only gets decoded once.  Right now, dep$
+
 * The output format of the flows isn't that useful. Maybe write a general
 output class/fn that prints out the top N talkers, ordered by traffic
 count. N would be defined in the config file
+             
+* honeysnap could possibly drop the data for two different flows with the same srcip:srcport-dstip:dstpo$
+
+* Add extracted data file summary to the results file.
+
+* Add RRD, or similar, functions
 
 * we drop files in a directory corresponding to the honeypot+remote ip,
           adding a postfix to every file name to ensure uniqueness so
@@ -21,7 +29,7 @@ BIG PROBLEM: http pipelined requests are broken!!!!!
 * Putting the files into the db as a blob/whatever is good here, but
 the option to not put it into a DB is always useful for quick one-off
 runs and should be kept I feel.
-
+           
 [better - put the file location in the db, but keep the file on the
 filesystem? - AJC]
 
@@ -67,5 +75,3 @@ commands
 
 and then create a regex from this that looks for all combinations for prefixes
 + commands.
-
-
