@@ -112,8 +112,8 @@ class flow_state(object):
         else:
             try:
                 self.fp = open(self.fname, flag)
-            except IOError:
-                print "error opening %s" % self.fname
+            except IOError, e:
+                print "error opening %s, reason %s" % (self.fname, e)
                 raise fileHandleError()
         return self.fp
 

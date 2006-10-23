@@ -45,8 +45,12 @@ def findName(filename, realname):
 def renameFile(state, realname):
     state.realname = realname
     newfn = findName(state.fname, realname)
-    #print "\n%s" %(newfn)
-    os.rename(state.fname, newfn)
+    #print "\n%s %s" %(state.fname, newfn)   
+    try:
+        os.rename(state.fname, newfn)
+    except OSError:
+        # file too long probably
+        return state.fname
     state.fname = newfn
     return newfn  
 

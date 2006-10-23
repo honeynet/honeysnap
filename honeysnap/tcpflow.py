@@ -126,14 +126,17 @@ class tcpFlow(object):
         if bytes_per_flow and (offset > bytes_per_flow):
             # too many bytes for this flow, drop it
             #print "too many bytes for flow, dropping packet"
-            state.flags |= FLOW_FINISHED
+            state.flags |= FLOW_FINISHED   
+            state.close()
             return
 
         if bytes_per_flow and (offset + length > bytes_per_flow):
             # long enough, mark this flow finished
             #print "flow marked finished due to length"
             state.flags |= FLOW_FINISHED
-            length = bytes_per_flow - offset
+            state.close()
+            length = bytes_per_flow - offset 
+            return
 
         try:
             state.open()
