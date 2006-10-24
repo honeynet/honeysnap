@@ -26,7 +26,8 @@ import cStringIO
 import os
 from util import findName, renameFile
 from flowIdentify import flowIdentify
-from base import Base
+from base import Base   
+import urllib
 
 class httpDecode(Base):
 
@@ -181,13 +182,19 @@ class httpDecode(Base):
                 #print "Both halves decoded"
                 r1 = rs.decoded                       
                 if t == 'request':            
-                    realname = state.decoded.uri.rsplit("/", 1)[-1]       
+                    realname = urllib.splitquery(state.decoded.uri)[0]
+                    #realname = state.decoded.uri.rsplit("/", 1)[-1]
                     #print "_renameFlow:request: ", realname
+                    if realname == '/':
+                        realname = 'index.html'
                     fn = renameFile(rs, realname)
                     id, m5 = self.id.identify(rs)
                     self.doOutput("extracted: %s\nfiletype: %s\nmd5 sum: %s\n" %(fn,id,m5))
-                if t == 'response':                        
-                    realname = r1.uri.rsplit("/", 1)[-1]
+                if t == 'response':    
+                    realname = urllib.splitquery(r1.uri)[0] 
+                    realname = realname.rsplit("/", 1)[-1]     
+                    if realname == '':
+                        realname = 'index.html'
                     #print "_renameFlow:response: ", realname   
                     fn = renameFile(state, realname) 
                     id, m5 = self.id.identify(state)
