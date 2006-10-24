@@ -107,7 +107,18 @@ def processFile(honeypots, file, dbargs=None):
             # should probably do a better check here
             tmpf = file
             deletetmp = 0
-        options["tmpf"] = tmpf
+        options["tmpf"] = tmpf  
+           
+        if not os.path.exists(options["output_data_directory"]):
+            # the directory isn't there
+            try:
+                os.mkdir(options["output_data_directory"])
+                # now we can create the output file
+                outfile = sys.stdout                    
+                #outfile = open(options["output_data_directory"] + "/results", 'a+')
+            except OSError:
+                print "Error creating output directory"
+                sys.exit(1)
         try:
             if options["filename"] is not None:
                 out = rawPathOutput(options["filename"], mode="a+")
@@ -115,25 +126,12 @@ def processFile(honeypots, file, dbargs=None):
                 out = outputSTDOUT()
         except IOError:
             # we have some error opening the file
-            # first we check if the output dir exists
-            if not os.path.exists(options["output_data_directory"]):
-                # the directory isn't there
-                try:
-                    os.mkdir(options["output_data_directory"])
-                    # now we can create the output file
-                    outfile = sys.stdout                    
-                    #outfile = open(options["output_data_directory"] + "/results", 'a+')
-                except OSError:
-                    print "Error creating output directory"
-                    sys.exit(1)
+            # there is something at that path. Is it a directory?
+            if not os.path.isdir(options["output_data_directory"]):
+                print "Error: output_data_directory exists, but is not a directory."
             else:
-                # there is something at that path. Is it a directory?
-                if not os.path.isdir(options["output_data_directory"]):
-                    print "Error: output_data_directory exists, but is not a directory."
-                else:
-                    print "Unknown Error creating output file"
+                print "Unknown Error creating output file"
                 sys.exit(1)
-
             
         if options["do_pcap"] == "YES":
             out("\n\nResults for file: %s\n" % file)
@@ -163,7 +161,7 @@ def processFile(honeypots, file, dbargs=None):
                     #c.writeResults()
                 out("\n")
 
-        if options["summarize_incoming"] == "YES":
+        if options["do_incoming"] == "YES":
             out("\nINCOMING CONNECTIONS\n")
             p = pcap.pcap(tmpf)
             if dbargs:
@@ -180,7 +178,7 @@ def processFile(honeypots, file, dbargs=None):
             del p
 
 
-        if options["summarize_outgoing"] == "YES":
+        if options["do_outgoing"] == "YES":
             out("\nOUTGOING CONNECTIONS\n")
             p = pcap.pcap(tmpf)
             s = Summarize(p, None)
@@ -332,7 +330,7 @@ def configOptions(parser):
     parser.add_option("-d", "--dir", dest="files", type="string",
                   help="Directory containing timestamped log directories. If this flag is set then honeysnap will run in batch mode. To limit which directories to parse, use -m (--mask)", metavar="FILE")
 
-    parser.add_option("-m", "--mask", dest="mask", type="string",
+    parser.add_option("-m", "--mask", dest="mask", type="string", 
             help = "Mask to limit which directories are recursed into.")
     parser.set_defaults(mask="*")
 
@@ -346,10 +344,10 @@ def configOptions(parser):
     parser.add_option("--do-packets", dest="do_packets", action="store_const", const="YES",
             help = "Summarise packet counts")
     parser.set_defaults(do_packets="NO")
-    parser.add_option("--do-incoming", dest="summarize_incoming", action="store_const", const="YES",
+    parser.add_option("--do-incoming", dest="do_incoming", action="store_const", const="YES",
             help = "Summarise incoming traffic flows")
     parser.set_defaults(summarize_incoming="NO")
-    parser.add_option("--do-outgoing", dest="summarize_outgoing", action="store_const", const="YES",
+    parser.add_option("--do-outgoing", dest="do_outgoing", action="store_const", const="YES",
             help = "Summarise packet counts")
     parser.set_defaults(summarize_outgoing="NO")
 
@@ -396,8 +394,6 @@ def configOptions(parser):
 
     return parser.parse_args()
 
-
-   
     
 def main():
     cmdparser = OptionParser(option_class=MyOption)
@@ -407,13 +403,13 @@ def main():
             parser = SafeConfigParser()
             parser.read(values.config)
             config = values.config
-            if values.outputdir == "/tmp/analysis":
+            if values.outputdir=='/tmp/analysis':
                 try:
                     outputdir = parser.get("IO", "OUTPUT_DATA_DIRECTORY")
                     values.outputdir = outputdir
                 except ConfigParser.Error:
                     outputdir = values.outputdir
-            if values.tmpdir == "/tmp":
+            if values.tmpdir=='/tmp':
                 try:
                     tmpdir = parser.get("IO", "TMP_FILE_DIRECTORY")
                     values.tmpdir = tmpdir
@@ -453,14 +449,14 @@ def main():
         # pull in the values from the option parser
         options = values.__dict__
 
-        if options['config'] is not None: 
+        if options['config'] is not None:             
             if os.path.isfile(options['config']):
                 for i in parser.items("OPTIONS"):
                     options[i[0]] = i[1]
             else:
                 print "Config file not found!"
                 sys.exit(1)
-
+                
         options["output_data_directory"] = values.outputdir
         options["tmp_file_directory"] = values.tmpdir
         if not os.path.exists(values.outputdir):
@@ -482,7 +478,7 @@ def main():
                 else:
                     print "File not found: %s" % values.files
                     sys.exit(2)
-        # -d was an option
+        # -d was an option  
         elif values.files:
             if os.path.exists(values.files) and os.path.isdir(values.files):
                 for root, dirs, files in os.walk(values.files):
@@ -490,7 +486,8 @@ def main():
                     if fnmatch(root, values.mask):
                         # this root matches the mask function
                         # find all the log files
-                        f  = [j for j in files if fnmatch(j, "log*")]
+                        #f  = [j for j in files if fnmatch(j, "log*")]  
+                        f  = [j for j in files]
                         # process each log file
                         if len(f):
                             for i in f:
@@ -498,6 +495,7 @@ def main():
             else:
                 print "File not found: %s" % values.files
                 sys.exit(2)
+
         # no args indicating files, read from stdin
         else:
             # can't really do true stdin input, since we repeatedly parse
