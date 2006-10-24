@@ -1,0 +1,9 @@
+
+Known Bugs
+==========
+
+Macs can have problems with 'too many open files'. To work around this, try setting
+
+$ uname -n unlimited
+
+in your shell before running honeysnap

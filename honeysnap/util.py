@@ -48,8 +48,9 @@ def renameFile(state, realname):
     #print "\n%s %s" %(state.fname, newfn)   
     try:
         os.rename(state.fname, newfn)
-    except OSError:
-        # file too long probably
+    except OSError, e:
+        # file too long probably 
+        print "Failed to rename file %s to %s, reason %s" % (state.fname, newfn, e)
         return state.fname
     state.fname = newfn
     return newfn  

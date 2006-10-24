@@ -183,7 +183,7 @@ class httpDecode(Base):
                 r1 = rs.decoded                       
                 if t == 'request':            
                     realname = urllib.splitquery(state.decoded.uri)[0]
-                    #realname = state.decoded.uri.rsplit("/", 1)[-1]
+                    realname = realname.rsplit("/", 1)[-1]
                     #print "_renameFlow:request: ", realname
                     if realname == '/':
                         realname = 'index.html'
