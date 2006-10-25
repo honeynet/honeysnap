@@ -50,16 +50,19 @@ Average packet size: %(avg)s bytes \n \
         pktcount = 0
         dsize = 0
         duration = 0
-        start = 0
         end  = 0
         bytes = 0
-        avg = 0
-        for p in pr:
-            if start == 0:
-                start = p[0]
+        avg = 0     
+        start = 0
+        for ts, buf in pr:  
+            if ts<start or start==0:
+                start = ts
             pktcount += 1
-            dsize += len(p[1])
-            end = p[0]
+            dsize += len(buf)
+            if ts>end:
+                end = ts
+
+        print start, end
             
         fsize = os.stat(self.filename).st_size
         duration = end - start
