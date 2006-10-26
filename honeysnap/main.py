@@ -235,6 +235,8 @@ def processFile(honeypots, file, dbargs=None):
             hd = ircDecode()
             hd.setOutput(out)
             hirc.addHandler("all_events", hd.decodeCB, -1)
+            # print all IRC lines to stdout. We should replace this with a handler that prints to file
+            # hirc.ircobj.add_global_handler("all_events", hirc.on_global, -1)
             hirc.ircobj.process_once()
             hd.printSummary()
             del p

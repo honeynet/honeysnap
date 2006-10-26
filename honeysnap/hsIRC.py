@@ -128,6 +128,8 @@ class HnyServerConnection(irclib.ServerConnection):
                 self.real_nickname = arguments[0]
 
             if command in ["privmsg", "notice"]:
+                if len(arguments)<2:
+                    raise IRCError
                 target, message = arguments[0], arguments[1]
                 messages = _ctcp_dequote(message)
 
