@@ -82,7 +82,10 @@ class ftpDecode(Base):
         iterlines = iter(lines)
         for l in iterlines:
             if l.find("PORT")>=0:
-                nextl = iterlines.next()
+                try:
+                    nextl = iterlines.next()
+                except StopIteration:
+                    return
                 if nextl.find("RETR")>=0:
                     # this means the current PORT will be 
                     # a data channel for a downaload
