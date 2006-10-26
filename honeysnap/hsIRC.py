@@ -167,14 +167,17 @@ class HnyServerConnection(irclib.ServerConnection):
             else:
                 target = None
 
-                if command == "quit":
-                    arguments = [arguments[0]]
-                elif command == "ping":
-                    target = arguments[0]
-                elif arguments is not None:
-                    target = arguments[0]
-                    arguments = arguments[1:]
-
+                try:
+                    if command == "quit":
+                        arguments = [arguments[0]]
+                    elif command == "ping":
+                        target = arguments[0]
+                    elif arguments is not None:
+                        target = arguments[0]
+                        arguments = arguments[1:]
+                except TypeError, IndexError:
+                    raise IRCError
+                    
                 if command == "mode":
                     if not is_channel(target):
                         command = "umode"
