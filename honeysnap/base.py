@@ -32,6 +32,7 @@ class Base(object):
         self.file = None
         self.filter = None
         self.out = lambda x: str(x)
+        self.listeners = []
         #self.out = None
 
     def setOutput(self, obj):
@@ -48,6 +49,10 @@ class Base(object):
         self.filter = filter
         self.file = file
         self.p.setfilter(filter)
+        
+    def addListener(self, func):
+        if func not in self.listeners:
+            self.listeners.append(func)
 
 class Output(object):
     """

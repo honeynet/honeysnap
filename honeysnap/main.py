@@ -27,7 +27,7 @@ import re
 import string
 import gzip
 import os
-from fnmatch import fnmatch   
+from fnmatch import fnmatch
 import ConfigParser
 from ConfigParser import SafeConfigParser
 import tempfile
@@ -67,236 +67,226 @@ class MyOption(Option):
         else:
             Option.take_action(
                 self, action, dest, opt, value, values, parser)
-    
+
 def setFilters(options):
-       """Set filters for packet counts"""
-       return { 'Counting outbound IP packets:':'src host %s', 
-                'Counting outbound FTP packets:':'src host %s and dst port 21',
-                'Counting outbound SSH packets:':'src host %s and dst port 22',
-                'Counting outbound Telnet packets:':'src host %s and dst port 23',
-                'Counting outbound SMTP packets:':'src host %s and dst port 25',
-                'Counting outbound HTTP packets:':'src host %s and dst port 80',
-                'Counting outbound HTTPS packets:':'src host %s and dst port 443',
-                'Counting outbound Sebek packets:':'src host %s and udp port %s' % ('%s', options["sebek_port"]),
-                'Counting outbound IRC packets:':'src host %s and dst port %s' % ('%s', options["irc_port"])}
-            
-            
+    """Set filters for packet counts"""
+    return { 'Counting outbound IP packets:':'src host %s',
+        'Counting outbound FTP packets:':'src host %s and dst port 21',
+        'Counting outbound SSH packets:':'src host %s and dst port 22',
+        'Counting outbound Telnet packets:':'src host %s and dst port 23',
+        'Counting outbound SMTP packets:':'src host %s and dst port 25',
+        'Counting outbound HTTP packets:':'src host %s and dst port 80',
+        'Counting outbound HTTPS packets:':'src host %s and dst port 443',
+        'Counting outbound Sebek packets:':'src host %s and udp port %s' % ('%s', options["sebek_port"]),
+        'Counting outbound IRC packets:':'src host %s and dst port %s' % ('%s', options["irc_port"])}
+
+
 def processFile(honeypots, file, dbargs=None):
-        """
-        Process a pcap file.
-        honeypots is a list of honeypot ip addresses
-        file is the pcap file to parse
-        This function will run any enabled options for each pcap file
-        """
-        hs = HoneysnapSingleton.getInstance()
-        options = hs.getOptions()
+    """
+    Process a pcap file.
+    honeypots is a list of honeypot ip addresses
+    file is the pcap file to parse
+    This function will run any enabled options for each pcap file
+    """
+    hs = HoneysnapSingleton.getInstance()
+    options = hs.getOptions()
+    try:
+        # This sucks. pcapy wants a path to a file, not a file obj
+        # so we have to uncompress the gzipped data into
+        # a tmp file, and pass the path of that file to pcapy
+        tmph, tmpf = tempfile.mkstemp()
+        tmph = open(tmpf, 'wb')
+        gfile = gzip.open(file)
+        tmph.writelines(gfile.readlines())
+        gfile.close()
+        del gfile
+        tmph.close()
+        deletetmp = 1
+    except IOError:
+        # got an error, must not be gzipped
+        # should probably do a better check here
+        tmpf = file
+        deletetmp = 0
+    options["tmpf"] = tmpf
+
+    if not os.path.exists(options["output_data_directory"]):
+        # the directory isn't there
         try:
-            # This sucks. pcapy wants a path to a file, not a file obj
-            # so we have to uncompress the gzipped data into 
-            # a tmp file, and pass the path of that file to pcapy
-            tmph, tmpf = tempfile.mkstemp()
-            tmph = open(tmpf, 'wb')
-            gfile = gzip.open(file)
-            tmph.writelines(gfile.readlines())
-            gfile.close()
-            del gfile
-            tmph.close()
-            deletetmp = 1
-        except IOError:
-            # got an error, must not be gzipped
-            # should probably do a better check here
-            tmpf = file
-            deletetmp = 0
-        options["tmpf"] = tmpf  
-           
-        if not os.path.exists(options["output_data_directory"]):
-            # the directory isn't there
-            try:
-                os.mkdir(options["output_data_directory"])
-                # now we can create the output file
-                outfile = sys.stdout                    
-                #outfile = open(options["output_data_directory"] + "/results", 'a+')
-            except OSError:
-                print "Error creating output directory"
-                sys.exit(1)
-        try:
-            if options["filename"] is not None:
-                out = rawPathOutput(options["filename"], mode="a+")
-            else:
-                out = outputSTDOUT()
-        except IOError:
-            # we have some error opening the file
-            # there is something at that path. Is it a directory?
-            if not os.path.isdir(options["output_data_directory"]):
-                print "Error: output_data_directory exists, but is not a directory."
-            else:
-                print "Unknown Error creating output file"
-                sys.exit(1)
-            
-        if options["do_pcap"] == "YES":
-            out("\n\nResults for file: %s\n" % file)
-            out("Pcap file information:\n")
-            pi = pcapInfo(tmpf)
-            pi.setOutput(out)
-            pi.getStats()
-            
-            #outfile.write(pi.getStats())
-        
-        if options["do_packets"] == "YES":
-            out("Counting outbound IP packets:\n")
-            out("%-40s %10s\n" % ("Filter", "Packets"))  
-            filters = setFilters(options)
-            #outfile.flush()
-            for key, filt in filters.items():
-                out(key+"\n")
-                for ipaddr in honeypots:
-                    p = pcap.pcap(tmpf)
-                    c = Counter(p)
-                    c.setOutput(out)
-                    #c.setOutput(options["output_data_directory"] + "/results")
-                    f = filt % ipaddr
-                    c.setFilter(f)
-                    c.count()
-                    #count = c.getCount()
-                    #c.writeResults()
-                out("\n")
+            os.mkdir(options["output_data_directory"])
+            # now we can create the output file
+            outfile = sys.stdout
+        except OSError:
+            print "Error creating output directory"
+            sys.exit(1)
+    try:
+        if options["filename"] is not None:
+            out = rawPathOutput(options["filename"], mode="a+")
+        else:
+            out = outputSTDOUT()
+    except IOError:
+        # we have some error opening the file
+        # there is something at that path. Is it a directory?
+        if not os.path.isdir(options["output_data_directory"]):
+            print "Error: output_data_directory exists, but is not a directory."
+        else:
+            print "Unknown Error creating output file"
+            sys.exit(1)
 
-        if options["do_incoming"] == "YES":
-            out("\nINCOMING CONNECTIONS\n")
-            p = pcap.pcap(tmpf)
-            if dbargs:
-                db = dbConnection(dbargs)
-            else:
-                db = None
-            s = Summarize(p, db)
-            filt = 'dst host ' + string.join(honeypots, ' or dst host ')
-            s.setFilter(filt, file)
-            s.setOutput(out)
-            #s.setOutput(options["output_data_directory"] + "/results")
-            s.start()
-            s.writeResults(limit=10)
-            del p
+    if options["do_pcap"] == "YES":
+        out("\n\nResults for file: %s\n\n" % file)
+        out("Pcap file information:\n")
+        pi = pcapInfo(tmpf)
+        pi.setOutput(out)
+        pi.getStats()
+
+    if options["do_packets"] == "YES":
+        out("\nCounting outbound IP packets:\n")
+        out("%-40s %10s\n" % ("Filter", "Packets"))
+        filters = setFilters(options)
+        for key, filt in filters.items():
+            out(key+"\n")
+            for ipaddr in honeypots:
+                p = pcap.pcap(tmpf)
+                c = Counter(p)
+                c.setOutput(out)
+                f = filt % ipaddr
+                c.setFilter(f)
+                c.count()
+            out("\n")
+
+    if options["do_incoming"] == "YES":
+        out("\nIncoming Connections\n")
+        p = pcap.pcap(tmpf)
+        if dbargs:
+            db = dbConnection(dbargs)
+        else:
+            db = None
+        s = Summarize(p, db)
+        filt = 'dst host ' + string.join(honeypots, ' or dst host ')
+        s.setFilter(filt, file)
+        s.setOutput(out)
+        s.start()
+        s.writeResults(limit=10)
+        del p
 
 
-        if options["do_outgoing"] == "YES":
-            out("\nOUTGOING CONNECTIONS\n")
-            p = pcap.pcap(tmpf)
-            s = Summarize(p, None)
-            filt = 'src host ' + string.join(honeypots, ' or src host ')
-            s.setFilter(filt, file)
-            s.setOutput(out)
-            #s.setOutput(options["output_data_directory"] + "/results")
-            s.start()
-            s.writeResults(limit=10)
-            del p
+    if options["do_outgoing"] == "YES":
+        out("\nOutgoing Connections\n")
+        p = pcap.pcap(tmpf)
+        s = Summarize(p, None)
+        filt = 'src host ' + string.join(honeypots, ' or src host ')
+        s.setFilter(filt, file)
+        s.setOutput(out)
+        s.start()
+        s.writeResults(limit=10)
+        del p
 
 
-        if options["do_irc_summary"] == "YES" or options["do_irc"] == "YES":
-            """
-            Here we will use PcapRE to find packets on irc_port with "PRIVMSG"
-            in the payload.  Matching packets will be handed to wordsearch 
-            to hunt for any matching words.
-            """
-            out("\nIRC SUMMARY\n")
-            p = pcap.pcap(tmpf)
-            words = '0day access account admin auth bank bash #!/bin binaries binary bot card cash cc cent connect crack credit dns dollar ebay e-bay egg flood ftp hackexploit http leech login money /msg nologin owns ownz password paypal phish pirate pound probe prv putty remote resolved root rooted scam scan shell smtp sploit sterling sucess sysop sys-op trade uid uname uptime userid virus warez' 
-            if options["wordfile"]:
-                wfile = options["wordfile"]
-                if os.path.exists(wfile) and os.path.isfile(wfile):
-                    wfp = open(wfile, 'rb')
-                    words = wfp.readlines()
-                    words = [w.strip() for w in words]
-                    words = " ".join(words)
-            ws = wordSearch()
-            ws.setWords(words)
-            ws.setOutput(out)
-            #ws.setOutput(options["output_data_directory"] + "/results")
-            r = pcapRE(p)
-            r.setFilter("port %s" % options["irc_port"])
-            r.setRE('PRIVMSG')
-            r.setWordSearch(ws)
-            r.setOutput(out)
-            #r.setOutput(options["output_data_directory"] + "/results")
-            r.start()
-            r.writeResults()
-            del p
+    if options["do_irc_summary"] == "YES" or options["do_irc"] == "YES":
+        """
+        Here we will use PcapRE to find packets on irc_port with "PRIVMSG"
+        in the payload.  Matching packets will be handed to wordsearch
+        to hunt for any matching words.
+        """
+        out("\nIRC Summary\n")
+        p = pcap.pcap(tmpf)
+        words = '0day access account admin auth bank bash #!/bin binaries binary bot card cash cc cent connect crack credit dns dollar ebay e-bay egg flood ftp hackexploit http leech login money /msg nologin owns ownz password paypal phish pirate pound probe prv putty remote resolved root rooted scam scan shell smtp sploit sterling sucess sysop sys-op trade uid uname uptime userid virus warez'
+        if options["wordfile"]:
+            wfile = options["wordfile"]
+            if os.path.exists(wfile) and os.path.isfile(wfile):
+                wfp = open(wfile, 'rb')
+                words = wfp.readlines()
+                words = [w.strip() for w in words]
+                words = " ".join(words)
+        ws = wordSearch()
+        ws.setWords(words)
+        ws.setOutput(out)
+        #ws.setOutput(options["output_data_directory"] + "/results")
+        r = pcapRE(p)
+        r.setFilter("port %s" % options["irc_port"])
+        r.setRE('PRIVMSG')
+        r.setWordSearch(ws)
+        r.setOutput(out)
+        r.start()
+        r.writeResults()
+        del p
 
-        if options["do_irc_detail"] == "YES" or options["do_irc"] == "YES":
-            out("\nExtracting from IRC\n")
-            p = pcap.pcap(tmpf)
-            de = tcpflow.tcpFlow(p)
-            de.setFilter("port %s" % options["irc_port"])
-            de.setOutput(out)
-            de.setOutdir(options["output_data_directory"]+ "/irc-extract")
-            de.start()
-            de.dump_extract(options)
-            hirc = HoneySnapIRC()
-            hirc.connect(tmpf, "tcp and port %s" % options["irc_port"])
-            hd = ircDecode()
-            hd.setOutput(out)
-            hirc.addHandler("all_events", hd.decodeCB, -1)
-            # print all IRC lines to stdout. We should replace this with a handler that prints to file
-            # hirc.ircobj.add_global_handler("all_events", hirc.on_global, -1)
-            hirc.ircobj.process_once()
-            hd.printSummary()
-            del p
-            
-        if options["do_http"] == "YES":
-            out("\nExtracting from http\n")
-            p = pcap.pcap(tmpf)
-            de = tcpflow.tcpFlow(p)
-            de.setFilter("port 80")
-            de.setOutdir(options["output_data_directory"]+ "/http-extract")
-            de.setOutput(out)
-            decode = httpDecode.httpDecode()
-            decode.setOutput(out)
-            de.registerPlugin(decode.decode)
-            de.start()
-            de.dump_extract(options)
-            del p
-        
+    if options["do_irc_detail"] == "YES" or options["do_irc"] == "YES":
+        out("\nExtracting from IRC\n")
+        p = pcap.pcap(tmpf)
+        de = tcpflow.tcpFlow(p)
+        de.setFilter("port %s" % options["irc_port"])
+        de.setOutput(out)
+        de.setOutdir(options["output_data_directory"]+ "/irc-extract")
+        de.start()
+        de.dump_extract(options)
+        hirc = HoneySnapIRC()
+        hirc.connect(tmpf, "tcp and port %s" % options["irc_port"])
+        hd = ircDecode()
+        hd.setOutput(out)
+        hirc.addHandler("all_events", hd.decodeCB, -1)
+        # print all IRC lines to stdout. We should replace this with a handler that prints to file
+        # hirc.ircobj.add_global_handler("all_events", hirc.on_global, -1)
+        hirc.ircobj.process_once()
+        hd.printSummary()
+        del p
 
-        if options["do_ftp"] == "YES":
-            out("\nExtracting from ftp\n")
-            p = pcap.pcap(tmpf)
-            de = tcpflow.tcpFlow(p)
-            de.setFilter("port 20 or port 21")
-            de.setOutdir(options["output_data_directory"] + "/ftp-extract")
-            de.setOutput(out)
-            decode = ftpDecode.ftpDecode()
-            decode.setOutput(out)
-            de.registerPlugin(decode.decode)
-            de.start()
-            de.dump_extract(options)
-            del p
+    if options["do_http"] == "YES":
+        out("\nExtracting from http\n")
+        p = pcap.pcap(tmpf)
+        de = tcpflow.tcpFlow(p)
+        de.setFilter("port 80")
+        de.setOutdir(options["output_data_directory"]+ "/http-extract")
+        de.setOutput(out)
+        decode = httpDecode.httpDecode()
+        decode.setOutput(out)
+        de.registerPlugin(decode.decode)
+        de.start()
+        de.dump_extract(options)
+        del p
 
-        if options["do_smtp"] == "YES":
-            out("\nExtracting from smtp\n")
-            p = pcap.pcap(tmpf)
-            de = tcpflow.tcpFlow(p)
-            de.setFilter("port 25")
-            de.setOutdir(options["output_data_directory"] + "/smtp-extract")
-            de.setOutput(out)
-            decode = smtpDecode.smtpDecode()
-            decode.setOutput(out)
-            de.registerPlugin(decode.decode)
-            de.start()
-            de.dump_extract(options)
-            del p
+
+    if options["do_ftp"] == "YES":
+        out("\nExtracting from ftp\n")
+        p = pcap.pcap(tmpf)
+        de = tcpflow.tcpFlow(p)
+        de.setFilter("port 20 or port 21")
+        de.setOutdir(options["output_data_directory"] + "/ftp-extract")
+        de.setOutput(out)
+        decode = ftpDecode.ftpDecode()
+        decode.setOutput(out)
+        de.registerPlugin(decode.decode)
+        de.start()
+        de.dump_extract(options)
+        del p
+
+    if options["do_smtp"] == "YES":
+        out("\nExtracting from smtp\n")
+        p = pcap.pcap(tmpf)
+        de = tcpflow.tcpFlow(p)
+        de.setFilter("port 25")
+        de.setOutdir(options["output_data_directory"] + "/smtp-extract")
+        de.setOutput(out)
+        decode = smtpDecode.smtpDecode()
+        decode.setOutput(out)
+        de.registerPlugin(decode.decode)
+        de.start()
+        de.dump_extract(options)
+        del p
 
 ##        if options["do_rrd"] == "YES":
 ##            print "RRD not currently supported"
-        
-        if options["do_sebek"] == "YES": 
-            out("\nExtracting Sebek data\n")
-            sbd = sebekDecode()
-            sbd.setOutput(out)
-            sbd.run()
-            
 
-        # delete the tmp file we used to hold unzipped data        
-        if deletetmp:
-            os.unlink(tmpf)
+    if options["do_sebek"] == "YES":
+        out("\nExtracting Sebek data\n")
+        sbd = sebekDecode()
+        sbd.setOutput(out)
+        sbd.run()
+
+
+    # delete the tmp file we used to hold unzipped data
+    if deletetmp:
+        os.unlink(tmpf)
 
 def cleanup(options):
     """
@@ -315,42 +305,42 @@ def cleanup(options):
 
 def configOptions(parser):
     parser.add_option("-c", "--config", dest="config",type="string",
-                  help="Config file")
+        help="Config file")
     parser.add_option("-f", "--file", dest="filename",type="string",
-                  help="Write report to FILE", metavar="FILE")
+        help="Write report to FILE", metavar="FILE")
     parser.set_defaults(filename=None)
     parser.add_option("-o", "--output", dest="outputdir",type="string",
-                  help="Write output to DIR, defaults to /tmp/analysis", metavar="DIR")
+        help="Write output to DIR, defaults to /tmp/analysis", metavar="DIR")
     parser.set_defaults(outputdir="/tmp/analysis")
     parser.add_option("-t", "--tmpdir", dest="tmpdir",type="string",
-                  help="Directory to use as a temporary directory, defaults to /tmp")
+        help="Directory to use as a temporary directory, defaults to /tmp")
     parser.set_defaults(tmpdir="/tmp")
     parser.add_option("-H", "--honeypots", dest="honeypots", action="extend", type="string",
-                  help="Comma delimited list of honeypots")
+        help="Comma delimited list of honeypots")
 ##    parser.add_option("-r", "--read", dest="files", type="string",
 ##                  help="Pcap file to be read. If this flag is set then honeysnap will not run in batch mode. Will also read from stdin.", metavar="FILE")
     parser.add_option("-d", "--dir", dest="files", type="string",
-                  help="Directory containing timestamped log directories. If this flag is set then honeysnap will run in batch mode. To limit which directories to parse, use -m (--mask)", metavar="FILE")
+        help="Directory containing timestamped log directories. If this flag is set then honeysnap will run in batch mode. To limit which directories to parse, use -m (--mask)", metavar="FILE")
 
-    parser.add_option("-m", "--mask", dest="mask", type="string", 
-            help = "Mask to limit which directories are recursed into.")
+    parser.add_option("-m", "--mask", dest="mask", type="string",
+        help = "Mask to limit which directories are recursed into.")
     parser.set_defaults(mask="*")
 
     parser.add_option("-w", "--words", dest="wordfile", type="string",
-            help = "Pull wordlist from FILE", metavar="FILE")
+        help = "Pull wordlist from FILE", metavar="FILE")
 
     # summary options
     parser.add_option("--do-pcap", dest="do_pcap", action="store_const", const="YES",
-            help = "Summarise pcap info")
+        help = "Summarise pcap info")
     parser.set_defaults(do_pcap="YES")
     parser.add_option("--do-packets", dest="do_packets", action="store_const", const="YES",
-            help = "Summarise packet counts")
+        help = "Summarise packet counts")
     parser.set_defaults(do_packets="NO")
     parser.add_option("--do-incoming", dest="do_incoming", action="store_const", const="YES",
-            help = "Summarise incoming traffic flows")
+        help = "Summarise incoming traffic flows")
     parser.set_defaults(summarize_incoming="NO")
     parser.add_option("--do-outgoing", dest="do_outgoing", action="store_const", const="YES",
-            help = "Summarise packet counts")
+        help = "Summarise packet counts")
     parser.set_defaults(summarize_outgoing="NO")
 
     # protocol options
@@ -361,42 +351,42 @@ def configOptions(parser):
 ##            help = "Count outbound ssh")
 ##    parser.set_defaults(do_ssh="NO")
     parser.add_option("--do-http", dest="do_http", action="store_const", const="YES",
-            help = "Extract http data")
+        help = "Extract http data")
     parser.set_defaults(do_http="NO")
 ##    parser.add_option("--do-https", dest="do_https", action="store_const", const="YES",
 ##            help = "Count outbound https")
 ##    parser.set_defaults(do_https="NO")
     parser.add_option("--do-ftp", dest="do_ftp", action="store_const", const="YES",
-            help = "Extract FTP data")
+        help = "Extract FTP data")
     parser.set_defaults(do_ftp="NO")
     parser.add_option("--do-smtp", dest="do_smtp", action="store_const", const="YES",
-            help = "Extract smtp data")
+        help = "Extract smtp data")
     parser.set_defaults(do_smtp="NO")
     parser.add_option("--do-irc", dest="do_irc", action="store_const", const="YES",
-            help = "Summarize IRC and do irc detail (same as --do-irc-detail and --do-irc-summary)")
+        help = "Summarize IRC and do irc detail (same as --do-irc-detail and --do-irc-summary)")
     parser.set_defaults(do_irc="NO")
     parser.add_option("--do-irc-summary", dest="do_irc_summary", action="store_const", const="YES",
-            help = "Sumarize IRC messages, providing a hit count for key words, use --words to supply a word file")
+        help = "Sumarize IRC messages, providing a hit count for key words, use --words to supply a word file")
     parser.set_defaults(do_irc_summary="NO")
     parser.add_option("--do-irc-detail", dest="do_irc_detail", action="store_const", const="YES",
-            help = "Extract IRC sessions, do detailed IRC analysis")
-    parser.set_defaults(do_irc_detail="NO")        
-    parser.add_option("--irc-port", dest="irc_port", action="store_const", const="YES", 
-            help = "Port to analyse for IRC traffic")
-    parser.set_defaults(irc_port=6667)            
+        help = "Extract IRC sessions, do detailed IRC analysis")
+    parser.set_defaults(do_irc_detail="NO")
+    parser.add_option("--irc-port", dest="irc_port", action="store_const", const="YES",
+        help = "Port to analyse for IRC traffic")
+    parser.set_defaults(irc_port=6667)
     parser.add_option("--do-sebek", dest="do_sebek", action="store_const", const="YES",
-            help = "Summarize Sebek")
-    parser.set_defaults(do_sebek="NO") 
+        help = "Summarize Sebek")
+    parser.set_defaults(do_sebek="NO")
     parser.add_option("--sebek-port", dest="sebek_port", action="store_const", const="YES",
-            help = "Port for sebek traffic")
-    parser.set_defaults(sebek_port=1101)    
+        help = "Port for sebek traffic")
+    parser.set_defaults(sebek_port=1101)
 ##    parser.add_option("--do-rrd", dest="do_rrd", action="store_const", const="YES",
 ##            help = "Do RRD, not yet implemented")
 ##    parser.set_defaults(do_rrd="NO")
 
     return parser.parse_args()
 
-    
+
 def main():
     cmdparser = OptionParser(option_class=MyOption)
     values, args = configOptions(cmdparser)
@@ -451,14 +441,14 @@ def main():
         # pull in the values from the option parser
         options = values.__dict__
 
-        if options['config'] is not None:             
+        if options['config'] is not None:
             if os.path.isfile(options['config']):
                 for i in parser.items("OPTIONS"):
                     options[i[0]] = i[1]
             else:
                 print "Config file not found!"
                 sys.exit(1)
-                
+
         options["output_data_directory"] = values.outputdir
         options["tmp_file_directory"] = values.tmpdir
         if not os.path.exists(values.outputdir):
@@ -466,7 +456,7 @@ def main():
                 os.mkdir(values.outputdir)
             except OSError:
                 print "Unable to create output dir: %s. Check permissions." % values.outputdir
-                
+
         if values.honeypots is None:
             print "No honeypots specified. Please use either -H or config file to specify honeypots.\n"
             sys.exit(2)
@@ -480,7 +470,7 @@ def main():
                 else:
                     print "File not found: %s" % values.files
                     sys.exit(2)
-        # -d was an option  
+        # -d was an option
         elif values.files:
             if os.path.exists(values.files) and os.path.isdir(values.files):
                 for root, dirs, files in os.walk(values.files):
@@ -488,7 +478,7 @@ def main():
                     if fnmatch(root, values.mask):
                         # this root matches the mask function
                         # find all the log files
-                        #f  = [j for j in files if fnmatch(j, "log*")]  
+                        #f  = [j for j in files if fnmatch(j, "log*")]
                         f  = [j for j in files]
                         # process each log file
                         if len(f):
@@ -512,8 +502,7 @@ def main():
             processFile(values.honeypots, tmpf, dbargs)
             # all done, delete the tmp file
             os.unlink(tmpf)
-##        else:
-##            cmdparser.print_help()
+
         cleanup(options)
     else:
         cmdparser.print_help()
@@ -521,5 +510,6 @@ def main():
 if __name__ == "__main__":
     #import profile
     #profile.run('main()', 'mainprof')
-        
+
     main()
+
