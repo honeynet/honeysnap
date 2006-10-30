@@ -161,24 +161,34 @@ def processFile(honeypots, file, dbargs=None):
             db = dbConnection(dbargs)
         else:
             db = None
-        s = Summarize(p, db)
+        v = options["verbose_summary"]
+        s = Summarize(p, verbose=v, db=None)
         filt = 'dst host ' + string.join(honeypots, ' or dst host ')
         s.setFilter(filt, file)
         s.setOutput(out)
         s.start()
-        s.writeResults(limit=10)
+        if v:
+            l = 0
+        else:
+            l = 10
+        s.writeResults(limit=0)
         del p
 
 
     if options["do_outgoing"] == "YES":
         out("\nOutgoing Connections\n")
         p = pcap.pcap(tmpf)
-        s = Summarize(p, None)
+        v = options["verbose_summary"]
+        s = Summarize(p, verbose=v, db=None)
         filt = 'src host ' + string.join(honeypots, ' or src host ')
         s.setFilter(filt, file)
         s.setOutput(out)
         s.start()
-        s.writeResults(limit=10)
+        if v:
+            l = 0
+        else:
+            l = 10
+        s.writeResults(limit=l)
         del p
 
 
@@ -342,6 +352,9 @@ def configOptions(parser):
     parser.add_option("--do-outgoing", dest="do_outgoing", action="store_const", const="YES",
         help = "Summarise packet counts")
     parser.set_defaults(summarize_outgoing="NO")
+    parser.add_option("--verbose-summary", dest="verbose_summary", action="store_const", const=1,
+        help = "Do verbose flow counts, indexes flows by srcip, sport, dstip, dport")
+    parser.set_defaults(verbose_summary=0)
 
     # protocol options
 ##    parser.add_option("--do-telnet", dest="do_telnet", action="store_const", const="YES",
@@ -512,4 +525,5 @@ if __name__ == "__main__":
     #profile.run('main()', 'mainprof')
 
     main()
+
 

@@ -16,30 +16,34 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-################################################################################   
+################################################################################
 
 # $Id$
-           
+
 import pcap
 import dpkt
 import base
-import socket   
+import socket
 import sys
+import time
+
+tf = lambda x: time.strftime("%d/%m/%y %H:%M:%S", time.localtime(x))
 
 class Summarize(base.Base):
     """
     Summarize takes a pcapObj, and an optional dbObj that is a mysql db connection.
     This class reads the pcap data, hands it to a decoder, and then keys each packet
-    by (srcip, dstip, dport).  The count of each tuple is kept. 
+    by (srcip, dstip, dport).  The count of each tuple is kept.
     Utimately you get a packet count for each outgoing connection.
     This class works best if you use setFilter to filter by "src $HONEYPOT"
     """
-    def __init__(self, pcapObj, dbObj=None):
+    def __init__(self, pcapObj, verbose=0, db=None):
         self.tcpports = {}
         self.udpports = {}
         self.icmp = {}
         self.p = pcapObj
-        if dbObj:
+        self.verbose = verbose
+        if db:
             self.db = summaryTable(dbObj)
         else:
             self.db = None
@@ -54,7 +58,7 @@ class Summarize(base.Base):
         for ts, buf in self.p:
             self.packetHandler(ts, buf)
 
-    def packetHandler(self, ts, buf): 
+    def packetHandler(self, ts, buf):
         """Process a pcap packet buffer"""
         try:
             pkt = dpkt.ethernet.Ethernet(buf)
@@ -65,48 +69,78 @@ class Summarize(base.Base):
             proto = subpkt.p
             shost = socket.inet_ntoa(subpkt.src)
             dhost = socket.inet_ntoa(subpkt.dst)
-        except dpkt.Error: 
+        except dpkt.Error:
             return
         try:
-            if proto == socket.IPPROTO_TCP:  
+            if proto == socket.IPPROTO_TCP:
                 tcp = subpkt.data
                 dport = tcp.dport
                 sport = tcp.sport
-                key = (shost, dhost, dport)
+                if self.verbose:
+                    key = (shost, dhost, dport, sport)
+                else:
+                    key = (shost, dhost, dport)
                 if key not in self.tcpports:
-                    self.tcpports[key] = 0
-                self.tcpports[key] += 1
+                    # tuple is [start time, end time, count, bytes]
+                    self.tcpports[key] = [ts, 0, 0, 0]
+                self.tcpports[key][1] = ts
+                self.tcpports[key][2] += 1
+                self.tcpports[key][3] += len(tcp.data)
                 if self.db:
-                    self.db.queueInsert((proto, ipnum(shost), sport, ipnum(dhost), dport, self.filter, self.file, hdr.getts()[0], self.tcpports[key])) 
+                    self.db.queueInsert((proto, ipnum(shost), sport, ipnum(dhost), dport, self.filter, self.file, hdr.getts()[0], self.tcpports[key]))
             if proto == socket.IPPROTO_UDP:
                 udp = subpkt.data
                 dport = udp.dport
                 sport = udp.sport
-                key = (shost, dhost, dport)
+                if self.verbose:
+                    key = (shost, dhost, dport, sport)
+                else:
+                    key = (shost, dhost, dport)
                 if key not in self.udpports:
-                    self.udpports[key] = 0
-                self.udpports[key] += 1
+                    # tuple is [start time, end time, count, bytes]
+                    self.udpports[key] = [ts, 0, 0, 0]
+                self.udpports[key][1] = ts
+                self.udpports[key][2] += 1
+                self.udpports[key][3] += len(udp.data)
                 if self.db:
-                    self.db.queueInsert((proto, ipnum(shost), sport, ipnum(dhost), dport, self.filter, self.file, hdr.getts()[0], self.udpports[key])) 
+                    self.db.queueInsert((proto, ipnum(shost), sport, ipnum(dhost), dport, self.filter, self.file, hdr.getts()[0], self.udpports[key]))
         except dpkt.Error:
             return
 
     def printResults(self):
-        self.writeResults(limit=10)
-    
+        if self.verbose:
+            self.writeResults(limit=0)
+        else:
+            self.writeResults(limit=10)
+
     def writeResults(self, limit=0):
         """Write results to a given filehandle. Optionally only print more significant options"""
-        self.doOutput("TCP TRAFFIC SUMMARY:\n")
-        self.doOutput("%-15s %-15s %8s %10s\n" % ("SOURCE", "DEST", "DPORT", "COUNT"))
-        for key, val in self.tcpports.items():
-            if val > limit:
-                self.doOutput("%-15s %-15s %8s %10s\n" % (key[0], key[1], key[2], val))
+        self.doOutput("Tcp Traffic Summary:\n")
+        if self.verbose:
+            self.doOutput("%-20s %-20s %-16s %-6s %-16s %-6s %10s %10s\n" % ("Start", "End", "Source", "Sport", "Dest", "Dport", "Count", "Bytes"))
+        else:
+            self.doOutput("%-20s %-20s %-16s %-16s %8s %10s %10s\n" % ("Start", "End", "Source", "Dest", "Dport", "Count", "Bytes"))
+        for key, val in self.tcpports.iteritems():
+            if val[2] > limit:
+                if self.verbose:
+                    self.doOutput("%-20s %-20s %-16s %-6s %-16s %-6s %10s %10s\n" % (tf(val[0]), tf(val[1]), key[0], key[3], key[1], key[2], str(val[2]), str(val[3])))
+                else:
+                    self.doOutput("%-20s %-20s %-16s %-16s %8s %10s %10s\n" % (tf(val[0]), tf(val[1]), key[0], key[1], key[2], str(val[2]), str(val[3])))
+
+
         if len(self.udpports) > 0:
-            self.doOutput("UDP TRAFFIC SUMMARY:\n")
-            self.doOutput("%-15s %-15s %8s %10s\n" % ("SOURCE", "DEST", "DPORT", "COUNT"))
-            for key, val in self.udpports.items():
-                if val > limit:
-                    self.doOutput("%-15s %-15s %8s %10s\n" % (key[0], key[1], key[2], val))
-        if self.db:
-            self.db.doInserts()
-                
+            self.doOutput("\n\nUDP TRAFFIC SUMMARY:\n")
+            if self.verbose:
+                self.doOutput("%-20s %-20s %-16s %-6s %-16s %-6s %10s %10s\n" % ("Start", "End", "Source", "Sport", "Dest", "Dport", "Count", "Bytes"))
+            else:
+                self.doOutput("%-20s %-20s %-16s %-16s %8s %10s %10s\n" % ("Start", "End", "Source", "Dest", "Dport", "Count", "Bytes"))
+            for key, val in self.udpports.iteritems():
+                if val[2] > limit:
+                    if self.verbose:
+                        self.doOutput("%-20s %-20s %-16s %-6s %-19s %-6s %10s %10s\n" % (tf(val[0]), tf(val[1]), key[0], key[3], key[1], key[2], str(val[2]), str(val[3])))
+                    else:
+                        self.doOutput("%-20s %-20s %-16s %-16s %8s %10s %10s\n" % (tf(val[0]), tf(val[1]), key[0], key[1], key[2], str(val[2]), str(val[3])))
+            if self.db:
+                self.db.doInserts()
+
+
