@@ -131,6 +131,16 @@ def processFile(honeypots, file, dbargs=None):
         else:
             print "Unknown Error creating output file"
             sys.exit(1)
+                  
+    # quick and dirty check file is a valid pcap file
+    try:                   
+        if os.path.exists(tmpf) and os.path.getsize(tmpf)>0 and os.path.isfile(tmpf):
+            p = pcap.pcap(tmpf)
+        else:
+            raise OSError
+    except OSError:
+            print "File %s is not a pcap file or does not exist" % file
+            sys.exit(1)
 
     if options["do_pcap"] == "YES":
         out("\n\nResults for file: %s\n\n" % file)
@@ -481,7 +491,7 @@ def main():
                 if os.path.exists(f) and os.path.isfile(f):
                     processFile(values.honeypots, f, dbargs)
                 else:
-                    print "File not found: %s" % values.files
+                    print "File not found: %s" % f
                     sys.exit(2)
         # -d was an option
         elif values.files:
