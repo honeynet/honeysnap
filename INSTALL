@@ -4,22 +4,52 @@ Python 2.4 or greater is strongly recommended.
 
 Dependencies
 
-irclib 0.4.6 or greater  			http://python-irclib.sourceforge.net/ 
-pypcap 1.1 or greater  				http://www.monkey.org/~dugsong/pypcap/
-dpkt		 						http://monkey.org/~dugsong/dpkt/
-magic								http://www.demonseed.net/~jp/code/magic.py			
-                               
-For each of these, untar the distribution file, then cd into the directory and run
-sudo python setup.py install
+irclib 0.4.6 or greater  	http://python-irclib.sourceforge.net/
+pypcap 1.1 or greater  		http://www.monkey.org/~dugsong/pypcap/
+dpkt		 		http://monkey.org/~dugsong/dpkt/
+magic				http://www.demonseed.net/~jp/code/magic.py
 
-irclib and magic can also be installed with easy_install
+
+
+For each of these, untar the distribution file, then cd into the directory
+and run setup.py as follows:
+
+	$ wget http://www.monkey.org/~dugsong/pypcap/pypcap-1.1.tar.gz
+	$ tar -xzf pypcap-1.1.tar.gz
+	$ pushd pypcap-1.1
+	$ make
+	$ sudo python setup.py install
+	$ popd
+	$ rm -rf pypcap-1.1*
+
+	$ wget http://www.monkey.org/~dugsong/dpkt/dpkt-1.6.tar.gz
+	$ pushd dpkt
+	$ make
+	$ sudo python setup.py install
+	$ popd
+	$ rm -rf dpkt-1.6*
+
+[Note: You cannot do the above steps on the production honeywall,
+as it has no gcc compiler, make, etc.  Do:
+
+	$ sudo yum install gcc python-devel
+
+...to turn a honeywall into a workable development/testing platform
+for honeysnap.]
+
+irclib and magic can also be installed with easy_install.
                                
-sudo easy_install python-irclib
-sudo easy_install magic
+	$ sudo easy_install python-irclib
+	$ sudo easy_install magic
+
+If you don't have easy_install, get it by doing the following:
+
+	$ wget http://peak.telecommunity.com/dist/ez_setup.py
+	$ sudo python ez_setup.py
 
 To install honeysnap, run
 
-sudo python setup.py install
+	$ sudo python setup.py install
 
 from within the honeysnap directory.
 
