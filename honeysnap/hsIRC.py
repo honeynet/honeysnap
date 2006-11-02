@@ -175,7 +175,7 @@ class HnyServerConnection(irclib.ServerConnection):
                     elif arguments is not None:
                         target = arguments[0]
                         arguments = arguments[1:]
-                except TypeError, IndexError:
+                except (TypeError, IndexError):
                     raise IRCError
                     
                 if command == "mode":
