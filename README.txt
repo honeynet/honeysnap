@@ -30,6 +30,12 @@ Modify the honeynet.cfg file to do the operations you like, and specify the outp
 to execute:
 honeysnap -c honeysnap.cfg <pcapfile>
 
+Efficency:
+
+Increasing the max number of open files will max things faster. On most unix like OSs
+
+$ ulimit -n 4096
+
 Bugs/Help:
 
 Please send any bugs, tracebacks, comments, or patches to Arthur Clune, arthur@honeynet.org.uk or Jed Haile jed.haile@thelogingroup.biz

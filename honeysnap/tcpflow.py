@@ -95,10 +95,8 @@ class tcpFlow(object):
         state = self.states.find_flow_state(flow)
         if state is None:
             #print "state not found, creating new"
-            state = self.states.create_state(flow, seq)
-            state.open()
-            #else:
-            #print "state found"
+            state = self.states.create_state(flow, seq) 
+            self.safe_open(state)
 
         if state.flags&FLOW_FINISHED:
             # print "flow finished: %s" % state.flow
@@ -113,7 +111,6 @@ class tcpFlow(object):
             # close the file
             # print "got RST or FIN"
             state.flags |= FLOW_FINISHED
-            state.fp.flush()
             state.close()
             return
 
@@ -138,12 +135,18 @@ class tcpFlow(object):
             length = bytes_per_flow - offset 
             return
 
-        try:
-            state.open()
-        except fileHandleError:
-            self.states.closeFiles()
-            state.open()
+        self.safe_open(state)
         state.writeData(data)
+    
+    def safe_open(self, state):
+        for i in range(1,5):
+            try:
+                state.open()
+            except fileHandleError:
+                self.states.closeFiles()
+            else:
+                return
+        raise fileHandleError
     
     def start(self):
         """Iterate over a pcap object"""
