@@ -72,15 +72,15 @@ class tcpFlow(object):
     def process_tcp(self, pkt, src, dst):
         """Process a tcp packet"""
         ip = pkt.data
-        tcp = ip.data
+        tcp = ip.data         
         this_flow = flow()
         this_flow.src = src
-        this_flow.dst = dst
+        this_flow.dst = dst        
+        if type(tcp) != dpkt.tcp.TCP or ip.len == ip.__hdr_len__ + tcp.__hdr_len__:
+            # no data or bad data, return
+            return
         this_flow.sport = tcp.sport
         this_flow.dport = tcp.dport
-        if ip.len == ip.__hdr_len__ + tcp.__hdr_len__:
-            # no data, return
-            return
         self.store_packet(this_flow, tcp)
         
     def store_packet(self, flow, tcp):
