@@ -20,7 +20,7 @@
 
 # $Id$
 
-import dpkt
+import pcap
 import os, time
 import base
 from output import stringFormatMessage
@@ -45,8 +45,7 @@ Average packet size: %(avg)s bytes \n \
         self.msg = stringFormatMessage(format = format)
     
     def getStats(self):
-        f = open(self.filename)
-        pr = dpkt.pcap.Reader(f)
+        p = pcap.pcap(self.filename)
         pktcount = 0
         dsize = 0
         duration = 0
@@ -54,7 +53,7 @@ Average packet size: %(avg)s bytes \n \
         bytes = 0
         avg = 0     
         start = 0
-        for ts, buf in pr:  
+        for ts, buf in p:  
             if ts<start or start==0:
                 start = ts
             pktcount += 1
@@ -71,12 +70,13 @@ Average packet size: %(avg)s bytes \n \
         bytes = float(dsize)/duration
         bits = bytes*8
         avg = float(dsize)/float(pktcount)
-        f.close()
         d = dict(filename=self.filename, pktcount=pktcount, fsize=fsize, dsize=dsize, duration=str(duration), start=start, end=end, bytes=str(bytes), bits=str(bits), avg=str(avg))
         self.msg.msg = d
         self.doOutput(self.msg)
 
-if __name__ == "__main__":
-    i = pcapInfo('/Users/jed/src/honeynet/roo/20050227')
+if __name__ == "__main__": 
+    import sys 
+    f = sys.argv[1]
+    i = pcapInfo(f)
     print i.getStats()
             
