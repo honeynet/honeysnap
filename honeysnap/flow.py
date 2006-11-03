@@ -112,9 +112,7 @@ class flow_state(object):
         else:
             try:
                 self.fp = open(self.fname, flag)
-            except IOError, e:
-                if not 'Too many open files' in e:
-                    print "error opening %s, reason %s" % (self.fname, e)
+            except IOError, e: 
                 raise fileHandleError()
         return self.fp
 
@@ -203,7 +201,6 @@ class flow_state_manager(object):
         return name
 
     def closeFiles(self):   
-        count = 0
         for s in self.getFlowStates(): 
             if s.fp is not None:
                 s.close()

@@ -139,7 +139,7 @@ class tcpFlow(object):
         state.writeData(data)
     
     def safe_open(self, state):
-        for i in range(1,5):
+        for i in range(1,2):
             try:
                 state.open()
             except fileHandleError:

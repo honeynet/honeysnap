@@ -34,7 +34,8 @@ import optparse
 import pcap
 import time
 from datetime import datetime
-from socket import inet_ntoa
+from socket import inet_ntoa 
+import sys
        
        
 class HnyEvent(irclib.Event):
@@ -231,12 +232,12 @@ class HoneySnapIRC(irclib.SimpleIRCClient):
             filter = "tcp and port 6667"
         self.connection.connect(pcapfile, filter)
 
-    def on_global(self, c, e):
+    def on_global(self, c, e, file=sys.stdout):
         if e.eventtype() != 'ping' and e.eventtype() != 'all_raw_messages':
-            print "%s\t%s:%s -> %s:%s\t%s\t%s\t%s\t%s" % (e.time, e.src, e.sport, e.dst, e.dport,
+            file.write("%s\t%s:%s -> %s:%s\t%s\t%s\t%s\t%s\n" % (e.time, e.src, e.sport, e.dst, e.dport,
                                           e.eventtype(), e.source(),
-                                          e.target(), ' '.join(e.arguments()))
-                                          
+                                          e.target(), ' '.join(e.arguments())))
+
     def addHandler(self, type, func, priority):
         """
         arguments:

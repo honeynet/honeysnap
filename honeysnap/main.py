@@ -71,15 +71,16 @@ class MyOption(Option):
 def setFilters(options):
     """Set filters for packet counts"""
     return { 'Counting outbound IP packets:':'src host %s',
-        'Counting outbound FTP packets:':'src host %s and dst port 21',
-        'Counting outbound SSH packets:':'src host %s and dst port 22',
-        'Counting outbound Telnet packets:':'src host %s and dst port 23',
-        'Counting outbound SMTP packets:':'src host %s and dst port 25',
-        'Counting outbound HTTP packets:':'src host %s and dst port 80',
-        'Counting outbound HTTPS packets:':'src host %s and dst port 443',
-        'Counting outbound Sebek packets:':'src host %s and udp port %s' % ('%s', options["sebek_port"]),
-        'Counting outbound IRC packets:':'src host %s and dst port %s' % ('%s', options["irc_port"])}
-
+        'Outbound FTP packets:':'src host %s and dst port 21',
+        'Outbound SSH packets:':'src host %s and dst port 22',
+        'Outbound Telnet packets:':'src host %s and dst port 23',
+        'Outbound SMTP packets:':'src host %s and dst port 25',
+        'Outbound HTTP packets:':'src host %s and dst port 80', 
+        'Served HTTP packets:':'dst host %s and dst port 80',
+        'Served HTTPS packets:':'dst host %s and dst port 443',
+        'Outbound HTTPS packets:':'src host %s and dst port 443',
+        'Outbound Sebek packets:':'src host %s and udp port %s' % ('%s', options["sebek_port"]),
+        'Outbound IRC packets:':'src host %s and dst port %s' % ('%s', options["irc_port"])}
 
 def processFile(honeypots, file, dbargs=None):
     """
