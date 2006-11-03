@@ -139,15 +139,13 @@ class tcpFlow(object):
         state.writeData(data)
     
     def safe_open(self, state):
-        for i in range(1,2):
-            try:
-                state.open()
-            except fileHandleError:
-                self.states.closeFiles()
-            else:
-                return
-        raise fileHandleError
-    
+	"""Try and open a file. Closed open files if necessary"""
+        try:
+            state.open()
+        except fileHandleError:
+            self.states.closeFiles()
+   	state.open()
+ 
     def start(self):
         """Iterate over a pcap object"""
         for ts, buf in self.p:

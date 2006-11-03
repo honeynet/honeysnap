@@ -201,14 +201,17 @@ class flow_state_manager(object):
         return name
 
     def closeFiles(self):   
+	"""Close all files associated with this flow_state"""
         for s in self.getFlowStates(): 
             if s.fp is not None:
                 s.close()
         
     def getFlows(self): 
+	"""return all flows for this state"""
         return [ s.flow for s in self.getFlowStates() ]
         
     def getFlowStates(self):
+	"""return all states"""
         states = []
         for s in self.flow_hash.values():
             states.append(s)

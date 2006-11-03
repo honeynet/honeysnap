@@ -214,7 +214,7 @@ class HnyIRC(irclib.IRC):
                 #import pdb, traceback
                 #traceback.print_exc(file=sys.stdout)
                 #pdb.post_mortem(sys.exc_traceback)
-                print "ERROR on:\n%s" % dpkt.hexdump(str(ip.tcp.data))
+                #print "ERROR on:\n%s" % dpkt.hexdump(str(ip.tcp.data))
                 continue
 
     def process_forever(self, timeout=0):
