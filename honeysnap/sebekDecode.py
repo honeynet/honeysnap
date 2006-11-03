@@ -101,7 +101,7 @@ class sebekDecode(base.Base):
             elif version == 3:
                 size = size3
             else:
-                print "sebekDecode:packetHandler:unknown sebek version number"
+                #print "sebekDecode:packetHandler:unknown sebek version number"
                 return
         else:
             return
@@ -165,7 +165,7 @@ class sebekDecode(base.Base):
             try:
                 self.packetHandler(ts, ip, payload)
             except Exception, e:
-                print "sebekDecode caught error:"
-                print e
-                print dpkt.dpkt.hexdump(buf)
+                #print "sebekDecode caught error:"
+                #print e
+                #print dpkt.dpkt.hexdump(buf)
                 continue
