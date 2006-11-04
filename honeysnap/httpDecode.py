@@ -16,7 +16,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-################################################################################ 
+################################################################################
 
 # $Id$
 
@@ -26,7 +26,7 @@ import cStringIO
 import os
 from util import findName, renameFile
 from flowIdentify import flowIdentify
-from base import Base   
+from base import Base
 import urllib
 
 class httpDecode(Base):
@@ -46,14 +46,14 @@ class httpDecode(Base):
         'BASELINE-CONTROL'
         ))
     __proto = 'HTTP'
-    
+
     __msgtypes = ['response', 'request']
-    
+
     def __init__(self):
         Base.__init__(self)
         self.statemgr = None
         self.id = flowIdentify()
-        
+
     def determineType(self, data):
         """
         Data should be a list of the data as obtained via file.readlines()
@@ -66,15 +66,15 @@ class httpDecode(Base):
         # is it a request?
         if len(l) == 3 and l[0] in self.__methods and l[2].startswith(self.__proto):
             return('request', line)
-            
+
         # is it a response?
         if len(l) >= 2 and l[0].startswith(self.__proto) and l[1].isdigit():
             return('response', line)
-         
+
         #print "determineType:unknown type, probably binary "
         return None, None
-        
-        
+
+
     def decode(self, state, statemgr):
         """
         Takes an instance of flow.flow_state, and an instance of
@@ -86,11 +86,11 @@ class httpDecode(Base):
         #d = "".join(state.data)
         state.close()
         state.open(flag="rb")
-        d = state.fp.readlines()    
+        d = state.fp.readlines()
         #print "decode:state ", state.fname
         if len(d) == 0:
             return
-        t, req = self.determineType(d)  
+        t, req = self.determineType(d)
         if (t, req) == (None, None):
             # binary data
             return
@@ -133,7 +133,7 @@ class httpDecode(Base):
                     pass
 
             if r:
-                state.decoded = r    
+                state.decoded = r
 
         if t == 'request':
             try:
@@ -141,65 +141,68 @@ class httpDecode(Base):
                 #print 'decode: %s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)
                 # The following line does essentially all the work:
                 r = dpkt.http.Request(d)
-                state.decoded = r                
+                state.decoded = r
                 r.request = req
                 if not getattr(r, "data"):
                     r.data = None
                 #print 'decode:method: ', r.method
-                #print 'decode:uri:    ', r.uri    
+                #print 'decode:uri:    ', r.uri
                 #print "\n"
             except dpkt.Error:
                 try:
                     state.open(flag="rb")
                     l = state.fp.readline()
-                    headers = dpkt.http.parse_headers(state.fp)                    
+                    headers = dpkt.http.parse_headers(state.fp)
                     r = dpkt.http.Message()
                     r.headers = headers
                     r.body = state.fp.readlines()
                     r.request = req
-                    r.data = None   
+                    r.data = None
                     state.decoded = r
                     state.close()
                     #print 'decode:headers ', headers
                 except dpkt.Error:
                     print "request failed to decode: %s " % state.fname
                     pass
-                
+
             if r:
-                state.decoded = r  
+                state.decoded = r
         if t is not None:
             self.extractHeaders(state, d)
-        self._renameFlow(state, t)                                     
+        self._renameFlow(state, t)
 
     def _renameFlow(self, state, t):
         """state is a honeysnap.flow.flow_state object, t = response or request"""
         #print "_renameFlow:state", state
         rflow = freverse(state.flow)
         #print '_renameFlow:rflow   ', rflow
-        rs = self.statemgr.find_flow_state(rflow) 
-        if rs is not None: 
+        rs = self.statemgr.find_flow_state(rflow)
+        if rs is not None:
             if rs.decoded is not None and state.decoded is not None:
                 #print "Both halves decoded"
-                r1 = rs.decoded                       
-                if t == 'request':            
-                    realname = urllib.splitquery(state.decoded.uri)[0]
-                    realname = realname.rsplit("/", 1)[-1]
-                    #print "_renameFlow:request: ", realname
+                r1 = rs.decoded
+                if t == 'request':
+                    try:
+                        realname = urllib.splitquery(state.decoded.uri)[0]
+                        realname = realname.rsplit("/", 1)[-1]
+                        #print "_renameFlow:request: ", realname
+                    except AttributeError:
+                        realname = ''
                     if realname == '/':
                         realname = 'index.html'
                     fn = renameFile(rs, realname)
                     id, m5 = self.id.identify(rs)
                     self.doOutput("extracted: %s\nfiletype: %s\nmd5 sum: %s\n" %(fn,id,m5))
-                if t == 'response':    
-                    realname = urllib.splitquery(r1.uri)[0] 
-                    realname = realname.rsplit("/", 1)[-1]     
+                if t == 'response':
+                    realname = urllib.splitquery(r1.uri)[0]
+                    realname = realname.rsplit("/", 1)[-1]
                     if realname == '':
                         realname = 'index.html'
-                    #print "_renameFlow:response: ", realname   
-                    fn = renameFile(state, realname) 
+                    #print "_renameFlow:response: ", realname
+                    fn = renameFile(state, realname)
                     id, m5 = self.id.identify(state)
                     self.doOutput("extracted: %s\nfiletype: %s\nmd5 sum: %s\n" %(fn,id,m5))
-                
+
     def extractHeaders(self, state, d):
         """
         Pull the headers and body off the data,
@@ -227,7 +230,7 @@ class httpDecode(Base):
                 data = state.decoded.data
             except dpkt.Error:
                 data = None
-            
+
         else:
             # dpkt.http failed to decode
             f = cStringIO.StringIO(d)
@@ -251,7 +254,7 @@ class httpDecode(Base):
             data = f.readlines()
             data = "".join(data)
             body = None
-            
+
         # write headers, body, data to files
         if headers is not None:
             base = state.fname
@@ -281,4 +284,5 @@ class httpDecode(Base):
                 data = "".join(data)
             fp.write(data)
             fp.close()
-        
+
+

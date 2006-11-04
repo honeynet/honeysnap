@@ -36,7 +36,7 @@ $ ulimit -n 4096
 
 Bugs/Help:
 
-Please send any bugs, tracebacks, comments, or patches to Arthur Clune, arthur@honeynet.org.uk or Jed Haile jed.haile@thelogingroup.biz
+Please send any bugs, tracebacks, comments, or patches to Arthur Clune, arthur@honeynet.org.uk or Jed Haile jed.haile@thelogangroup.biz
 
 Copyright:
 All code in honeysnap is copyright The Honeynet Project.
