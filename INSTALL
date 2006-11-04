@@ -1,6 +1,6 @@
 Installing Honeysnap
 --------------------
-Python 2.4 or greater is strongly recommended.
+Python 2.4 or greater is required
 
 Dependencies
 
@@ -9,7 +9,9 @@ pypcap 1.1 or greater  		http://www.monkey.org/~dugsong/pypcap/
 dpkt		 		http://monkey.org/~dugsong/dpkt/
 magic				http://www.demonseed.net/~jp/code/magic.py
 
-
+      
+Installation on a workstation
+-----------------------------
 
 For each of these, untar the distribution file, then cd into the directory
 and run setup.py as follows:
@@ -29,14 +31,6 @@ and run setup.py as follows:
 	$ popd
 	$ rm -rf dpkt-1.6*
 
-[Note: You cannot do the above steps on the production honeywall,
-as it has no gcc compiler, make, etc.  Do:
-
-	$ sudo yum install gcc python-devel
-
-...to turn a honeywall into a workable development/testing platform
-for honeysnap.]
-
 irclib and magic can also be installed with easy_install.
                                
 	$ sudo easy_install python-irclib
@@ -46,6 +40,45 @@ If you don't have easy_install, get it by doing the following:
 
 	$ wget http://peak.telecommunity.com/dist/ez_setup.py
 	$ sudo python ez_setup.py
+        
+                 
+Installation on a honeywall
+---------------------------
+
+Note: You cannot do the above steps on the production honeywall,
+as it has no gcc compiler, make, etc.  Do:
+
+	$ sudo yum install gcc 
+
+Then you must install python 2.4
+
+For Fedora Core 3, create "/etc/yum.repos.d/python24.repo" with the following lines:
+
+  [python24]
+  name=Fedora Core $releasever - $basearch - Python 2.4
+  baseurl=http://www.python.org/ftp/python/2.4/rpms/fedora-$releasever/
+  enabled=1
+  gpgcheck=1
+
+Add the KRUD GPG key by running: 
+
+$ sudo rpm --import http://www.python.org/ftp/python/2.4/rpms/KRUD-GPG-KEY"
+
+Install Python 2.4 by running: 
+
+$ sudo yum install python2.4
+
+Then follow the instructions above, but replacing calls to 'python' with 'python2.4'. e.g.
+
+$ sudo python2.4 setup.py install
+
+You will also need to use python 2.4 to install easy_install
+
+$ sudo python2.4 ez_setup.py
+
+
+Running honeysnap
+=================
 
 To install honeysnap, run
 
