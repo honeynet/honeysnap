@@ -31,22 +31,18 @@ tf = lambda x: time.strftime("%d/%m/%y %H:%M:%S", time.localtime(x))
 
 class Summarize(base.Base):
     """
-    Summarize takes a pcapObj, and an optional dbObj that is a mysql db connection.
+    Summarize takes a pcapObj
     This class reads the pcap data, hands it to a decoder, and then keys each packet
     by (srcip, dstip, dport).  The count of each tuple is kept.
     Utimately you get a packet count for each outgoing connection.
     This class works best if you use setFilter to filter by "src $HONEYPOT"
     """
-    def __init__(self, pcapObj, verbose=0, db=None):
+    def __init__(self, pcapObj, verbose=0):
         self.tcpports = {}
         self.udpports = {}
         self.icmp = {}
         self.p = pcapObj
         self.verbose = verbose
-        if db:
-            self.db = summaryTable(dbObj)
-        else:
-            self.db = None
 
     def setFilter(self, filter, file):
         self.filter = filter
@@ -86,8 +82,6 @@ class Summarize(base.Base):
                 self.tcpports[key][1] = ts
                 self.tcpports[key][2] += 1
                 self.tcpports[key][3] += len(tcp.data)
-                if self.db:
-                    self.db.queueInsert((proto, ipnum(shost), sport, ipnum(dhost), dport, self.filter, self.file, hdr.getts()[0], self.tcpports[key]))
             if proto == socket.IPPROTO_UDP:
                 udp = subpkt.data
                 dport = udp.dport
@@ -102,8 +96,6 @@ class Summarize(base.Base):
                 self.udpports[key][1] = ts
                 self.udpports[key][2] += 1
                 self.udpports[key][3] += len(udp.data)
-                if self.db:
-                    self.db.queueInsert((proto, ipnum(shost), sport, ipnum(dhost), dport, self.filter, self.file, hdr.getts()[0], self.udpports[key]))
         except dpkt.Error:
             return
 
@@ -140,7 +132,5 @@ class Summarize(base.Base):
                         self.doOutput("%-20s %-20s %-16s %-6s %-19s %-6s %10s %10s\n" % (tf(val[0]), tf(val[1]), key[0], key[3], key[1], key[2], str(val[2]), str(val[3])))
                     else:
                         self.doOutput("%-20s %-20s %-16s %-16s %8s %10s %10s\n" % (tf(val[0]), tf(val[1]), key[0], key[1], key[2], str(val[2]), str(val[3])))
-            if self.db:
-                self.db.doInserts()
 
 

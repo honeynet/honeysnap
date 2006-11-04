@@ -5,9 +5,9 @@ Honeysnap is a python application that can parse raw or gzipped pcap files and p
 
 The primary intention is to give a quick first look into a directory full of pcap data that has been pulled from a roo or some honeynet.
 
-Honeysnap.py is derived/inspired by honeysnap.sh by David Watson, Steve Mumford, and Arthur Clune of the UK Honeynet Project.  It is included in this distribution for reference.
+Honeysnap.py is derived/inspired by honeysnap.sh by David Watson, Steve Mumford, and Arthur Clune of the UK Honeynet Project. 
 
-This includes:
+Honeysnap includes:
 Outgoing packet counts for telnet, ssh, http, https, ftp, smtp, and irc. This can be easily extended.
 
 Incoming and outgoing connection summaries
@@ -17,8 +17,6 @@ Binary extraction from http, smtp, irc, and ftp.
 Word based inspection of IRC traffic.
 
 Support for sebek data
-
-Support for database output is also in progress.
 
 Installation:
 

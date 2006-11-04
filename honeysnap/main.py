@@ -82,7 +82,7 @@ def setFilters(options):
         'Outbound Sebek packets:':'src host %s and udp port %s' % ('%s', options["sebek_port"]),
         'Outbound IRC packets:':'src host %s and dst port %s' % ('%s', options["irc_port"])}
 
-def processFile(honeypots, file, dbargs=None):
+def processFile(honeypots, file):
     """
     Process a pcap file.
     honeypots is a list of honeypot ip addresses
@@ -168,12 +168,8 @@ def processFile(honeypots, file, dbargs=None):
     if options["do_incoming"] == "YES":
         out("\nIncoming Connections\n")
         p = pcap.pcap(tmpf)
-        if dbargs:
-            db = dbConnection(dbargs)
-        else:
-            db = None
         v = options["verbose_summary"]
-        s = Summarize(p, verbose=v, db=None)
+        s = Summarize(p, verbose=v)
         filt = 'dst host ' + string.join(honeypots, ' or dst host ')
         s.setFilter(filt, file)
         s.setOutput(out)
@@ -190,7 +186,7 @@ def processFile(honeypots, file, dbargs=None):
         out("\nOutgoing Connections\n")
         p = pcap.pcap(tmpf)
         v = options["verbose_summary"]
-        s = Summarize(p, verbose=v, db=None)
+        s = Summarize(p, verbose=v)
         filt = 'src host ' + string.join(honeypots, ' or src host ')
         s.setFilter(filt, file)
         s.setOutput(out)
@@ -452,15 +448,6 @@ def main():
                     pass
         else:
             parser = None
-        dbargs = None
-        """
-        if parser.has_section("DATABASE"):
-            dbargs = {}
-            dbargs["host"] = parser.get("DATABASE", "host")
-            dbargs["user"] = parser.get("DATABASE", "user")
-            dbargs["password"] = parser.get("DATABASE", "password")
-            dbargs["db"] = parser.get("DATABASE", "db")
-        """
 
         # pull in the values from the option parser
         options = values.__dict__
@@ -490,7 +477,7 @@ def main():
         if len(args):
             for f in args:
                 if os.path.exists(f) and os.path.isfile(f):
-                    processFile(values.honeypots, f, dbargs)
+                    processFile(values.honeypots, f)
                 else:
                     print "File not found: %s" % f
                     sys.exit(2)
@@ -507,7 +494,7 @@ def main():
                         # process each log file
                         if len(f):
                             for i in f:
-                                processFile(values.honeypots, root+"/"+i, dbargs)
+                                processFile(values.honeypots, root+"/"+i)
             else:
                 print "File not found: %s" % values.files
                 sys.exit(2)
@@ -523,7 +510,7 @@ def main():
             for l in fh:
                 tmph.write(l)
             tmph.close()
-            processFile(values.honeypots, tmpf, dbargs)
+            processFile(values.honeypots, tmpf)
             # all done, delete the tmp file
             os.unlink(tmpf)
 
