@@ -33,8 +33,8 @@ honeysnap -c honeysnap.cfg <pcapfile>
 
 Efficency
 ---------
--
-Increasing the max number of open files will max things faster. On most unix like OSs
+
+Increasing the max number of open files will make things faster. On most unix like OSs
 
 $ ulimit -n 4096
 
