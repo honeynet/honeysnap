@@ -26,7 +26,7 @@ import time
 import sys
 import re
 #import dnet
-from util import orderByValue
+from util import orderByValue, make_dir
 from base import Base
 from output import stringMessage
 
@@ -87,11 +87,11 @@ class ircDecode(Base):
             self.fp.write("%s\t%s:%s -> %s:%s\t%s\t%s\t%s\t%s\n" % (e.time, e.src, e.sport, e.dst, e.dport,
                                           e.eventtype(), e.source(),
                                           e.target(), ' '.join(e.arguments())))
+             
+    def setOutdir(self, dir):
+        make_dir(dir)                               
+        self.fp = open(dir + "/irclog.txt", "w")  
     
-    def setDetailOutput(self, fp):
-        """Directed details to file given by file pointer fp"""
-        self.fp = fp
-        
     def decodeCB(self, c, e):
         """
         Callback to register with HoneySnapIRC
@@ -121,8 +121,8 @@ class ircDecode(Base):
     def printSummary(self):
 ##        import pdb
 ##        pdb.set_trace() 
-        if not (self.cmds or self.sources or self.targets):
-            self.doOutput("No IRC seen")
+        if not (self.cmds or self.sources or self.targets):  
+            self.doOutput("No IRC seen\n")
             return
         self.doOutput("\n****** command count *******\n")
         for k,v in self.cmds.items():

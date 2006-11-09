@@ -239,18 +239,16 @@ def processFile(honeypots, file):
             out("\nHoneypot %s\n\n" % hp)
             outdir = options["output_data_directory"] + "/%s/irc" % hp 
             make_dir(outdir)
-            fp = open(outdir + "/irclog.%s" % options["irc_port"], "w")
             hirc = HoneySnapIRC()
             hirc.connect(tmpf, "host %s and tcp and port %s" % (hp, options["irc_port"]))
             hd = ircDecode()
             hd.setOutput(out)
-            hd.setDetailOutput(fp)
+            hd.setOutdir(outdir)
             hirc.addHandler("all_events", hd.decodeCB, -1)   
             hirc.ircobj.add_global_handler("all_events", hd.printLines, -1)
             hirc.ircobj.process_once()
             hd.printSummary()    
             del hd
-            fp.close()
 
     if options["do_http"] == "YES":
         out("\nExtracting from http\n")
