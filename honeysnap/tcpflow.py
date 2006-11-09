@@ -25,6 +25,7 @@ import socket
 import pcap
 import dpkt
 from flow import flow, flow_state, flow_state_manager, reverse, fileHandleError
+from singletonmixin import HoneysnapSingleton
 
 FLOW_FINISHED=(1 << 0)
 FLOW_FILE_EXISTS=(1 << 1)
@@ -38,7 +39,9 @@ class tcpFlow(object):
         self.outdir = ""
         self.fname = []
         self.plugins = []
-        
+        self.hs = HoneysnapSingleton.getInstance()
+        self.honeypots = self.hs.getOptions()["honeypots"]
+
     def __del__(self):
         pass
 
@@ -59,11 +62,12 @@ class tcpFlow(object):
             proto = subpkt.p
             shost = socket.inet_ntoa(subpkt.src)
             dhost = socket.inet_ntoa(subpkt.dst)
-        except dpkt.Error: 
+        except dpkt.Error:
             return
 
         if proto == socket.IPPROTO_TCP:
-            self.process_tcp(pkt, shost, dhost)
+            if shost in self.honeypots or dhost in self.honeypots:
+                self.process_tcp(pkt, shost, dhost)
 
     def process_ip(self, pkt):
         """Process a dpkt.ip.IP object"""
@@ -72,17 +76,17 @@ class tcpFlow(object):
     def process_tcp(self, pkt, src, dst):
         """Process a tcp packet"""
         ip = pkt.data
-        tcp = ip.data         
+        tcp = ip.data
         this_flow = flow()
         this_flow.src = src
-        this_flow.dst = dst        
+        this_flow.dst = dst
         if type(tcp) != dpkt.tcp.TCP or ip.len == ip.__hdr_len__ + tcp.__hdr_len__:
             # no data or bad data, return
             return
         this_flow.sport = tcp.sport
         this_flow.dport = tcp.dport
         self.store_packet(this_flow, tcp)
-        
+
     def store_packet(self, flow, tcp):
         """Store a packet in a flow"""
         bytes_per_flow = 100000000
@@ -95,7 +99,7 @@ class tcpFlow(object):
         state = self.states.find_flow_state(flow)
         if state is None:
             #print "state not found, creating new"
-            state = self.states.create_state(flow, seq) 
+            state = self.states.create_state(flow, seq)
             self.safe_open(state)
 
         if state.flags&FLOW_FINISHED:
@@ -118,12 +122,12 @@ class tcpFlow(object):
         if offset < 0:
             # seq < isn, drop it
             # print "bad seq number"
-            return 
+            return
 
         if bytes_per_flow and (offset > bytes_per_flow):
             # too many bytes for this flow, drop it
             #print "too many bytes for flow, dropping packet"
-            state.flags |= FLOW_FINISHED   
+            state.flags |= FLOW_FINISHED
             state.close()
             return
 
@@ -132,33 +136,36 @@ class tcpFlow(object):
             #print "flow marked finished due to length"
             state.flags |= FLOW_FINISHED
             state.close()
-            length = bytes_per_flow - offset 
+            length = bytes_per_flow - offset
             return
 
         self.safe_open(state)
         state.writeData(data)
-    
+
     def safe_open(self, state):
-	"""Try and open a file. Closed open files if necessary"""
+        """Try and open a file. Closed open files if necessary"""
         try:
             state.open()
         except fileHandleError:
             self.states.closeFiles()
-   	state.open()
- 
+        state.open()
+
     def start(self):
         """Iterate over a pcap object"""
         for ts, buf in self.p:
             self.packetHandler(ts, buf)
-        
+
     def setFilter(self, filter):
         self.p.setfilter(filter)
 
     def setOutdir(self, dir):
         self.outdir = dir
         self.states.setOutdir(dir)
-        if not os.path.exists(self.outdir):
-            os.mkdir(self.outdir)
+        hps = self.hs.getOptions()["honeypots"]
+        for i in hps:
+            o = self.outdir % i
+            if not os.path.exists(o):
+                os.mkdir(o)
 
     def setOutput(self, file):
         self.outfile = file
@@ -167,7 +174,7 @@ class tcpFlow(object):
         for s in self.states.flow_hash.values():
             for func in self.plugins:
                 func(s, self.states)
-                                        
+
     def writeResults(self):
         """TODO: I would like to implement some sort of summarization
         of the data files that were written during the run...
@@ -181,4 +188,6 @@ if __name__ == "__main__":
     tflow = tcpFlow(pcapObj)
     tflow.setFilter("not port 445")
     tflow.start()
+
+
 

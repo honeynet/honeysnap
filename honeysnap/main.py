@@ -75,7 +75,7 @@ def setFilters(options):
         'Outbound SSH packets:':'src host %s and dst port 22',
         'Outbound Telnet packets:':'src host %s and dst port 23',
         'Outbound SMTP packets:':'src host %s and dst port 25',
-        'Outbound HTTP packets:':'src host %s and dst port 80', 
+        'Outbound HTTP packets:':'src host %s and dst port 80',
         'Served HTTP packets:':'dst host %s and dst port 80',
         'Served HTTPS packets:':'dst host %s and dst port 443',
         'Outbound HTTPS packets:':'src host %s and dst port 443',
@@ -110,15 +110,19 @@ def processFile(honeypots, file):
         deletetmp = 0
     options["tmpf"] = tmpf
 
+    """
     if not os.path.exists(options["output_data_directory"]):
         # the directory isn't there
         try:
             os.mkdir(options["output_data_directory"])
+            for i in options["honeypots"]:
+                os.mkdir(options["output_data_directory"]+"/"+i)
             # now we can create the output file
-            outfile = sys.stdout
+            #outfile = sys.stdout
         except OSError:
             print "Error creating output directory"
             sys.exit(1)
+    """
     try:
         if options["filename"] is not None:
             out = rawPathOutput(options["filename"], mode="a+")
@@ -132,16 +136,16 @@ def processFile(honeypots, file):
         else:
             print "Unknown Error creating output file"
             sys.exit(1)
-                  
+
     # quick and dirty check file is a valid pcap file
-    try:                   
+    try:
         if os.path.exists(tmpf) and os.path.getsize(tmpf)>0 and os.path.isfile(tmpf):
             p = pcap.pcap(tmpf)
         else:
             raise OSError
     except OSError:
-            print "File %s is not a pcap file or does not exist" % file
-            sys.exit(1)
+        print "File %s is not a pcap file or does not exist" % file
+        sys.exit(1)
 
     if options["do_pcap"] == "YES":
         out("\n\nResults for file: %s\n\n" % file)
@@ -234,7 +238,7 @@ def processFile(honeypots, file):
         de = tcpflow.tcpFlow(p)
         de.setFilter("port %s" % options["irc_port"])
         de.setOutput(out)
-        de.setOutdir(options["output_data_directory"]+ "/irc-extract")
+        de.setOutdir(options["output_data_directory"]+ "/%s/irc")
         de.start()
         de.dump_extract(options)
         hirc = HoneySnapIRC()
@@ -253,7 +257,7 @@ def processFile(honeypots, file):
         p = pcap.pcap(tmpf)
         de = tcpflow.tcpFlow(p)
         de.setFilter("port 80")
-        de.setOutdir(options["output_data_directory"]+ "/http-extract")
+        de.setOutdir(options["output_data_directory"]+ "/%s/http")
         de.setOutput(out)
         decode = httpDecode.httpDecode()
         decode.setOutput(out)
@@ -268,7 +272,7 @@ def processFile(honeypots, file):
         p = pcap.pcap(tmpf)
         de = tcpflow.tcpFlow(p)
         de.setFilter("port 20 or port 21")
-        de.setOutdir(options["output_data_directory"] + "/ftp-extract")
+        de.setOutdir(options["output_data_directory"] + "/%s/ftp")
         de.setOutput(out)
         decode = ftpDecode.ftpDecode()
         decode.setOutput(out)
@@ -282,7 +286,7 @@ def processFile(honeypots, file):
         p = pcap.pcap(tmpf)
         de = tcpflow.tcpFlow(p)
         de.setFilter("port 25")
-        de.setOutdir(options["output_data_directory"] + "/smtp-extract")
+        de.setOutdir(options["output_data_directory"] + "/%s/smtp")
         de.setOutput(out)
         decode = smtpDecode.smtpDecode()
         decode.setOutput(out)
@@ -295,8 +299,10 @@ def processFile(honeypots, file):
 ##            print "RRD not currently supported"
 
     if options["do_sebek"] == "YES":
+
         out("\nExtracting Sebek data\n")
         sbd = sebekDecode()
+        sbd.setOutdir(options["output_data_directory"] + "/%s/sebek")
         sbd.setOutput(out)
         sbd.run()
 
@@ -310,7 +316,7 @@ def cleanup(options):
     Clean up empty files, etc.
     """
     datadir = options["output_data_directory"]
-    for dir in ["/irc-extract", "/http-extract", "/ftp-extract", "/smtp-extract"]:
+    for dir in ["/irc", "/http", "/ftp", "/smtp", "/sebek"]:
         if os.path.isdir(datadir+dir):
             files = os.listdir(datadir+dir)
         else:
@@ -462,16 +468,25 @@ def main():
 
         options["output_data_directory"] = values.outputdir
         options["tmp_file_directory"] = values.tmpdir
-        if not os.path.exists(values.outputdir):
-            try:
-                os.mkdir(values.outputdir)
-            except OSError:
-                print "Unable to create output dir: %s. Check permissions." % values.outputdir
 
         if values.honeypots is None:
             print "No honeypots specified. Please use either -H or config file to specify honeypots.\n"
             sys.exit(2)
         hsingleton = HoneysnapSingleton.getInstance(options)
+        if not os.path.exists(values.outputdir):
+            try:
+                os.mkdir(values.outputdir)
+            except OSError:
+                print "Unable to create output dir: %s. Check permissions." % values.outputdir
+                sys.exit(2)
+        if os.path.exists(values.outputdir):
+                for i in options["honeypots"]:
+                    if not os.path.exists(options["output_data_directory"]+"/"+i):
+                        try:
+                            os.mkdir(options["output_data_directory"]+"/"+i)
+                        except OSError:
+                            print "Unable to create output dir: %s/%s. Check permissions." % (values.outputdir, i)
+                            sys.exit(2)
         # by default treat args as files to be processed
         # handle multiple files being passed as args
         if len(args):
@@ -523,5 +538,7 @@ if __name__ == "__main__":
     #profile.run('main()', 'mainprof')
 
     main()
+
+
 
 

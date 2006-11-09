@@ -17,10 +17,13 @@
 #   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 ################################################################################
-                                                        
+
 # $Id$
 
+import os
+import sys
 from util import ipnum
+from singletonmixin import HoneysnapSingleton
 
 HASH_SIZE=1009
 FLOW_FINISHED=(1 << 0)
@@ -54,7 +57,7 @@ class flow(object):
 
     def __repr__(self):
         return "%s.%s-%s.%s" % (self.src, self.sport, self.dst, self.dport)
-        
+
     def isSrcSport(self, src, sport):
         if self.src == src and self.sport == sport:
             return True
@@ -62,7 +65,7 @@ class flow(object):
             return False
 
 class flow_state(object):
-    
+
     def __init__(self):
         self.next = None # link to next flow state
         self.flow = None # Description of the flow
@@ -79,6 +82,8 @@ class flow_state(object):
         self.data = []
         self.fname = ""
         self.decoded = None
+        self.honeypot = None
+        self.direction = 0
 
     def __cmp__(self, other):
         # to facilitate sorting a list of states by last_access
@@ -99,20 +104,22 @@ class flow_state(object):
                 except IOError:
                     # too many files open
                     # lets toss an exception
-                    self.fp = None  
-                    raise fileHandleError() 
+                    self.fp = None
+                    print self.fname
+                    raise fileHandleError()
             elif self.fp.mode != flag:    # must handle case where file is opened 'a' and we want to read
                 try:
                     self.close()
                     self.fp = open(self.fname, flag)
-                except IOError:   
+                except IOError:
                     print "Can't re-open %s in mode %s" % (self.fname, flag)
                     self.fp = None
                     raise fileHandleError()
         else:
             try:
                 self.fp = open(self.fname, flag)
-            except IOError, e: 
+            except IOError, e:
+                print self.fname
                 raise fileHandleError()
         return self.fp
 
@@ -120,7 +127,7 @@ class flow_state(object):
         if self.fp is not None:
             if not self.fp.closed:
                 self.fp.close()
-            self.fp = None   
+            self.fp = None
             self.pos = 0
 
     def writeData(self, data):
@@ -143,7 +150,8 @@ class flow_state_manager(object):
         self.flow_hash = {}
         self.curent_time = 0
         self.outdir = None
-        
+        self.hs = HoneysnapSingleton.getInstance()
+
     def setOutdir(self, outdir):
         self.outdir = outdir
 
@@ -156,10 +164,26 @@ class flow_state_manager(object):
         new_state.flow = flow
         new_state.isn = isn
         new_state.last_access = self.current_time+1
-        new_state.outdir = self.outdir
-        new_state.fname = self.flow_filename(flow)
         self.current_time +=1
         index = self.fhash(new_state.flow)
+        # figure out which honeypot belongs to this flow
+        hps = self.hs.getOptions()["honeypots"]
+        ips = [flow.src, flow.dst]
+        new_state.honeypot = [i for i in hps if i in ips][0]
+        if new_state.honeypot == flow.src:
+            new_state.direction = "incoming"
+        else:
+            new_state.direction = "outgoing"
+        # path and name the file appropriately
+        new_state.outdir = self.outdir % new_state.honeypot
+        new_state.outdir += "/"+new_state.direction
+        if not os.path.exists(new_state.outdir):
+            try:
+                os.mkdir(new_state.outdir)
+            except OSError:
+                print "Unable to create dir: %s. Check permissions." % (newstate.outdir)
+                sys.exit(2)
+        new_state.fname = self._flow_filename(new_state)
         if index in self.flow_hash:
             tmp = self.flow_hash[index]
             new_state.next = tmp
@@ -167,7 +191,7 @@ class flow_state_manager(object):
         else:
             self.flow_hash[index] = new_state
         return new_state
-      
+
     def find_flow_state(self, flow):
         index = self.fhash(flow)
         #print "index: " + str(index)
@@ -192,26 +216,26 @@ class flow_state_manager(object):
                     return state
         return None
 
-    def flow_filename(self, flow):
+    def _flow_filename(self, state):
         """
         filename should be:
         "%03d.%03d.%03d.%03d.%05d-%03d.%03d.%03d.%03d.%05d"
         """
-        name = "%s/%s.%s-%s.%s" % (self.outdir, flow.src, flow.sport, flow.dst, flow.dport)
+        name = "%s/%s.%s-%s.%s" % (state.outdir, state.flow.src, state.flow.sport, state.flow.dst, state.flow.dport)
         return name
 
-    def closeFiles(self):   
-	"""Close all files associated with this flow_state"""
-        for s in self.getFlowStates(): 
+    def closeFiles(self):
+        """Close all files associated with this flow_state"""
+        for s in self.getFlowStates():
             if s.fp is not None:
                 s.close()
-        
-    def getFlows(self): 
-	"""return all flows for this state"""
+
+    def getFlows(self):
+        """return all flows for this state"""
         return [ s.flow for s in self.getFlowStates() ]
-        
+
     def getFlowStates(self):
-	"""return all states"""
+        """return all states"""
         states = []
         for s in self.flow_hash.values():
             states.append(s)
@@ -225,3 +249,5 @@ class flow_state_manager(object):
 
 class fileHandleError(Exception):
     pass
+
+

@@ -38,7 +38,7 @@ class ftpDecode(Base):
         Base.__init__(self)
         self.statemgr = None
         # for some reason the data samples I'm using
-        # often have UUUUUUPORT, compensate for that in the RE 
+        # often have UUUUUUPORT, compensate for that in the RE
         # It turns out these are being stuck in the stream due to duplicate ACKS
         self.activeRE = re.compile("^U*PORT", re.M)
         self.passiveRE = re.compile("PASV")
@@ -48,8 +48,8 @@ class ftpDecode(Base):
         self._227re = re.compile("^227|^229", re.M)
         self.id = flowIdentify()
         self.msg = stringMessage()
-        
-        
+
+
     def decode(self, state, statemgr):
         self.statemgr = statemgr
         state.close()
@@ -62,15 +62,15 @@ class ftpDecode(Base):
         #print '%s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)
         if f.dport == 21:
             # ftp control connection
-            # use these to figure out filenames for other flows            
+            # use these to figure out filenames for other flows
             m = self.passiveRE.search(d)
             if m is not None:
                 self.extractPassive(state, d)
             else:
                 # if we didn't find a PASV command, assume active
                 self.extractActive(state, d)
-        
-        
+
+
     def extractActive(self, state, d):
         #print "Active FTP"
         # look for port lines
@@ -87,7 +87,7 @@ class ftpDecode(Base):
                 except StopIteration:
                     return
                 if nextl.find("RETR")>=0:
-                    # this means the current PORT will be 
+                    # this means the current PORT will be
                     # a data channel for a downaload
                     filename = nextl.split(" ")[1]
                     ip_port = l.split(" ")[1].split(",")
@@ -108,8 +108,8 @@ class ftpDecode(Base):
                         id, m5 = self.id.identify(rstate)
                         self.msg.msg = "extracted: %s\nfiletype: %s\nmd5 sum: %s\n" %(fn,id,m5)
                         self.doOutput(self.msg)
-                        
-        
+
+
     def extractPassive(self, state, d):
         # print "Passive FTP"
         # repr(port/256), repr(port%256)
@@ -159,7 +159,7 @@ class ftpDecode(Base):
             else:
                 continue
             filename = p[1].split(" ")[1]
-            rflow.sport = port 
+            rflow.sport = port
             # passive ftp transactions happen on high ports
             # so the stream extractor has not extracted the data
             # create a new stream extractor to pull the data
@@ -171,7 +171,7 @@ class ftpDecode(Base):
             de = tcpflow.tcpFlow(p)
             filter = "src host %s and src port %d" % (rflow.src, rflow.sport)
             de.setFilter(filter)
-            de.setOutdir(options["output_data_directory"]+ "/ftp-extract")
+            de.setOutdir(options["output_data_directory"]+ "/%s/ftp")
             # run the flow extractor
             de.start()
             # now find the correct state
@@ -188,5 +188,6 @@ class ftpDecode(Base):
                 self.msg.msg = "extracted: %s\nfiletype: %s\nmd5 sum: %s\n" %(fn,id,m5)
                 self.doOutput(self.msg)
 
-                
-                
+
+
+

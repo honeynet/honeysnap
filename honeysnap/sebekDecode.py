@@ -91,6 +91,9 @@ class sebekDecode(base.Base):
         self.p.setfilter("udp port %s" % options["sebek_port"])
         self.log = {}
 
+    def setOutdir(self, dir):
+        pass
+
     def packetHandler(self, ts, ip, payload):
         """ts timestamp, ip dpkt.ip.IP, payload = sebek udp data"""
 
@@ -169,3 +172,4 @@ class sebekDecode(base.Base):
                 #print e
                 #print dpkt.dpkt.hexdump(buf)
                 continue
+
