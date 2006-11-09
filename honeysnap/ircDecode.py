@@ -122,7 +122,7 @@ class ircDecode(Base):
 ##        import pdb
 ##        pdb.set_trace() 
         if not (self.cmds or self.sources or self.targets):
-            print "No IRC seen"
+            self.doOutput("No IRC seen")
             return
         self.doOutput("\n****** command count *******\n")
         for k,v in self.cmds.items():

@@ -21,7 +21,8 @@
 # $Id$
 
 import os
-import md5
+import md5       
+import sys
 from operator import itemgetter
 
 def ipnum(ip) :
@@ -77,5 +78,5 @@ def make_dir(path):
         try:
             os.mkdir(path)
         except OSError:
-            print "Unable to create dir: %s. Check permissions." % (path)
+            print "Unable to create dir: %s Check permissions." % (path)
             sys.exit(2)    

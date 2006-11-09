@@ -58,7 +58,9 @@ import struct, dpkt, time, re
 import base
 from singletonmixin import HoneysnapSingleton
 import pcap
-from socket import inet_ntoa
+from socket import inet_ntoa 
+import sys     
+from util import make_dir
 
 sbk2 = "!IHHIIIIII12sI"
 sbk3 = "!IHHIIIIIIII12sI"
@@ -84,16 +86,18 @@ tf = lambda x: time.asctime(time.localtime(x))
 
 class sebekDecode(base.Base):
 
-    def __init__(self):
+    def __init__(self, hp):
         hs = HoneysnapSingleton.getInstance()
         options = hs.getOptions()
         self.p = pcap.pcap(options["tmpf"], promisc=False)
-        self.p.setfilter("udp port %s" % options["sebek_port"])
+        self.p.setfilter("host %s and udp port %s" % (hp, options["sebek_port"]))
         self.log = {}
+        self.fp = sys.stdout
 
     def setOutdir(self, dir):
-        pass
-
+        make_dir(dir)
+        self.fp = open(dir + "/sebek.txt", "w")
+    
     def packetHandler(self, ts, ip, payload):
         """ts timestamp, ip dpkt.ip.IP, payload = sebek udp data"""
 
@@ -149,11 +153,13 @@ class sebekDecode(base.Base):
                 # strip out nonascii junk
                 d = nonascii.sub("", d)
             if version == 3 and coms not in ["configure", "prelink", "sshd"]:
-                self.doOutput("[%s ip:%s parent:%s pid:%s uid:%s fd:%s inode:%s com:%s] %s\n" % (tf(t), self.log[k]["ip"], self.log[k]["parent_pid"],
-                    self.log[k]["pid"], uids, self.log[k]["fd"], self.log[k]["inode"], coms, d))
+                line = "[%s ip:%s parent:%s pid:%s uid:%s fd:%s inode:%s com:%s] %s\n" % (tf(t), self.log[k]["ip"], self.log[k]["parent_pid"],
+                    self.log[k]["pid"], uids, self.log[k]["fd"], self.log[k]["inode"], coms, d)
             elif coms not in ["configure", "prelink", "sshd"]:
-                self.doOutput("[%s ip:%s pid:%s uid:%s fd:%s com:%s] %s\n" % (tf(t), self.log[k]["ip"], self.log[k]["pid"],
-                    uids,  self.log[k]["fd"], coms, d))
+                line = "[%s ip:%s pid:%s uid:%s fd:%s com:%s] %s\n" % (tf(t), self.log[k]["ip"], self.log[k]["pid"],
+                    uids,  self.log[k]["fd"], coms, d)
+            self.doOutput(line)
+            self.fp.write(line)
             del self.log[k]
 
     def run(self):

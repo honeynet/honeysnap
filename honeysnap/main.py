@@ -236,7 +236,7 @@ def processFile(honeypots, file):
     if options["do_irc_detail"] == "YES" or options["do_irc"] == "YES":
         out("\nAnaylsing IRC\n")
         for hp in options["honeypots"]:    
-            print "\nHoneypot %s\n" % hp
+            out("\nHoneypot %s\n\n" % hp)
             outdir = options["output_data_directory"] + "/%s/irc" % hp 
             make_dir(outdir)
             fp = open(outdir + "/irclog.%s" % options["irc_port"], "w")
@@ -300,12 +300,14 @@ def processFile(honeypots, file):
 
     if options["do_sebek"] == "YES":
 
-        out("\nExtracting Sebek data\n")
-        sbd = sebekDecode()
-        sbd.setOutdir(options["output_data_directory"] + "/%s/sebek")
-        sbd.setOutput(out)
-        sbd.run()
-
+        out("\nExtracting Sebek data\n")   
+        for hp in options["honeypots"]:                                      
+            out("\nHoneypot %s\n\n" % hp)
+            sbd = sebekDecode(hp)
+            sbd.setOutdir(options["output_data_directory"] + "/%s/sebek" % hp)
+            sbd.setOutput(out)
+            sbd.run()
+            del sbd
 
     # delete the tmp file we used to hold unzipped data
     if deletetmp:

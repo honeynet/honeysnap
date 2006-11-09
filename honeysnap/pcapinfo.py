@@ -60,9 +60,6 @@ Average packet size: %(avg)s bytes \n \
             dsize += len(buf)
             if ts>end:
                 end = ts
-
-        print start, end
-            
         fsize = os.stat(self.filename).st_size
         duration = end - start
         start = time.asctime(time.localtime(start))
