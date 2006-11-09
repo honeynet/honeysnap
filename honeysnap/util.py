@@ -68,4 +68,14 @@ def orderByValue(d, rev=True):
     Given a dictionary, returns a list of tuples (key, value), sorted
     by the value of each entry
     """
-    return sorted(d.iteritems(), key=itemgetter(1), reverse=rev)
+    return sorted(d.iteritems(), key=itemgetter(1), reverse=rev)     
+    
+    
+def make_dir(path):
+    """Create a dir, print nice error if we fail"""
+    if not os.path.exists(path):
+        try:
+            os.mkdir(path)
+        except OSError:
+            print "Unable to create dir: %s. Check permissions." % (path)
+            sys.exit(2)    

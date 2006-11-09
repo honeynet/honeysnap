@@ -232,11 +232,12 @@ class HoneySnapIRC(irclib.SimpleIRCClient):
             filter = "tcp and port 6667"
         self.connection.connect(pcapfile, filter)
 
-    def on_global(self, c, e, file=sys.stdout):
+    def on_global(self, c, e):        
+        """Simple print method"""
         if e.eventtype() != 'ping' and e.eventtype() != 'all_raw_messages':
-            file.write("%s\t%s:%s -> %s:%s\t%s\t%s\t%s\t%s\n" % (e.time, e.src, e.sport, e.dst, e.dport,
+            print "%s\t%s:%s -> %s:%s\t%s\t%s\t%s\t%s\n" % (e.time, e.src, e.sport, e.dst, e.dport,
                                           e.eventtype(), e.source(),
-                                          e.target(), ' '.join(e.arguments())))
+                                          e.target(), ' '.join(e.arguments()))
 
     def addHandler(self, type, func, priority):
         """

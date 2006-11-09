@@ -25,7 +25,8 @@ import socket
 import pcap
 import dpkt
 from flow import flow, flow_state, flow_state_manager, reverse, fileHandleError
-from singletonmixin import HoneysnapSingleton
+from singletonmixin import HoneysnapSingleton    
+from util import make_dir
 
 FLOW_FINISHED=(1 << 0)
 FLOW_FILE_EXISTS=(1 << 1)
@@ -143,11 +144,12 @@ class tcpFlow(object):
         state.writeData(data)
 
     def safe_open(self, state):
-        """Try and open a file. Closed open files if necessary"""
+        """Try and open a file. Close open files if necessary"""
         try:
             state.open()
         except fileHandleError:
-            self.states.closeFiles()
+            self.states.closeFiles()   
+        # try again. If this fails, it's 'Not Our Fault'(tm) so just pass on the raised error
         state.open()
 
     def start(self):
@@ -163,9 +165,8 @@ class tcpFlow(object):
         self.states.setOutdir(dir)
         hps = self.hs.getOptions()["honeypots"]
         for i in hps:
-            o = self.outdir % i
-            if not os.path.exists(o):
-                os.mkdir(o)
+            o = self.outdir % i   
+            make_dir(o)
 
     def setOutput(self, file):
         self.outfile = file

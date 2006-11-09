@@ -49,7 +49,8 @@ from base import Base
 from output import outputSTDOUT, rawPathOutput
 from packetCounter import Counter
 from pcapRE import pcapRE, wordSearch
-from sebekDecode import sebekDecode
+from sebekDecode import sebekDecode   
+from util import make_dir
 
 class MyOption(Option):
     """
@@ -233,24 +234,23 @@ def processFile(honeypots, file):
         del p
 
     if options["do_irc_detail"] == "YES" or options["do_irc"] == "YES":
-        out("\nExtracting from IRC\n")
-        p = pcap.pcap(tmpf)
-        de = tcpflow.tcpFlow(p)
-        de.setFilter("port %s" % options["irc_port"])
-        de.setOutput(out)
-        de.setOutdir(options["output_data_directory"]+ "/%s/irc")
-        de.start()
-        de.dump_extract(options)
-        hirc = HoneySnapIRC()
-        hirc.connect(tmpf, "tcp and port %s" % options["irc_port"])
-        hd = ircDecode()
-        hd.setOutput(out)
-        hirc.addHandler("all_events", hd.decodeCB, -1)
-        # print all IRC lines to stdout. We should replace this with a handler that prints to file
-        # hirc.ircobj.add_global_handler("all_events", hirc.on_global, -1)
-        hirc.ircobj.process_once()
-        hd.printSummary()
-        del p
+        out("\nAnaylsing IRC\n")
+        for hp in options["honeypots"]:    
+            print "\nHoneypot %s\n" % hp
+            outdir = options["output_data_directory"] + "/%s/irc" % hp 
+            make_dir(outdir)
+            fp = open(outdir + "/irclog.%s" % options["irc_port"], "w")
+            hirc = HoneySnapIRC()
+            hirc.connect(tmpf, "host %s and tcp and port %s" % (hp, options["irc_port"]))
+            hd = ircDecode()
+            hd.setOutput(out)
+            hd.setDetailOutput(fp)
+            hirc.addHandler("all_events", hd.decodeCB, -1)   
+            hirc.ircobj.add_global_handler("all_events", hd.printLines, -1)
+            hirc.ircobj.process_once()
+            hd.printSummary()    
+            del hd
+            fp.close()
 
     if options["do_http"] == "YES":
         out("\nExtracting from http\n")
@@ -474,19 +474,10 @@ def main():
             sys.exit(2)
         hsingleton = HoneysnapSingleton.getInstance(options)
         if not os.path.exists(values.outputdir):
-            try:
-                os.mkdir(values.outputdir)
-            except OSError:
-                print "Unable to create output dir: %s. Check permissions." % values.outputdir
-                sys.exit(2)
+            make_dir(values.outputdir)
         if os.path.exists(values.outputdir):
                 for i in options["honeypots"]:
-                    if not os.path.exists(options["output_data_directory"]+"/"+i):
-                        try:
-                            os.mkdir(options["output_data_directory"]+"/"+i)
-                        except OSError:
-                            print "Unable to create output dir: %s/%s. Check permissions." % (values.outputdir, i)
-                            sys.exit(2)
+                    make_dir(options["output_data_directory"]+"/"+i)
         # by default treat args as files to be processed
         # handle multiple files being passed as args
         if len(args):
@@ -538,7 +529,4 @@ if __name__ == "__main__":
     #profile.run('main()', 'mainprof')
 
     main()
-
-
-
-
+                    

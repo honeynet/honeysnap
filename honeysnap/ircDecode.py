@@ -22,7 +22,8 @@
 
 from hsIRC import HoneySnapIRC
 import math
-import time
+import time    
+import sys
 import re
 #import dnet
 from util import orderByValue
@@ -77,7 +78,19 @@ class ircDecode(Base):
         self.repeats = {}
         self.lines = {}
         self.botlines = {}
-        self.privcount = 0
+        self.privcount = 0   
+        self.fp = sys.stdout
+         
+    def printLines(self, c, e):        
+        """Simple print method"""
+        if e.eventtype() != 'ping' and e.eventtype() != 'all_raw_messages':
+            self.fp.write("%s\t%s:%s -> %s:%s\t%s\t%s\t%s\t%s\n" % (e.time, e.src, e.sport, e.dst, e.dport,
+                                          e.eventtype(), e.source(),
+                                          e.target(), ' '.join(e.arguments())))
+    
+    def setDetailOutput(self, fp):
+        """Directed details to file given by file pointer fp"""
+        self.fp = fp
         
     def decodeCB(self, c, e):
         """
@@ -107,7 +120,10 @@ class ircDecode(Base):
             
     def printSummary(self):
 ##        import pdb
-##        pdb.set_trace()
+##        pdb.set_trace() 
+        if not (self.cmds or self.sources or self.targets):
+            print "No IRC seen"
+            return
         self.doOutput("\n****** command count *******\n")
         for k,v in self.cmds.items():
             self.doOutput("%s: %d\n" % (k, v))
@@ -117,7 +133,7 @@ class ircDecode(Base):
         self.doOutput("\n****** target count ******\n")
         for k,v in self.targets.items():
             self.doOutput("%s : %d\n" % (k, v))
-        self.doOutput("Detailed report for IRC keyword matches:\n")
+        self.doOutput("\nDetailed report for IRC keyword matches:\n")
         self.doOutput("\tRepeated Lines %d\n" % len(self.lines))
         self.doOutput("\tIPs %d\n" % len(self.ips))
         self.doOutput("\tUsers %d\n" % len(self.users))

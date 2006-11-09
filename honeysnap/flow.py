@@ -22,7 +22,7 @@
 
 import os
 import sys
-from util import ipnum
+from util import ipnum, make_dir
 from singletonmixin import HoneysnapSingleton
 
 HASH_SIZE=1009
@@ -105,7 +105,7 @@ class flow_state(object):
                     # too many files open
                     # lets toss an exception
                     self.fp = None
-                    print self.fname
+                    #print self.fname
                     raise fileHandleError()
             elif self.fp.mode != flag:    # must handle case where file is opened 'a' and we want to read
                 try:
@@ -119,7 +119,7 @@ class flow_state(object):
             try:
                 self.fp = open(self.fname, flag)
             except IOError, e:
-                print self.fname
+                #print self.fname
                 raise fileHandleError()
         return self.fp
 
@@ -177,12 +177,7 @@ class flow_state_manager(object):
         # path and name the file appropriately
         new_state.outdir = self.outdir % new_state.honeypot
         new_state.outdir += "/"+new_state.direction
-        if not os.path.exists(new_state.outdir):
-            try:
-                os.mkdir(new_state.outdir)
-            except OSError:
-                print "Unable to create dir: %s. Check permissions." % (newstate.outdir)
-                sys.exit(2)
+        make_dir(new_state.outdir)
         new_state.fname = self._flow_filename(new_state)
         if index in self.flow_hash:
             tmp = self.flow_hash[index]
