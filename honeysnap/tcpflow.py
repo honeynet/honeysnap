@@ -25,7 +25,7 @@ import socket
 import pcap
 import dpkt
 from flow import flow, flow_state, flow_state_manager, reverse, fileHandleError
-from singletonmixin import HoneysnapSingleton    
+from singletonmixin import HoneysnapSingleton
 from util import make_dir
 
 FLOW_FINISHED=(1 << 0)
@@ -42,6 +42,7 @@ class tcpFlow(object):
         self.plugins = []
         self.hs = HoneysnapSingleton.getInstance()
         self.honeypots = self.hs.getOptions()["honeypots"]
+        self.fp = None
 
     def __del__(self):
         pass
@@ -148,7 +149,7 @@ class tcpFlow(object):
         try:
             state.open()
         except fileHandleError:
-            self.states.closeFiles()   
+            self.states.closeFiles()
         # try again. If this fails, it's 'Not Our Fault'(tm) so just pass on the raised error
         state.open()
 
@@ -165,7 +166,7 @@ class tcpFlow(object):
         self.states.setOutdir(dir)
         hps = self.hs.getOptions()["honeypots"]
         for i in hps:
-            o = self.outdir % i   
+            o = self.outdir % i
             make_dir(o)
 
     def setOutput(self, file):
@@ -189,6 +190,7 @@ if __name__ == "__main__":
     tflow = tcpFlow(pcapObj)
     tflow.setFilter("not port 445")
     tflow.start()
+
 
 
 

@@ -58,8 +58,8 @@ import struct, dpkt, time, re
 import base
 from singletonmixin import HoneysnapSingleton
 import pcap
-from socket import inet_ntoa 
-import sys     
+from socket import inet_ntoa
+import sys
 from util import make_dir
 
 sbk2 = "!IHHIIIIII12sI"
@@ -97,7 +97,7 @@ class sebekDecode(base.Base):
     def setOutdir(self, dir):
         make_dir(dir)
         self.fp = open(dir + "/sebek.txt", "w")
-    
+
     def packetHandler(self, ts, ip, payload):
         """ts timestamp, ip dpkt.ip.IP, payload = sebek udp data"""
 
@@ -178,4 +178,5 @@ class sebekDecode(base.Base):
                 #print e
                 #print dpkt.dpkt.hexdump(buf)
                 continue
+
 

@@ -49,7 +49,7 @@ from base import Base
 from output import outputSTDOUT, rawPathOutput
 from packetCounter import Counter
 from pcapRE import pcapRE, wordSearch
-from sebekDecode import sebekDecode   
+from sebekDecode import sebekDecode
 from util import make_dir
 
 class MyOption(Option):
@@ -171,37 +171,45 @@ def processFile(honeypots, file):
             out("\n")
 
     if options["do_incoming"] == "YES":
-        out("\nIncoming Connections\n")
-        p = pcap.pcap(tmpf)
-        v = options["verbose_summary"]
-        s = Summarize(p, verbose=v)
-        filt = 'dst host ' + string.join(honeypots, ' or dst host ')
-        s.setFilter(filt, file)
-        s.setOutput(out)
-        s.start()
-        if v:
-            l = 0
-        else:
-            l = 10
-        s.writeResults(limit=0)
-        del p
+        for hp in options["honeypots"]:
+            outdir = options["output_data_directory"] + "/%s/conns" % hp
+            make_dir(outdir)
+            myout = rawPathOutput(outdir+"/incoming.txt", mode="a+")
+            #myout("\nIncoming Connections\n")
+            p = pcap.pcap(tmpf)
+            v = options["verbose_summary"]
+            s = Summarize(p, verbose=v)
+            filt = 'dst host %s' % hp
+            s.setFilter(filt, file)
+            s.setOutput(myout)
+            s.start()
+            if v:
+                l = 0
+            else:
+                l = 10
+            s.writeResults(limit=0)
+            del p
 
 
     if options["do_outgoing"] == "YES":
-        out("\nOutgoing Connections\n")
-        p = pcap.pcap(tmpf)
-        v = options["verbose_summary"]
-        s = Summarize(p, verbose=v)
-        filt = 'src host ' + string.join(honeypots, ' or src host ')
-        s.setFilter(filt, file)
-        s.setOutput(out)
-        s.start()
-        if v:
-            l = 0
-        else:
-            l = 10
-        s.writeResults(limit=l)
-        del p
+        for hp in options["honeypots"]:
+            outdir = options["output_data_directory"] + "/%s/conns" % hp
+            make_dir(outdir)
+            myout = rawPathOutput(outdir+"/outgoing.txt", mode="a+")
+            #myout("\nOutgoing Connections\n")
+            p = pcap.pcap(tmpf)
+            v = options["verbose_summary"]
+            s = Summarize(p, verbose=v)
+            filt = 'src host %s' % hp
+            s.setFilter(filt, file)
+            s.setOutput(myout)
+            s.start()
+            if v:
+                l = 0
+            else:
+                l = 10
+            s.writeResults(limit=l)
+            del p
 
 
     if options["do_irc_summary"] == "YES" or options["do_irc"] == "YES":
@@ -235,20 +243,38 @@ def processFile(honeypots, file):
 
     if options["do_irc_detail"] == "YES" or options["do_irc"] == "YES":
         out("\nAnaylsing IRC\n")
-        for hp in options["honeypots"]:    
+        for hp in options["honeypots"]:
             out("\nHoneypot %s\n\n" % hp)
-            outdir = options["output_data_directory"] + "/%s/irc" % hp 
+            outdir = options["output_data_directory"] + "/%s/irc" % hp
             make_dir(outdir)
             hirc = HoneySnapIRC()
             hirc.connect(tmpf, "host %s and tcp and port %s" % (hp, options["irc_port"]))
             hd = ircDecode()
             hd.setOutput(out)
             hd.setOutdir(outdir)
-            hirc.addHandler("all_events", hd.decodeCB, -1)   
+            hirc.addHandler("all_events", hd.decodeCB, -1)
             hirc.ircobj.add_global_handler("all_events", hd.printLines, -1)
             hirc.ircobj.process_once()
-            hd.printSummary()    
+            hd.printSummary()
             del hd
+
+    if options["all_flows"] == "YES":
+        out("\nExtracting all flows\n")
+        p = pcap.pcap(tmpf)
+        de = tcpflow.tcpFlow(p)
+        filt = "host "
+        filt += " or host ".join(options["honeypots"])
+        de.setFilter(filt)
+        de.setOutdir(options["output_data_directory"]+ "/%s/flows")
+        de.setOutput(out)
+        """
+        decode = httpDecode.httpDecode()
+        decode.setOutput(out)
+        de.registerPlugin(decode.decode)
+        """
+        de.start()
+        de.dump_extract(options)
+        del p
 
     if options["do_http"] == "YES":
         out("\nExtracting from http\n")
@@ -298,8 +324,8 @@ def processFile(honeypots, file):
 
     if options["do_sebek"] == "YES":
 
-        out("\nExtracting Sebek data\n")   
-        for hp in options["honeypots"]:                                      
+        out("\nExtracting Sebek data\n")
+        for hp in options["honeypots"]:
             out("\nHoneypot %s\n\n" % hp)
             sbd = sebekDecode(hp)
             sbd.setOutdir(options["output_data_directory"] + "/%s/sebek" % hp)
@@ -406,6 +432,9 @@ def configOptions(parser):
     parser.add_option("--sebek-port", dest="sebek_port", action="store_const", const="YES",
         help = "Port for sebek traffic")
     parser.set_defaults(sebek_port=1101)
+    parser.add_option("--all-flows", dest="all_flows", action="store_const", const="YES",
+        help = "Extract data from all tcp flows")
+    parser.set_defaults(do_http="NO")
 ##    parser.add_option("--do-rrd", dest="do_rrd", action="store_const", const="YES",
 ##            help = "Do RRD, not yet implemented")
 ##    parser.set_defaults(do_rrd="NO")
@@ -476,8 +505,8 @@ def main():
         if not os.path.exists(values.outputdir):
             make_dir(values.outputdir)
         if os.path.exists(values.outputdir):
-                for i in options["honeypots"]:
-                    make_dir(options["output_data_directory"]+"/"+i)
+            for i in options["honeypots"]:
+                make_dir(options["output_data_directory"]+"/"+i)
         # by default treat args as files to be processed
         # handle multiple files being passed as args
         if len(args):
@@ -529,4 +558,4 @@ if __name__ == "__main__":
     #profile.run('main()', 'mainprof')
 
     main()
-                    
+

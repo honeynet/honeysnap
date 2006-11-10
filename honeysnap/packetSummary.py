@@ -26,6 +26,7 @@ import base
 import socket
 import sys
 import time
+from util import make_dir
 
 tf = lambda x: time.strftime("%d/%m/%y %H:%M:%S", time.localtime(x))
 
@@ -43,11 +44,16 @@ class Summarize(base.Base):
         self.icmp = {}
         self.p = pcapObj
         self.verbose = verbose
+        self.outdir = ""
 
     def setFilter(self, filter, file):
         self.filter = filter
         self.file = file
         self.p.setfilter(filter)
+
+    def setOutdir(self, dir):
+        make_dir(dir)
+        self.outdir = dir
 
     def start(self):
         """Iterate over a pcap object"""
@@ -132,5 +138,6 @@ class Summarize(base.Base):
                         self.doOutput("%-20s %-20s %-16s %-6s %-19s %-6s %10s %10s\n" % (tf(val[0]), tf(val[1]), key[0], key[3], key[1], key[2], str(val[2]), str(val[3])))
                     else:
                         self.doOutput("%-20s %-20s %-16s %-16s %8s %10s %10s\n" % (tf(val[0]), tf(val[1]), key[0], key[1], key[2], str(val[2]), str(val[3])))
+
 
 
