@@ -342,6 +342,17 @@ def cleanup(options):
     Clean up empty files, etc.
     """
     datadir = options["output_data_directory"]
+    for root, dirs, files in os.walk(datadir, topdown=False):
+        #print root, dirs, files
+        for name in files:
+            if os.stat(os.path.join(root, name)).st_size == 0:
+                #print "removing %s" % os.path.join(root, name)
+                os.remove(os.path.join(root, name))
+        for name in dirs:
+            if not len(os.listdir(os.path.join(root, name))):
+                #print "removing dir %s" % os.path.join(root, name)
+                os.rmdir(os.path.join(root, name))
+    """
     for dir in ["/irc", "/http", "/ftp", "/smtp", "/sebek"]:
         if os.path.isdir(datadir+dir):
             files = os.listdir(datadir+dir)
@@ -351,6 +362,7 @@ def cleanup(options):
             file = datadir + dir + "/" + f
             if os.stat(file).st_size == 0:
                 os.unlink(file)
+    """
 
 def configOptions(parser):
     parser.add_option("-c", "--config", dest="config",type="string",
