@@ -29,6 +29,78 @@ from flowIdentify import flowIdentify
 from base import Base
 import urllib
 
+def parse_headers(f):
+    """Return dict of HTTP headers parsed from a file object."""
+    d = {}
+    while 1:
+        line = f.readline()
+        if not line:
+            raise dpkt.NeedData('premature end of headers')
+        line = line.strip()
+        if not line:
+            break
+        l = line.split(':', 1)
+        if not len(l) == 2:
+            raise dpkt.UnpackError('invalid header: %r' % line)
+        l[0] = l[0] + ':'
+        k = l[0][:-1].lower()
+        d[k] = len(l) != 1 and l[1] or ''
+    return d
+
+def parse_body(f, headers):
+    """Return HTTP body parsed from a file object, given HTTP header dict."""
+    if headers.get('transfer-encoding', '').lower() == 'chunked':
+        l = []
+        found_end = False
+        while 1:
+            try:
+                sz = f.readline().split(None, 1)[0]
+            except IndexError:
+                raise dpkt.UnpackError('missing chunk size')
+            n = int(sz, 16)
+            if n == 0:
+                found_end = True
+            buf = f.read(n)
+            if f.readline().strip():
+                break
+            if n and len(buf) == n:
+                l.append(buf)
+            else:
+                break
+        if not found_end:
+            raise dpkt.NeedData('premature end of chunked body')
+        body = ''.join(l)
+    elif 'content-length' in headers:
+        n = int(headers['content-length'])
+        body = f.read(n)
+        if len(body) != n:
+            raise dpkt.NeedData('short body (missing %d bytes)' % (n - len(body)))
+    elif 'content-type' in headers:
+        body = f.read()
+    else:
+        # XXX - need to handle HTTP/0.9
+        body = ''
+    return body
+
+class myMessage(dpkt.http.Message):
+    """Hypertext Transfer Protocol headers + body."""
+    __metaclass__ = type
+    __hdr_defaults__ = {}
+    headers = None
+    body = None
+
+    def __init__(self, *args, **kwargs):
+        super(myMessage, self).__init__()
+
+    def unpack(self, buf):
+        f = cStringIO.StringIO(buf)
+        # Parse headers
+        self.headers = parse_headers(f)
+        # Parse body
+        self.body = parse_body(f, self.headers)
+        # Save the rest
+        self.data = f.read()
+
 class httpDecode(Base):
 
     # this part stolen from dpkt.  Thanks Dug!
@@ -119,8 +191,8 @@ class httpDecode(Base):
                 try:
                     state.open(flag="rb")
                     l = state.fp.readline()
-                    headers = dpkt.http.parse_headers(state.fp)
-                    r = dpkt.http.Message()
+                    headers = parse_headers(state.fp)
+                    r = myMessage()
                     r.headers = headers
                     r.body = state.fp.readlines()
                     r.data = None
@@ -152,8 +224,8 @@ class httpDecode(Base):
                 try:
                     state.open(flag="rb")
                     l = state.fp.readline()
-                    headers = dpkt.http.parse_headers(state.fp)
-                    r = dpkt.http.Message()
+                    headers = parse_headers(state.fp)
+                    r = myMessage()
                     r.headers = headers
                     r.body = state.fp.readlines()
                     r.request = req
@@ -284,5 +356,6 @@ class httpDecode(Base):
                 data = "".join(data)
             fp.write(data)
             fp.close()
+
 
 
