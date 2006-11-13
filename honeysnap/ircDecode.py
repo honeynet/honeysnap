@@ -78,19 +78,32 @@ class ircDecode(Base):
         self.repeats = {}
         self.lines = {}
         self.botlines = {}
-        self.privcount = 0   
-        self.fp = sys.stdout
+        self.privcount = 0     
+        self.dir = ""
+        self.fp = sys.stdout           
          
     def printLines(self, c, e):        
         """Simple print method"""
         if e.eventtype() != 'ping' and e.eventtype() != 'all_raw_messages':
-            self.fp.write("%s\t%s:%s -> %s:%s\t%s\t%s\t%s\t%s\n" % (e.time, e.src, e.sport, e.dst, e.dport,
-                                          e.eventtype(), e.source(),
-                                          e.target(), ' '.join(e.arguments())))
+            self.fp.write(str(e))
              
     def setOutdir(self, dir):
-        make_dir(dir)                               
-        self.fp = open(dir + "/irclog.txt", "w")  
+        """
+        Set output directory for IRC log
+        If you just want output to stdout, don't call this function
+        """
+        make_dir(dir) 
+        self.dir = dir
+        
+    def setOutfile(self, filename):
+        """
+        Set output filename for IRC log
+        If you just want output to stdout, don't call this function
+        """
+        if self.dir:
+            self.fp = open(self.dir + "/%s" % filename, "w")  
+        else:
+            raise IOError("Cannot create file %s - directory not specified" % filename) 
     
     def decodeCB(self, c, e):
         """
@@ -99,9 +112,6 @@ class ircDecode(Base):
         e: instance of irclib.Event
         """
         if e.eventtype() not in ['ping', 'pong'] and e.eventtype() != 'all_raw_messages':
-##            print "%s\t%s\t%s\t%s\t%s" % (long(math.ceil(time.time())),
-##                                          e.eventtype(), e.source(),
-##                                          e.target(), ' '.join(e.arguments()))
             cmd = e.eventtype()
             source = e.source()
             target = e.target()

@@ -22,7 +22,7 @@
 
 import sys
 import socket
-from optparse import OptionParser, Option
+from optparse import OptionParser, Option, OptionValueError
 import re
 import string
 import gzip
@@ -70,7 +70,14 @@ class MyOption(Option):
                 self, action, dest, opt, value, values, parser)
 
 def setFilters(options):
-    """Set filters for packet counts"""
+    """Set filters for packet counts"""         
+    irc_ports = options["irc_ports"]                                
+    if len(irc_ports)==1:
+        irc_filter = "dst port %s" % irc_ports[0]
+    else:                              
+        irc_filter = "("                
+        port = [ 'dst port %s' % port for port in irc_ports ]
+        irc_filter = irc_filter + " or ".join(port) + ")"
     return { 'Counting outbound IP packets:':'src host %s',
         'Outbound FTP packets:':'src host %s and dst port 21',
         'Outbound SSH packets:':'src host %s and dst port 22',
@@ -81,7 +88,7 @@ def setFilters(options):
         'Served HTTPS packets:':'dst host %s and dst port 443',
         'Outbound HTTPS packets:':'src host %s and dst port 443',
         'Outbound Sebek packets:':'src host %s and udp port %s' % ('%s', options["sebek_port"]),
-        'Outbound IRC packets:':'src host %s and dst port %s' % ('%s', options["irc_port"])}
+        'Outbound IRC packets:':'src host %s and tcp and %s' % ('%s', irc_filter)}
 
 def processFile(honeypots, file):
     """
@@ -218,45 +225,48 @@ def processFile(honeypots, file):
         in the payload.  Matching packets will be handed to wordsearch
         to hunt for any matching words.
         """
-        out("\nIRC Summary\n")
-        p = pcap.pcap(tmpf)
-        words = '0day access account admin auth bank bash #!/bin binaries binary bot card cash cc cent connect crack credit dns dollar ebay e-bay egg flood ftp hackexploit http leech login money /msg nologin owns ownz password paypal phish pirate pound probe prv putty remote resolved root rooted scam scan shell smtp sploit sterling sucess sysop sys-op trade uid uname uptime userid virus warez'
-        if options["wordfile"]:
-            wfile = options["wordfile"]
-            if os.path.exists(wfile) and os.path.isfile(wfile):
-                wfp = open(wfile, 'rb')
-                words = wfp.readlines()
-                words = [w.strip() for w in words]
-                words = " ".join(words)
-        ws = wordSearch()
-        ws.setWords(words)
-        ws.setOutput(out)
-        #ws.setOutput(options["output_data_directory"] + "/results")
-        r = pcapRE(p)
-        r.setFilter("port %s" % options["irc_port"])
-        r.setRE('PRIVMSG')
-        r.setWordSearch(ws)
-        r.setOutput(out)
-        r.start()
-        r.writeResults()
-        del p
+        for hp in options["honeypots"]:
+            for port in options["irc_ports"]:                        
+                out("\nIRC Summary for %s:%s\n\n" % (hp, port))
+                p = pcap.pcap(tmpf)
+                words = '0day access account admin auth bank bash #!/bin binaries binary bot card cash cc cent connect crack credit dns dollar ebay e-bay egg flood ftp hackexploit http leech login money /msg nologin owns ownz password paypal phish pirate pound probe prv putty remote resolved root rooted scam scan shell smtp sploit sterling sucess sysop sys-op trade uid uname uptime userid virus warez'
+                if options["wordfile"]:
+                    wfile = options["wordfile"]
+                    if os.path.exists(wfile) and os.path.isfile(wfile):
+                        wfp = open(wfile, 'rb')
+                        words = wfp.readlines()
+                        words = [w.strip() for w in words]
+                        words = " ".join(words)
+                ws = wordSearch()
+                ws.setWords(words)
+                ws.setOutput(out)
+                #ws.setOutput(options["output_data_directory"] + "/results")
+                r = pcapRE(p)
+                r.setFilter("host %s and tcp and port %s" % (hp, port))
+                r.setRE('PRIVMSG')
+                r.setWordSearch(ws)
+                r.setOutput(out)
+                r.start()
+                r.writeResults()
+                del p 
 
     if options["do_irc_detail"] == "YES" or options["do_irc"] == "YES":
         out("\nAnaylsing IRC\n")
-        for hp in options["honeypots"]:
-            out("\nHoneypot %s\n\n" % hp)
+        for hp in options["honeypots"]: 
             outdir = options["output_data_directory"] + "/%s/irc" % hp
-            make_dir(outdir)
-            hirc = HoneySnapIRC()
-            hirc.connect(tmpf, "host %s and tcp and port %s" % (hp, options["irc_port"]))
-            hd = ircDecode()
-            hd.setOutput(out)
-            hd.setOutdir(outdir)
-            hirc.addHandler("all_events", hd.decodeCB, -1)
-            hirc.ircobj.add_global_handler("all_events", hd.printLines, -1)
-            hirc.ircobj.process_once()
-            hd.printSummary()
-            del hd
+            for port in options["irc_ports"] :
+                out("\nHoneypot %s, port %s\n\n" % (hp, port))
+                hirc = HoneySnapIRC()
+                hirc.connect(tmpf, "host %s and tcp and port %s" % (hp, port))
+                hd = ircDecode()
+                hd.setOutput(out)
+                hd.setOutdir(outdir)                        
+                hd.setOutfile('irclog-%s.txt' % port)
+                hirc.addHandler("all_events", hd.decodeCB, -1)
+                hirc.ircobj.add_global_handler("all_events", hd.printLines, -1)
+                hirc.ircobj.process_once()  
+                hd.printSummary()
+                del hd 
 
     if options["all_flows"] == "YES":
         out("\nExtracting all flows\n")
@@ -363,8 +373,19 @@ def cleanup(options):
             if os.stat(file).st_size == 0:
                 os.unlink(file)
     """
+                     
+def store_int_array(option, opt_str, value, parser):
+    """Store comman seperated integer values from options into an array"""
+    a = []         
+    a = value.split(",")   
+    try:
+        a = [ int(n) for n in a ]
+    except ValueError:
+        raise OptionValueError("Argument %s not an integer!" % opt_str)
+    setattr(parser.values, option.dest, a)
 
-def configOptions(parser):
+def configOptions(parser):   
+    """Define options"""
     parser.add_option("-c", "--config", dest="config",type="string",
         help="Config file")
     parser.add_option("-f", "--file", dest="filename",type="string",
@@ -435,9 +456,9 @@ def configOptions(parser):
     parser.add_option("--do-irc-detail", dest="do_irc_detail", action="store_const", const="YES",
         help = "Extract IRC sessions, do detailed IRC analysis")
     parser.set_defaults(do_irc_detail="NO")
-    parser.add_option("--irc-port", dest="irc_port", action="store_const", const="YES",
-        help = "Port to analyse for IRC traffic")
-    parser.set_defaults(irc_port=6667)
+    parser.add_option("--irc-ports", action="callback", callback=store_int_array, dest="irc_ports", type="string",
+        help = "Ports for IRC traffic")
+    parser.set_defaults(irc_ports=[6667])
     parser.add_option("--do-sebek", dest="do_sebek", action="store_const", const="YES",
         help = "Summarize Sebek")
     parser.set_defaults(do_sebek="NO")

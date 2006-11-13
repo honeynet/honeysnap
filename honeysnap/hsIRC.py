@@ -49,7 +49,13 @@ class HnyEvent(irclib.Event):
         self.src   = inet_ntoa(pkt.src)
         self.dst   = inet_ntoa(pkt.dst)
         self.dport = pkt.data.dport
-        self.sport = pkt.data.sport
+        self.sport = pkt.data.sport 
+    
+    def __str__(self):                                 
+         return "%s\t%s:%s -> %s:%s\t%s\t%s\t%s\t%s\n" % (self.time, self.src, self.sport, self.dst, self.dport,
+                                      self.eventtype(), self.source(),
+                                      self.target(), ' '.join(self.arguments()))
+                                      
 
 class HnyServerConnection(irclib.ServerConnection):
     def __init__(self, irclibobj):
@@ -234,10 +240,8 @@ class HoneySnapIRC(irclib.SimpleIRCClient):
 
     def on_global(self, c, e):        
         """Simple print method"""
-        if e.eventtype() != 'ping' and e.eventtype() != 'all_raw_messages':
-            print "%s\t%s:%s -> %s:%s\t%s\t%s\t%s\t%s\n" % (e.time, e.src, e.sport, e.dst, e.dport,
-                                          e.eventtype(), e.source(),
-                                          e.target(), ' '.join(e.arguments()))
+        if e.eventtype() != 'ping' and e.eventtype() != 'all_raw_messages': 
+            print e,
 
     def addHandler(self, type, func, priority):
         """

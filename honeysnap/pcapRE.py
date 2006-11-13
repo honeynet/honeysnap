@@ -39,13 +39,15 @@ class wordSearch(Base):
         Base.__init__(self)
         self.results = {}
         self.words = []
-        format = "%-10(word)s %-5(proto)s %-17(source)s %-17(dest)s %-7(dport)s %10(count)s\n"
+        format = "%(word)-10s %(proto)-5s %(source)-17s %(dest)-17s %(dport)-7s %(count)10s\n"
         self.msg = stringFormatMessage(format=format)
         
     def findWords(self, data, key):
         for w in self.words:
             if string.find(data, w) >= 0:
                 if key is not None:
+                    if not self.results.has_key(w):
+                        self.results[w] = {}
                     if key not in self.results[w]:
                         self.results[w][key] = 0 
                     self.results[w][key] += 1
@@ -53,18 +55,21 @@ class wordSearch(Base):
     def setWords(self, wordstr):
         self.words = []
         for w in wordstr.split(" "):
-            self.results[w] = {}
+            #self.results[w] = {}
             self.words.append(w)
 
-    def printResults(self, f=sys.stdout):
-        self.writeResults(sys.stdout)
-
-    def writeResults(self, f=sys.stdout):
-        self.doOutput("Word Matches\n")
-        self.doOutput("%-10s %-5s %-17s %-17s %-7s %10s\n" % ("WORD", "PROTO", "SOURCE", "DEST", "DPORT", "COUNT"))
-        for word, cons in self.results.items():
-            for k in cons:
-                self.doOutput("%-10s %-5s %-17s %-17s %-7s %10s\n" % (word, k[0], k[1], k[2], k[3], self.results[word][k]))
+    def writeResults(self):  
+        """Summarise results"""
+        if self.results:
+            #self.doOutput("Word Matches\n")      
+            self.msg.msg=dict(word="WORD", proto="PROTO", source="SOURCE", dest="DEST", dport="DPORT", count="COUNT")
+            self.doOutput(self.msg)
+            for word, cons in self.results.items():
+                for k in cons: 
+                    self.msg.msg = dict(word=word, proto=k[0], source=k[1], dest=k[2], dport=k[3], count=self.results[word][k])
+                    self.doOutput(self.msg)   
+        else:
+             self.doOutput("No words found\n")
 
 
 class pcapRE(Base):
@@ -77,7 +82,7 @@ class pcapRE(Base):
         self.p = pcapObj
         self.results = {}
         self.doWordSearch = 0
-        format = "%-10(pattern)s %-5(proto)s %-15(source)s %-15(dest)s %-5(dport)s %10(count)s\n"
+        format = "%(pattern)-10s %(proto)-5s %(source)-15s %(dest)-15s %(dport)-5s %(count)10s\n"  
         self.msg = stringFormatMessage(format=format)
         
     def setRE(self, pattern):
@@ -137,13 +142,15 @@ class pcapRE(Base):
                 if self.doWordSearch:
                     self.searcher.findWords(pay, key)
     
-    def printResults(self):
-        self.writeResults(sys.stdout)
-
-    def writeResults(self, f=sys.stdout):
-        """Write results to a given filehandle"""
-        self.doOutput("%-10s %-5s %-15s %-15s %-5s %10s\n" % ("PATTERN", "PROTO", "SOURCE", "DEST", "DPORT", "COUNT"))
-        for key, val in self.results.items():
-            self.doOutput("%-10s %-5s %-15s %-15s %-5s %10s\n" % (self.pattern, key[0], key[1], key[2], key[3], val))
-        if self.doWordSearch:
-            self.searcher.writeResults()
+    def writeResults(self):
+        """Summarise results"""  
+        if self.results:     
+            self.msg.msg=dict(pattern="PATTERN", proto="PROTO", source="SOURCE", dest="DEST", dport="DPORT", count="COUNT")
+            self.doOutput(self.msg)
+            for key, val in self.results.items():
+                self.msg.msg=dict(pattern=self.pattern, proto=key[0], source=key[1], dest=key[2], dport=key[3], count=val)
+                self.doOutput(self.msg)  
+        else:
+            self.doOutput('No matching packets found\n')
+        if self.doWordSearch:  
+            self.searcher.writeResults()   
