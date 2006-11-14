@@ -1,0 +1,5 @@
+# $Id$
+include INSTALL
+include COPYING
+include honeynet.cfg
+include words

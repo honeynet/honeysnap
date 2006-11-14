@@ -12,6 +12,7 @@ setup(name="honeysnap",
       author="Jed Hale",
       author_email="jed.haile@thelogangroup.biz",
       url="http://www.honeynet.org/tools/danalysis",
+	  license="GNU GPL",
       packages=["honeysnap"],
       scripts = ['scripts/honeysnap'],
       )
