@@ -64,12 +64,15 @@ def mdsum(file):
     #print "md5: %s" % d
     return d
 
-def orderByValue(d, rev=True):
+def orderByValue(d, rev=True, limit=0):
     """
     Given a dictionary, returns a list of tuples (key, value), sorted
-    by the value of each entry
-    """
-    return sorted(d.iteritems(), key=itemgetter(1), reverse=rev)     
+    by the value of each entry, limited to the top N values if limit>0
+    """                             
+    if limit==0:               
+        return sorted(d.iteritems(), key=itemgetter(1), reverse=rev)     
+    else:                                                           
+        return sorted(d.iteritems(), key=itemgetter(1), reverse=rev)[0:limit]
     
     
 def make_dir(path):

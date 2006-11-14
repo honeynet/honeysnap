@@ -457,13 +457,15 @@ def configOptions(parser):
         help = "Extract IRC sessions, do detailed IRC analysis")
     parser.set_defaults(do_irc_detail="NO")
     parser.add_option("--irc-ports", action="callback", callback=store_int_array, dest="irc_ports", type="string",
-        help = "Ports for IRC traffic")
-    parser.set_defaults(irc_ports=[6667])
+        help = "Ports for IRC traffic")   
+    parser.set_defaults(irc_ports=[6667]) 
+    parser.add_option("--irc-limit", dest="irc_limit", type="int",
+        help = "Limit IRC summary to top N items")
+    parser.set_defaults(irc_limit=0)
     parser.add_option("--do-sebek", dest="do_sebek", action="store_const", const="YES",
         help = "Summarize Sebek")
     parser.set_defaults(do_sebek="NO")
-    parser.add_option("--sebek-port", dest="sebek_port", action="store_const", const="YES",
-        help = "Port for sebek traffic")
+    parser.add_option("--sebek-port", dest="sebek_port", type="int", help = "Port for sebek traffic")
     parser.set_defaults(sebek_port=1101)
     parser.add_option("--all-flows", dest="all_flows", action="store_const", const="YES",
         help = "Extract data from all tcp flows")

@@ -20,7 +20,8 @@
 
 # $Id$
 
-from hsIRC import HoneySnapIRC
+from hsIRC import HoneySnapIRC   
+from singletonmixin import HoneysnapSingleton
 import math
 import time    
 import sys
@@ -80,7 +81,10 @@ class ircDecode(Base):
         self.botlines = {}
         self.privcount = 0     
         self.dir = ""
-        self.fp = sys.stdout           
+        self.fp = sys.stdout   
+        hs = HoneysnapSingleton.getInstance()
+        options = hs.getOptions() 
+        self.limit=options['irc_limit']      
          
     def printLines(self, c, e):        
         """Simple print method"""
@@ -130,18 +134,18 @@ class ircDecode(Base):
             
     def printSummary(self):
 ##        import pdb
-##        pdb.set_trace() 
+##        pdb.set_trace()                                 
         if not (self.cmds or self.sources or self.targets):  
             self.doOutput("No IRC seen\n")
             return
         self.doOutput("\n****** command count *******\n")
-        for k,v in self.cmds.items():
+        for k,v in orderByValue(self.cmds, limit=self.limit):
             self.doOutput("%s: %d\n" % (k, v))
         self.doOutput("\n****** source count *******\n")
-        for k,v in self.sources.items():
+        for k,v in orderByValue(self.sources, limit=self.limit):
             self.doOutput("%s : %d\n" % (k, v))
         self.doOutput("\n****** target count ******\n")
-        for k,v in self.targets.items():
+        for k,v in orderByValue(self.targets, limit=self.limit):
             self.doOutput("%s : %d\n" % (k, v))
         self.doOutput("\nDetailed report for IRC keyword matches:\n")
         self.doOutput("\tRepeated Lines %d\n" % len(self.lines))
@@ -150,9 +154,8 @@ class ircDecode(Base):
         self.doOutput("\tChannels %d\n" % len(self.channels))
         if len(self.botlines) > 0:
             self.doOutput("\tPossible bot commands:\n")
-            vals = orderByValue(self.botlines)
-            for i in vals:
-                self.doOutput("\t\t%s => %d\n" % i)
+            for k,v in orderByValue(self.botlines, limit=self.limit):
+                self.doOutput("\t\t%s => %d\n" % (k, v))
             
         """
         print "\n****** talking ips ******"
