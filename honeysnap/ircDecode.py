@@ -138,13 +138,13 @@ class ircDecode(Base):
         if not (self.cmds or self.sources or self.targets):  
             self.doOutput("No IRC seen\n")
             return
-        self.doOutput("\n****** command count *******\n")
+        self.doOutput("\nCommand counts:\n\n")
         for k,v in orderByValue(self.cmds, limit=self.limit):
             self.doOutput("%s: %d\n" % (k, v))
-        self.doOutput("\n****** source count *******\n")
+        self.doOutput("\nSource counts:\n\n")
         for k,v in orderByValue(self.sources, limit=self.limit):
             self.doOutput("%s : %d\n" % (k, v))
-        self.doOutput("\n****** target count ******\n")
+        self.doOutput("\nTarget counts:\n\n")
         for k,v in orderByValue(self.targets, limit=self.limit):
             self.doOutput("%s : %d\n" % (k, v))
         self.doOutput("\nDetailed report for IRC keyword matches:\n")

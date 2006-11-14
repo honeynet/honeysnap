@@ -256,7 +256,7 @@ def processFile(honeypots, file):
                 del p
 
     if options["do_irc_detail"] == "YES" or options["do_irc"] == "YES":
-        out("\nAnaylsing IRC\n")
+        out("\nAnaylsing IRC\n")          
         for hp in options["honeypots"]:
             outdir = options["output_data_directory"] + "/%s/irc" % hp
             for port in options["irc_ports"] :
@@ -420,10 +420,10 @@ def configOptions(parser):
     parser.set_defaults(do_packets="NO")
     parser.add_option("--do-incoming", dest="do_incoming", action="store_const", const="YES",
         help = "Summarise incoming traffic flows")
-    parser.set_defaults(summarize_incoming="NO")
+    parser.set_defaults(do_incoming="NO")
     parser.add_option("--do-outgoing", dest="do_outgoing", action="store_const", const="YES",
-        help = "Summarise packet counts")
-    parser.set_defaults(summarize_outgoing="NO")
+        help = "Summarise outgoing traffic flows")
+    parser.set_defaults(do_outgoing="NO")
     parser.add_option("--verbose-summary", dest="verbose_summary", action="store_const", const=1,
         help = "Do verbose flow counts, indexes flows by srcip, sport, dstip, dport")
     parser.set_defaults(verbose_summary=0)
@@ -459,8 +459,7 @@ def configOptions(parser):
     parser.add_option("--irc-ports", action="callback", callback=store_int_array, dest="irc_ports", type="string",
         help = "Ports for IRC traffic")   
     parser.set_defaults(irc_ports=[6667]) 
-    parser.add_option("--irc-limit", dest="irc_limit", type="int",
-        help = "Limit IRC summary to top N items")
+    parser.add_option("--irc-limit", dest="irc_limit", type="int", help = "Limit IRC summary to top N items")
     parser.set_defaults(irc_limit=0)
     parser.add_option("--do-sebek", dest="do_sebek", action="store_const", const="YES",
         help = "Summarize Sebek")
@@ -503,7 +502,8 @@ def main():
                     honeypots = honeypots.split()
                     values.honeypots = honeypots
                 except ConfigParser.Error:
-                    honeypots = values.honeypots
+                    print "Must specify honeypots!"
+                    sys.exit(1)
             if not values.wordfile:
                 try:
                     wordfile = parser.get("IO", "WORDFILE")
@@ -521,15 +521,19 @@ def main():
 
         # pull in the values from the option parser
         options = values.__dict__
-
+        
         if options['config'] is not None:
             if os.path.isfile(options['config']):
-                for i in parser.items("OPTIONS"):
-                    options[i[0]] = i[1]
+                for i in parser.items("OPTIONS"): 
+                    if i[0] == 'irc_ports':
+                        options[i[0]] = [ int(n) for n in i[1].split(',') ]
+                    elif i[0] == 'irc_limit': 
+                        options[i[0]] = int(i[1])
+                    else:
+                        options[i[0]] = i[1]
             else:
                 print "Config file not found!"
                 sys.exit(1)
-
         options["output_data_directory"] = values.outputdir
         options["tmp_file_directory"] = values.tmpdir
 
