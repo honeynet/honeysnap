@@ -48,7 +48,7 @@ from packetSummary import Summarize
 from base import Base
 from output import outputSTDOUT, rawPathOutput
 from packetCounter import Counter
-from pcapRE import pcapRE, wordSearch
+from pcapRE import pcapRE, wordSearch, pcapReCounter
 from sebekDecode import sebekDecode
 from util import make_dir
 
@@ -246,9 +246,9 @@ def processFile(honeypots, file):
                 ws.setWords(words)
                 ws.setOutput(out)
                 #ws.setOutput(options["output_data_directory"] + "/results")
-                r = pcapRE(p)
+                r = pcapReCounter(p)
                 r.setFilter("host %s and tcp and port %s" % (hp, port))
-                r.setRE('PRIVMSG')
+                r.setRE('PRIVMSG') 
                 r.setWordSearch(ws)
                 r.setOutput(out)
                 r.start()

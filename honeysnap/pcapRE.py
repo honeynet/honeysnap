@@ -29,48 +29,9 @@ import pcap
 
 from base import Base
 from output import stringFormatMessage
-
-class wordSearch(Base):
-    """
-    wordSeach is an auxillary of pcapRE. It allows you to pass a list of words 
-    you wish to search for to pcapRE.
-    """
-    def __init__(self):
-        Base.__init__(self)
-        self.results = {}
-        self.words = []
-        format = "%(word)-10s %(proto)-5s %(source)-17s %(dest)-17s %(dport)-7s %(count)10s\n"
-        self.msg = stringFormatMessage(format=format)
-        
-    def findWords(self, data, key):
-        for w in self.words:
-            if string.find(data, w) >= 0:
-                if key is not None:
-                    if not self.results.has_key(w):
-                        self.results[w] = {}
-                    if key not in self.results[w]:
-                        self.results[w][key] = 0 
-                    self.results[w][key] += 1
-                
-    def setWords(self, wordstr):
-        self.words = []
-        for w in wordstr.split(" "):
-            #self.results[w] = {}
-            self.words.append(w)
-
-    def writeResults(self):  
-        """Summarise results"""
-        if self.results:
-            #self.doOutput("Word Matches\n")      
-            self.msg.msg=dict(word="WORD", proto="PROTO", source="SOURCE", dest="DEST", dport="DPORT", count="COUNT")
-            self.doOutput(self.msg)
-            for word, cons in self.results.items():
-                for k in cons: 
-                    self.msg.msg = dict(word=word, proto=k[0], source=k[1], dest=k[2], dport=k[3], count=self.results[word][k])
-                    self.doOutput(self.msg)   
-        else:
-             self.doOutput("No words found\n")
-
+  
+class pcapReError(Exception):
+    pass
 
 class pcapRE(Base):
     """
@@ -79,11 +40,11 @@ class pcapRE(Base):
     def __init__(self, pcapObj):
         Base.__init__(self)
         self.exp = None
-        self.p = pcapObj
-        self.results = {}
-        self.doWordSearch = 0
+        self.p = pcapObj    
+        self.action = None
+        self.doWordSearch = 0                                
         format = "%(pattern)-10s %(proto)-5s %(source)-15s %(dest)-15s %(dport)-5s %(count)10s\n"  
-        self.msg = stringFormatMessage(format=format)
+        self.msg = stringFormatMessage(format=format)        
         
     def setRE(self, pattern):
         """
@@ -94,6 +55,9 @@ class pcapRE(Base):
 
     def setFilter(self, filter):
         self.p.setfilter(filter)
+   
+    def setAction(self, action):
+        self.action=action
 
     def setWordSearch(self, searcher):
         """ Takes an instance of class wordSearch as arg"""
@@ -101,7 +65,9 @@ class pcapRE(Base):
         self.searcher = searcher
         
     def start(self):
-        """Iterate over a pcap object"""
+        """Iterate over a pcap object"""  
+        if not self.action:
+            raise pcapReError('Action not set (use setAction)')  
         for ts, buf in self.p:
             self.packetHandler(ts, buf)
 
@@ -125,25 +91,35 @@ class pcapRE(Base):
                 tcp = subpkt.data
                 pay = tcp.data
                 dport = tcp.dport
-                key = (proto, shost, dhost, dport)
             if proto == socket.IPPROTO_UDP:
                 udp = subpkt.data
                 pay = udp.data
                 dport = udp.dport
-                key = (proto, shost, dhost, dport)
         except dpkt.Error:
-            return
+            return        
         if pay is not None and self.exp is not None:
             m = self.exp.search(pay)
-            if m:
-                if key not in self.results:
-                    self.results[key] = 0
-                self.results[key] += 1
-                if self.doWordSearch:
-                    self.searcher.findWords(pay, key)
+            if m:                   
+                self.action(m, proto, shost, dhost, dport, pay)
+     
+class pcapReCounter(pcapRE):
+    """Extension of pcapRE to do simple counting of matching packets"""
+    def __init__(self, pcapObj):
+        pcapRE.__init__(self, pcapObj) 
+        self.results = {}          
+        self.action = self.simpleCounter
+
+    def simpleCounter(self, m, proto, shost, dhost, dport, pay):
+        """Simple action that just counts matches"""  
+        key = (proto, shost, dhost, dport) 
+        if key not in self.results:
+            self.results[key] = 0
+        self.results[key] += 1
+        if self.doWordSearch:
+            self.searcher.findWords(pay, key)
     
     def writeResults(self):
-        """Summarise results"""  
+        """Summarise results for simpleCounter()"""  
         if self.results:     
             self.msg.msg=dict(pattern="PATTERN", proto="PROTO", source="SOURCE", dest="DEST", dport="DPORT", count="COUNT")
             self.doOutput(self.msg)
@@ -154,3 +130,45 @@ class pcapRE(Base):
             self.doOutput('No matching packets found\n')
         if self.doWordSearch:  
             self.searcher.writeResults()   
+     
+class wordSearch(Base):
+    """
+    wordSeach is an auxillary of pcapReCounter. It allows you to pass a list of words 
+    you wish to search for to pcapRE.
+    """
+    def __init__(self):
+        Base.__init__(self)
+        self.results = {}
+        self.words = []
+        format = "%(word)-10s %(proto)-5s %(source)-17s %(dest)-17s %(dport)-7s %(count)10s\n"
+        self.msg = stringFormatMessage(format=format)
+
+    def findWords(self, data, key):
+        for w in self.words:
+            if string.find(data, w) >= 0:
+                if key is not None:
+                    if not self.results.has_key(w):
+                        self.results[w] = {}
+                    if key not in self.results[w]:
+                        self.results[w][key] = 0 
+                    self.results[w][key] += 1
+
+    def setWords(self, wordstr):
+        self.words = []
+        for w in wordstr.split(" "):
+            #self.results[w] = {}
+            self.words.append(w)
+
+    def writeResults(self):  
+        """Summarise results"""
+        if self.results:
+            #self.doOutput("Word Matches\n")      
+            self.msg.msg=dict(word="WORD", proto="PROTO", source="SOURCE", dest="DEST", dport="DPORT", count="COUNT")
+            self.doOutput(self.msg)
+            for word, cons in self.results.items():
+                for k in cons: 
+                    self.msg.msg = dict(word=word, proto=k[0], source=k[1], dest=k[2], dport=k[3], count=self.results[word][k])
+                    self.doOutput(self.msg)   
+        else:
+             self.doOutput("No words found\n")
+              
