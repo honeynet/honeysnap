@@ -20,14 +20,15 @@ and run setup.py as follows:
 	$ tar -xzf pypcap-1.1.tar.gz
 	$ pushd pypcap-1.1
 	$ make
-	$ sudo python setup.py install
+	$ python setup.py build && sudo python setup.py install
 	$ popd
 	$ rm -rf pypcap-1.1*
 
 	$ wget http://www.monkey.org/~dugsong/dpkt/dpkt-1.6.tar.gz
-	$ pushd dpkt
+	$ tar -xzf dpkt-1.6.tar.gz
+	$ pushd dpkt  
 	$ make
-	$ sudo python setup.py install
+	$ python setup.py build && sudo python setup.py install
 	$ popd
 	$ rm -rf dpkt-1.6*
 
@@ -50,7 +51,7 @@ as it has no gcc compiler, make, etc.  Do:
 
 	$ sudo yum install gcc 
 
-Then you must install python 2.4
+Then you must install python 2.4 or later.
 
 For Fedora Core 3, create "/etc/yum.repos.d/python24.repo" with the following lines:
 
