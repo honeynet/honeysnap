@@ -523,14 +523,18 @@ def main():
         options = values.__dict__
         
         if options['config'] is not None:
-            if os.path.isfile(options['config']):
-                for i in parser.items("OPTIONS"): 
-                    if i[0] == 'irc_ports':
-                        options[i[0]] = [ int(n) for n in i[1].split(',') ]
-                    elif i[0] == 'irc_limit': 
-                        options[i[0]] = int(i[1])
-                    else:
-                        options[i[0]] = i[1]
+            if os.path.isfile(options['config']): 
+                try:
+                    for i in parser.items("OPTIONS"): 
+                        if i[0] == 'irc_ports':
+                            options[i[0]] = [ int(n) for n in i[1].split(',') ]
+                        elif i[0] == 'irc_limit': 
+                            options[i[0]] = int(i[1])
+                        else:
+                            options[i[0]] = i[1] 
+                except ConfigParser.Error:
+                    print "Problem with the config file! Check format and permissions"
+                    sys.exit(1)
             else:
                 print "Config file not found!"
                 sys.exit(1)
