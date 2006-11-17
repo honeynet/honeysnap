@@ -78,17 +78,21 @@ def setFilters(options):
         irc_filter = "("
         port = [ 'dst port %s' % port for port in irc_ports ]
         irc_filter = irc_filter + " or ".join(port) + ")"
-    return { 'Counting outbound IP packets:':'src host %s',
-        'Outbound FTP packets:':'src host %s and dst port 21',
-        'Outbound SSH packets:':'src host %s and dst port 22',
-        'Outbound Telnet packets:':'src host %s and dst port 23',
-        'Outbound SMTP packets:':'src host %s and dst port 25',
-        'Outbound HTTP packets:':'src host %s and dst port 80',
-        'Served HTTP packets:':'dst host %s and dst port 80',
-        'Served HTTPS packets:':'dst host %s and dst port 443',
-        'Outbound HTTPS packets:':'src host %s and dst port 443',
-        'Outbound Sebek packets:':'src host %s and udp port %s' % ('%s', options["sebek_port"]),
-        'Outbound IRC packets:':'src host %s and tcp and %s' % ('%s', irc_filter)}
+    return [ 
+        ('All outbound IPv4 packets:', 'src host %s'),         
+        ('Outbound FTP packets:','src host %s and dst port 21'),
+        ('Outbound SSH packets:','src host %s and dst port 22'),
+        ('Outbound Telnet packets:','src host %s and dst port 23'),
+        ('Outbound SMTP packets:','src host %s and dst port 25'),
+        ('Outbound HTTP packets:','src host %s and dst port 80'),
+        ('Outbound HTTPS packets:','src host %s and dst port 443'),        
+        ('Outbound Sebek packets:','src host %s and udp port %s' % ('%s', options["sebek_port"])),
+        ('Outbound IRC packets:','src host %s and tcp and %s' % ('%s', irc_filter)),
+        ('Served FTP packets:','dst host %s and dst port 21'),
+        ('Served SMTP packets:','dst host %s and dst port 25'),
+        ('Served HTTP packets:','dst host %s and dst port 80'),
+        ('Served HTTPS packets:','dst host %s and dst port 443'),
+        ]
 
 def processFile(honeypots, file):
     """
@@ -169,7 +173,8 @@ def processFile(honeypots, file):
         out("\nIP packet summary for common ports:\n\n")
         out("%-40s %10s\n" % ("Filter", "Packets"))
         filters = setFilters(options)
-        for key, filt in filters.items():
+        for i in filters:
+            key, filt = i
             out(key+"\n")
             for hp in honeypots:
                 p = pcap.pcap(tmpf)
@@ -287,7 +292,7 @@ def processFile(honeypots, file):
         del p
 
     if options["do_http"] == "YES":
-        out("\nExtracting from http\n\n")
+        out("\nExtracting from HTTP\n\n")
         p = pcap.pcap(tmpf)
         de = tcpflow.tcpFlow(p)
         de.setFilter("port 80")
@@ -302,7 +307,7 @@ def processFile(honeypots, file):
 
 
     if options["do_ftp"] == "YES":
-        out("\nExtracting from ftp\n\n")
+        out("\nExtracting from FTP\n\n")
         p = pcap.pcap(tmpf)
         de = tcpflow.tcpFlow(p)
         de.setFilter("port 20 or port 21")
@@ -316,7 +321,7 @@ def processFile(honeypots, file):
         del p
 
     if options["do_smtp"] == "YES":
-        out("\nExtracting from smtp\n\n")
+        out("\nExtracting from SMTP\n\n")
         p = pcap.pcap(tmpf)
         de = tcpflow.tcpFlow(p)
         de.setFilter("port 25")
@@ -329,11 +334,7 @@ def processFile(honeypots, file):
         de.dump_extract(options)
         del p
 
-##        if options["do_rrd"] == "YES":
-##            print "RRD not currently supported"
-
     if options["do_sebek"] == "YES":
-
         out("\nExtracting Sebek data\n")
         for hp in options["honeypots"]:
             out("\nHoneypot %s\n\n" % hp)
