@@ -125,5 +125,14 @@ Type "help", "copyright", "credits" or "license" for more information.
 
 The add <prefix>/bin to your PATH.
 
+       
+Some notes on python 2.5 and OS/X
+=================================
+
+If upgrading Python on a Mac, and you hit problems, try getting the Python pkg 
+from www.python.org, not from Darwin ports.
+
+Get pycap from Dug Song's site as Mac pkg, do not install from source. 
+  http://monkey.org/~dugsong/pypcap/pypcap-1.1-fat.dmg
 
 

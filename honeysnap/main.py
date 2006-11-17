@@ -88,10 +88,10 @@ def setFilters(options):
         ('Outbound HTTPS packets:','src host %s and dst port 443'),        
         ('Outbound Sebek packets:','src host %s and udp port %s' % ('%s', options["sebek_port"])),
         ('Outbound IRC packets:','src host %s and tcp and %s' % ('%s', irc_filter)),
-        ('Served FTP packets:','dst host %s and dst port 21'),
-        ('Served SMTP packets:','dst host %s and dst port 25'),
-        ('Served HTTP packets:','dst host %s and dst port 80'),
-        ('Served HTTPS packets:','dst host %s and dst port 443'),
+        ('Inbound FTP packets:','dst host %s and dst port 21'),
+        ('Inbound SMTP packets:','dst host %s and dst port 25'),
+        ('Inbound HTTP packets:','dst host %s and dst port 80'),
+        ('Inbound HTTPS packets:','dst host %s and dst port 443'),
         ]
 
 def processFile(honeypots, file):
@@ -195,14 +195,18 @@ def processFile(honeypots, file):
             filt = 'dst host %s' % hp
             s.setFilter(filt, file)
             s.start()
-            if v:
+            if v=="YES":
                 l = 0
             else:
                 l = 10  
-            fileout = rawPathOutput(outdir+"/incoming.txt", mode="w")                   
-            for output in (fileout, out):
+            fileout = rawPathOutput(outdir+"/incoming.txt", mode="w") 
+            if options["print_verbose"] == "YES":
+                outputs = (fileout, out)
+            else:
+                outputs = (fileout,)                  
+            for output in outputs:
                 s.setOutput(output)
-                s.doOutput("\nIncoming Connections for %s\n" % hp)             
+                s.doOutput("\nINCOMING CONNECTIONS FOR %s\n" % hp)             
                 s.writeResults(limit=l)
             del p
 
@@ -217,14 +221,18 @@ def processFile(honeypots, file):
             filt = 'src host %s' % hp
             s.setFilter(filt, file)
             s.start()
-            if v:
+            if v=="YES":
                 l = 0
             else:
-                l = 10      
-            fileout = rawPathOutput(outdir+"/outgoing.txt", mode="w") 
-            for output in (fileout, out):
+                l = 10  
+            fileout = rawPathOutput(outdir+"/outgoing.txt", mode="w")  
+            if options["print_verbose"] == "YES":
+                outputs = (fileout, out)
+            else:
+                outputs = (fileout,)
+            for output in outputs:
                 s.setOutput(output) 
-                s.doOutput("\nOutgoing Connections for %s\n" % hp)                 
+                s.doOutput("\nOUTGOING CONNECTIONS FOR %s\n" % hp)                 
                 s.writeResults(limit=l)  
             del p
 
@@ -425,9 +433,12 @@ def configOptions(parser):
     parser.add_option("--do-outgoing", dest="do_outgoing", action="store_const", const="YES",
         help = "Summarise outgoing traffic flows")
     parser.set_defaults(do_outgoing="NO")
-    parser.add_option("--verbose-summary", dest="verbose_summary", action="store_const", const=1,
+    parser.add_option("--verbose-summary", dest="verbose_summary", action="store_const", const="YES",
         help = "Do verbose flow counts, indexes flows by srcip, sport, dstip, dport")
-    parser.set_defaults(verbose_summary=0)
+    parser.set_defaults(verbose_summary="YES")
+    parser.add_option("--print-verbose", dest="print_verbose", action="store_const", const="YES",
+        help = "Print verbose flow counts to screen as well as storing in a file") 
+    parser.set_defaults(print_flow="NO")
 
     # protocol options
 ##    parser.add_option("--do-telnet", dest="do_telnet", action="store_const", const="YES",
@@ -463,7 +474,7 @@ def configOptions(parser):
     parser.add_option("--irc-limit", dest="irc_limit", type="int", help = "Limit IRC summary to top N items")
     parser.set_defaults(irc_limit=0)
     parser.add_option("--do-sebek", dest="do_sebek", action="store_const", const="YES",
-        help = "Summarize Sebek")
+        help = "Extract Sebek data")
     parser.set_defaults(do_sebek="NO")
     parser.add_option("--sebek-port", dest="sebek_port", type="int", help = "Port for sebek traffic")
     parser.set_defaults(sebek_port=1101)
