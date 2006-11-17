@@ -112,22 +112,27 @@ class Summarize(base.Base):
             self.writeResults(limit=10)
 
     def writeResults(self, limit=0):
-        """Write results to a given filehandle. Optionally only print more significant options"""
-        self.doOutput("Tcp Traffic Summary:\n")
-        if self.verbose:
-            self.doOutput("%-20s %-20s %-16s %-6s %-16s %-6s %10s %10s\n" % ("Start", "End", "Source", "Sport", "Dest", "Dport", "Count", "Bytes"))
+        """Write results. Optionally only print more significant options""" 
+        
+        if len(self.tcpports) == 0:
+            self.doOutput("No TCP traffic seen\n")
         else:
-            self.doOutput("%-20s %-20s %-16s %-16s %8s %10s %10s\n" % ("Start", "End", "Source", "Dest", "Dport", "Count", "Bytes"))
-        for key, val in self.tcpports.iteritems():
-            if val[2] > limit:
-                if self.verbose:
-                    self.doOutput("%-20s %-20s %-16s %-6s %-16s %-6s %10s %10s\n" % (tf(val[0]), tf(val[1]), key[0], key[3], key[1], key[2], str(val[2]), str(val[3])))
-                else:
-                    self.doOutput("%-20s %-20s %-16s %-16s %8s %10s %10s\n" % (tf(val[0]), tf(val[1]), key[0], key[1], key[2], str(val[2]), str(val[3])))
-
-
-        if len(self.udpports) > 0:
-            self.doOutput("\n\nUDP TRAFFIC SUMMARY:\n")
+            self.doOutput("\nTCP TRAFFIC SUMMARY:\n\n")
+            if self.verbose:
+                self.doOutput("%-20s %-20s %-16s %-6s %-16s %-6s %10s %10s\n" % ("Start", "End", "Source", "Sport", "Dest", "Dport", "Count", "Bytes"))
+            else:
+                self.doOutput("%-20s %-20s %-16s %-16s %8s %10s %10s\n" % ("Start", "End", "Source", "Dest", "Dport", "Count", "Bytes"))
+            for key, val in self.tcpports.iteritems():
+                if val[2] > limit:
+                    if self.verbose:
+                        self.doOutput("%-20s %-20s %-16s %-6s %-16s %-6s %10s %10s\n" % (tf(val[0]), tf(val[1]), key[0], key[3], key[1], key[2], str(val[2]), str(val[3])))
+                    else:
+                        self.doOutput("%-20s %-20s %-16s %-16s %8s %10s %10s\n" % (tf(val[0]), tf(val[1]), key[0], key[1], key[2], str(val[2]), str(val[3])))
+                        
+        if len(self.udpports) == 0:
+            self.doOutput("No UDP traffic seen\n")
+        else:
+            self.doOutput("\n\nUDP TRAFFIC SUMMARY:\n\n")
             if self.verbose:
                 self.doOutput("%-20s %-20s %-16s %-6s %-16s %-6s %10s %10s\n" % ("Start", "End", "Source", "Sport", "Dest", "Dport", "Count", "Bytes"))
             else:
@@ -138,6 +143,6 @@ class Summarize(base.Base):
                         self.doOutput("%-20s %-20s %-16s %-6s %-19s %-6s %10s %10s\n" % (tf(val[0]), tf(val[1]), key[0], key[3], key[1], key[2], str(val[2]), str(val[3])))
                     else:
                         self.doOutput("%-20s %-20s %-16s %-16s %8s %10s %10s\n" % (tf(val[0]), tf(val[1]), key[0], key[1], key[2], str(val[2]), str(val[3])))
-
-
+                  
+                   
 

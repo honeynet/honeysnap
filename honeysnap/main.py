@@ -166,16 +166,16 @@ def processFile(honeypots, file):
         pi.getStats()
 
     if options["do_packets"] == "YES":
-        out("\nCounting outbound IP packets:\n")
+        out("\nIP packet summary for common ports:\n\n")
         out("%-40s %10s\n" % ("Filter", "Packets"))
         filters = setFilters(options)
         for key, filt in filters.items():
             out(key+"\n")
-            for ipaddr in honeypots:
+            for hp in honeypots:
                 p = pcap.pcap(tmpf)
                 c = Counter(p)
                 c.setOutput(out)
-                f = filt % ipaddr
+                f = filt % hp
                 c.setFilter(f)
                 c.count()
             out("\n")
@@ -184,20 +184,21 @@ def processFile(honeypots, file):
         for hp in options["honeypots"]:
             outdir = options["output_data_directory"] + "/%s/conns" % hp
             make_dir(outdir)
-            myout = rawPathOutput(outdir+"/incoming.txt", mode="a+")
-            #myout("\nIncoming Connections\n")
             p = pcap.pcap(tmpf)
             v = options["verbose_summary"]
             s = Summarize(p, verbose=v)
             filt = 'dst host %s' % hp
             s.setFilter(filt, file)
-            s.setOutput(myout)
             s.start()
             if v:
                 l = 0
             else:
-                l = 10
-            s.writeResults(limit=0)
+                l = 10  
+            fileout = rawPathOutput(outdir+"/incoming.txt", mode="w")                   
+            for output in (fileout, out):
+                s.setOutput(output)
+                s.doOutput("\nIncoming Connections for %s\n" % hp)             
+                s.writeResults(limit=l)
             del p
 
 
@@ -205,22 +206,21 @@ def processFile(honeypots, file):
         for hp in options["honeypots"]:
             outdir = options["output_data_directory"] + "/%s/conns" % hp
             make_dir(outdir)
-            myout = rawPathOutput(outdir+"/outgoing.txt", mode="a+")
-            #myout("\nOutgoing Connections\n")
             p = pcap.pcap(tmpf)
             v = options["verbose_summary"]
             s = Summarize(p, verbose=v)
             filt = 'src host %s' % hp
             s.setFilter(filt, file)
-            s.setOutput(myout)
             s.start()
             if v:
                 l = 0
             else:
-                l = 10
-            s.writeResults(limit=l)
-            s.setOutput(out)
-            s.writeResults(limit=l)
+                l = 10      
+            fileout = rawPathOutput(outdir+"/outgoing.txt", mode="w") 
+            for output in (fileout, out):
+                s.setOutput(output) 
+                s.doOutput("\nOutgoing Connections for %s\n" % hp)                 
+                s.writeResults(limit=l)  
             del p
 
 

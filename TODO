@@ -13,65 +13,6 @@ count. N would be defined in the config file
              
 * honeysnap could possibly drop the data for two different flows with the same srcip:srcport-dstip:dstpo$
 
-* Add extracted data file summary to the results file.
-
-* Add RRD, or similar, functions
-
-* we drop files in a directory corresponding to the honeypot+remote ip,
-          adding a postfix to every file name to ensure uniqueness so
-            GET /fred/fred.tar
-          run twice produces two files
-            ./honeynetip/remoteip/fred-DIR-fred.tar.1 and fred-DIR-fred.tar.2
-
 * we strip the http header and store that as filename.hdr -- this is mostly done
 BIG PROBLEM: http pipelined requests are broken!!!!!
 
-* Putting the files into the db as a blob/whatever is good here, but
-the option to not put it into a DB is always useful for quick one-off
-runs and should be kept I feel.
-           
-[better - put the file location in the db, but keep the file on the
-filesystem? - AJC]
-
-* IRC analysis
-    * number of messages
-    * messages matching patterns
-          * static patterns
-          * regex patterns
-          * possible bot commands
-
-[How sh version works:]
-
-Currently our pattern lists are:
-
-# keywords is a list of literal strings to match, case insensitive
-@keywords = qw{ 
-   ./ ./remote /bin /etc /var 0day access account admin auth backdoor bank bash
-   binaries binary bot brute buffer card cash cc cent code connect crack credit
-   dns denied dollar ebay e-bay egg elf exec flood euro ftp google hackexploit
-   http leech login mail mastercard merge money nologin owns ownz packet pass
-   password paypal perl phish php pirate pound probe prv putty remote resolved
-   root rooted rootkit salts scam scan shell smtp sploit ssh sterling sucess
-   sysop sys-op trade uid uname uptime USD userid virus visa warez
-   };
-
-
-For regexs, we currently just look for IP addresses. Surprisingly useful
-
-   # keyword_res is a list of regular expressions to match
-   @keyword_res = ();
-   # Match an IP addr. From Jeffrey Friedl's "Mastering Regular Expressions"
-   my $ReIpNum = qr{(?:[01]?\d\d?|2[0-4]\d|25[0-5])};
-   my $ReIpAddr = qr{(?:\b$ReIpNum\.$ReIpNum\.$ReIpNum\.$ReIpNum\b)};
-   push @keyword_res, $ReIpAddr;
-
-
-For the bot commands, we have two lists, one of possible prefixes and one of
-commands
-
-   @botprefixes = qw{ . - ! \`  \  | };
-   @botcoms = qw{ die esay flood m me part payment ping s say server services
-                  startflood stopflood x};
-
-and then create a regex from this that looks for all combinations for prefixes
-+ commands.
