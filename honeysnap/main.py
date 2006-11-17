@@ -482,7 +482,11 @@ def main():
     if len(sys.argv) > 1:
         if values.config:
             parser = SafeConfigParser()
-            parser.read(values.config)
+            try:
+                parser.read(values.config)
+            except ConfigParser.Error:
+                print 'Bad config file!'
+                sys.exit(1)
             config = values.config
             if values.outputdir=='/tmp/analysis':
                 try:
