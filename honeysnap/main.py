@@ -287,7 +287,7 @@ def processFile(honeypots, file):
         del p
 
     if options["do_http"] == "YES":
-        out("\nExtracting from http\n")
+        out("\nExtracting from http\n\n")
         p = pcap.pcap(tmpf)
         de = tcpflow.tcpFlow(p)
         de.setFilter("port 80")
@@ -302,7 +302,7 @@ def processFile(honeypots, file):
 
 
     if options["do_ftp"] == "YES":
-        out("\nExtracting from ftp\n")
+        out("\nExtracting from ftp\n\n")
         p = pcap.pcap(tmpf)
         de = tcpflow.tcpFlow(p)
         de.setFilter("port 20 or port 21")
@@ -316,7 +316,7 @@ def processFile(honeypots, file):
         del p
 
     if options["do_smtp"] == "YES":
-        out("\nExtracting from smtp\n")
+        out("\nExtracting from smtp\n\n")
         p = pcap.pcap(tmpf)
         de = tcpflow.tcpFlow(p)
         de.setFilter("port 25")

@@ -255,25 +255,20 @@ class httpDecode(Base):
                 r1 = rs.decoded
                 if t == 'request':
                     try:
-                        realname = urllib.splitquery(state.decoded.uri)[0]
-                        realname = realname.rsplit("/", 1)[-1]
-                        #print "_renameFlow:request: ", realname
+                        url = urllib.splitquery(state.decoded.uri)[0]
+                        realname = url.rsplit("/", 1)[-1]
                     except AttributeError:
-                        realname = ''
-                    if realname == '/':
                         realname = 'index.html'
-                    fn = renameFile(rs, realname)
-                    id, m5 = self.id.identify(rs)
-                    self.doOutput("extracted: %s\nfiletype: %s\nmd5 sum: %s\n" %(fn,id,m5))
                 if t == 'response':
-                    realname = urllib.splitquery(r1.uri)[0]
-                    realname = realname.rsplit("/", 1)[-1]
-                    if realname == '':
-                        realname = 'index.html'
-                    #print "_renameFlow:response: ", realname
-                    fn = renameFile(state, realname)
-                    id, m5 = self.id.identify(state)
-                    self.doOutput("extracted: %s\nfiletype: %s\nmd5 sum: %s\n" %(fn,id,m5))
+                    url = urllib.splitquery(r1.uri)[0]
+                    realname = url.rsplit("/", 1)[-1]  
+                # map 'GET /' to 'index.html'    
+                if realname == '' or realname == '/' or not realname:
+                    realname = 'index.html'
+                fn = renameFile(state, realname)
+                id, m5 = self.id.identify(state)  
+                self.doOutput("Request %s\n" % url)
+                self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5)) 
 
     def extractHeaders(self, state, d):
         """
