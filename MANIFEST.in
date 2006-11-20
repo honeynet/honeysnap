@@ -3,4 +3,5 @@ include INSTALL
 include USAGE.txt
 include COPYING
 include honeynet.cfg
-include words
+include words      
+include TODO

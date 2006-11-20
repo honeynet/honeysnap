@@ -48,7 +48,16 @@ You can also redirect stdout to honeysnap:
  tar -xfO  tarballofpcaps.tar | honeysnap -c honeysnap.cfg
 or
  honeysnap -c honeysnap.cfg < pcap.gz
+                                                 
 
+All the output from each run will be placed in the same output
+directory (as given in the config file or on the commandline),
+even when multiple files are specified. If this isn't what you
+want, the easiest solution is to use a script to run overall
+the files, adjusting the output directory suitably. See the 
+misc/ directory for sample code.
+
+                                    
 WORDS
 =====
 

@@ -1,18 +1,24 @@
 Honeysnap TODO list
+
 $Id$
-$URL$
 
 * Fix TCPFlow to deal correctly with nasty things like duplicate ACKS...
  these are corupting the data
 
-* We need to change the flow of program execution so each packet only gets decoded once.  Right now, dep$
+* We need to change the flow of program execution so each packet only 
+gets decoded once.  
 
-* The output format of the flows isn't that useful. Maybe write a general
-output class/fn that prints out the top N talkers, ordered by traffic
-count. N would be defined in the config file
-             
-* honeysnap could possibly drop the data for two different flows with the same srcip:srcport-dstip:dstpo$
+* honeysnap could possibly drop the data for two different flows with 
+the same srcip:srcport-dstip:dstport
 
-* we strip the http header and store that as filename.hdr -- this is mostly done
-BIG PROBLEM: http pipelined requests are broken!!!!!
+* http pipelined requests are broken
+
+
+Contributing to Honeysnap
+=========================
+
+Patches, suggestion, enhancments all welcome. Contact
+
+honeysnap@honeynet.org
+
 

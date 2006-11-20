@@ -68,21 +68,20 @@ On most unix like OSs this can be done by executing the following.
 
 $ ulimit -n 4096
 
-BUGS/HELP
-=========
-
-Please send any bugs, tracebacks, comments, or patches to Arthur 
-Clune (arthur@honeynet.org.uk) or Jed Haile 
-(jed.haile@thelogangroup.biz)
-
 COPYRIGHT
 =========
 
 All code in honeysnap is copyright The Honeynet Project.
 
-Contact Information:
-Jed Haile
-jed.haile@thelogangroup.biz
+CONTACT
+=======
 
-Arthur Clune 
-arthur@honeynet.org.uk
+For general questions, please contact
+
+honeysnap@honeynet.org
+
+BUGS/HELP
+=========
+
+Please send any bugs, tracebacks, comments, or patches to 
+the honeysnap team: honeysnap@honeynet.org

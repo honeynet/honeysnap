@@ -158,9 +158,10 @@ def processFile(honeypots, file):
     except OSError:
         print "File %s is not a pcap file or does not exist" % file
         sys.exit(1)
-
+                                   
+    out("\n\nAnalysing file: %s\n\n" % file)  
+                      
     if options["do_pcap"] == "YES":
-        out("\n\nResults for file: %s\n\n" % file)
         out("Pcap file information:\n")
         pi = pcapInfo(tmpf)
         pi.setOutput(out)
@@ -570,7 +571,7 @@ def main():
         # handle multiple files being passed as args
         if len(args):
             for f in args:
-                if os.path.exists(f) and os.path.isfile(f):
+                if os.path.exists(f) and os.path.isfile(f):  
                     processFile(values.honeypots, f)
                 else:
                     print "File not found: %s" % f
