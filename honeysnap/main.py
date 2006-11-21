@@ -94,10 +94,9 @@ def setFilters(options):
         ('Inbound HTTPS packets:','dst host %s and dst port 443'),
         ]
 
-def processFile(honeypots, file):
+def processFile(file):
     """
     Process a pcap file.
-    honeypots is a list of honeypot ip addresses
     file is the pcap file to parse
     This function will run any enabled options for each pcap file
     """
@@ -177,7 +176,7 @@ def processFile(honeypots, file):
         for i in filters:
             key, filt = i
             out(key+"\n")
-            for hp in honeypots:
+            for hp in options['honeypots']:
                 p = pcap.pcap(tmpf)
                 c = Counter(p)
                 c.setOutput(out)
@@ -394,177 +393,150 @@ def store_int_array(option, opt_str, value, parser):
         raise OptionValueError("Argument %s not an integer!" % opt_str)
     setattr(parser.values, option.dest, a)
 
-def configOptions(parser):
-    """Define options"""
+def parseOptions():
+    """
+    Read options from both config file and command line and merge
+    Precedence order: Command line > config file > defaults 
+    
+    Returns an (options, args) pair
+    """
+    
+    # default values for all options.   
+    defaults = {        
+            'honeypots'         : None,
+            'config'            : None,
+            'filename'          : None,
+        	'mask' 				: '*',
+        	'wordfile'          : None,
+        	'files'             : None,
+    		'do_pcap' 			: 'YES',
+    		'do_packets'		: 'YES',
+    		'do_incoming'		: 'YES',
+    		'do_outgoing'		: 'YES',
+    		'verbose_summary'	: 'YES',
+    		'print_verbose'		: 'NO',
+    		'do_http'			: 'YES',
+    		'do_ftp'			: 'YES',
+    		'do_smtp'           : 'YES',
+    		'do_irc'			: 'YES',
+    		'do_irc_summary'	: 'YES',
+    		'do_irc_detail'		: 'YES',
+    		'irc_ports'			: [6667],
+    		'irc_limit'			: 0,
+    		'do_sebek'			: 'YES',
+    		'sebek_port'		: 1101,
+    		'all_flows'			: 'YES', 
+    		'output_data_directory'   : '/tmp/analysis',
+    		'tmp_file_directory': '/tmp'
+    }  
+         
+    parser = OptionParser(option_class=MyOption)         
+        
     parser.add_option("-c", "--config", dest="config",type="string",
         help="Config file")
     parser.add_option("-f", "--file", dest="filename",type="string",
         help="Write report to FILE", metavar="FILE")
-    parser.set_defaults(filename=None)
-    parser.add_option("-o", "--output", dest="outputdir",type="string",
+    parser.add_option("-o", "--output", dest="output_data_directory",type="string",
         help="Write output to DIR, defaults to /tmp/analysis", metavar="DIR")
-    parser.set_defaults(outputdir="/tmp/analysis")
-    parser.add_option("-t", "--tmpdir", dest="tmpdir",type="string",
+    parser.add_option("-t", "--tmpdir", dest="tmp_file_directory",type="string",
         help="Directory to use as a temporary directory, defaults to /tmp")
-    parser.set_defaults(tmpdir="/tmp")
     parser.add_option("-H", "--honeypots", dest="honeypots", action="extend", type="string",
         help="Comma delimited list of honeypots")
-##    parser.add_option("-r", "--read", dest="files", type="string",
-##                  help="Pcap file to be read. If this flag is set then honeysnap will not run in batch mode. Will also read from stdin.", metavar="FILE")
     parser.add_option("-d", "--dir", dest="files", type="string",
         help="Directory containing timestamped log directories. If this flag is set then honeysnap will run in batch mode. To limit which directories to parse, use -m (--mask)", metavar="FILE")
-
     parser.add_option("-m", "--mask", dest="mask", type="string",
         help = "Mask to limit which directories are recursed into.")
-    parser.set_defaults(mask="*")
-
     parser.add_option("-w", "--words", dest="wordfile", type="string",
         help = "Pull wordlist from FILE", metavar="FILE")
 
-    # summary options
     parser.add_option("--do-pcap", dest="do_pcap", action="store_const", const="YES",
         help = "Summarise pcap info")
-    parser.set_defaults(do_pcap="YES")
     parser.add_option("--do-packets", dest="do_packets", action="store_const", const="YES",
         help = "Summarise packet counts")
-    parser.set_defaults(do_packets="NO")
     parser.add_option("--do-incoming", dest="do_incoming", action="store_const", const="YES",
         help = "Summarise incoming traffic flows")
-    parser.set_defaults(do_incoming="NO")
     parser.add_option("--do-outgoing", dest="do_outgoing", action="store_const", const="YES",
         help = "Summarise outgoing traffic flows")
-    parser.set_defaults(do_outgoing="NO")
     parser.add_option("--verbose-summary", dest="verbose_summary", action="store_const", const="YES",
         help = "Do verbose flow counts, indexes flows by srcip, sport, dstip, dport")
-    parser.set_defaults(verbose_summary="YES")
     parser.add_option("--print-verbose", dest="print_verbose", action="store_const", const="YES",
         help = "Print verbose flow counts to screen as well as storing in a file") 
-    parser.set_defaults(print_flow="NO")
-
-    # protocol options
-##    parser.add_option("--do-telnet", dest="do_telnet", action="store_const", const="YES",
-##            help = "Count outbound telnet")
-##    parser.set_defaults(do_telnet="NO")
-##    parser.add_option("--do-ssh", dest="do_ssh", action="store_const", const="YES",
-##            help = "Count outbound ssh")
-##    parser.set_defaults(do_ssh="NO")
     parser.add_option("--do-http", dest="do_http", action="store_const", const="YES",
         help = "Extract http data")
-    parser.set_defaults(do_http="NO")
-##    parser.add_option("--do-https", dest="do_https", action="store_const", const="YES",
-##            help = "Count outbound https")
-##    parser.set_defaults(do_https="NO")
     parser.add_option("--do-ftp", dest="do_ftp", action="store_const", const="YES",
         help = "Extract FTP data")
-    parser.set_defaults(do_ftp="NO")
     parser.add_option("--do-smtp", dest="do_smtp", action="store_const", const="YES",
         help = "Extract smtp data")
-    parser.set_defaults(do_smtp="NO")
     parser.add_option("--do-irc", dest="do_irc", action="store_const", const="YES",
         help = "Summarize IRC and do irc detail (same as --do-irc-detail and --do-irc-summary)")
-    parser.set_defaults(do_irc="NO")
     parser.add_option("--do-irc-summary", dest="do_irc_summary", action="store_const", const="YES",
         help = "Sumarize IRC messages, providing a hit count for key words, use --words to supply a word file")
-    parser.set_defaults(do_irc_summary="NO")
     parser.add_option("--do-irc-detail", dest="do_irc_detail", action="store_const", const="YES",
         help = "Extract IRC sessions, do detailed IRC analysis")
-    parser.set_defaults(do_irc_detail="NO")
     parser.add_option("--irc-ports", action="callback", callback=store_int_array, dest="irc_ports", type="string",
         help = "Ports for IRC traffic")   
-    parser.set_defaults(irc_ports=[6667]) 
     parser.add_option("--irc-limit", dest="irc_limit", type="int", help = "Limit IRC summary to top N items")
-    parser.set_defaults(irc_limit=0)
     parser.add_option("--do-sebek", dest="do_sebek", action="store_const", const="YES",
         help = "Extract Sebek data")
-    parser.set_defaults(do_sebek="NO")
     parser.add_option("--sebek-port", dest="sebek_port", type="int", help = "Port for sebek traffic")
-    parser.set_defaults(sebek_port=1101)
     parser.add_option("--all-flows", dest="all_flows", action="store_const", const="YES",
         help = "Extract data from all tcp flows")
-    parser.set_defaults(do_http="NO")
-##    parser.add_option("--do-rrd", dest="do_rrd", action="store_const", const="YES",
-##            help = "Do RRD, not yet implemented")
-##    parser.set_defaults(do_rrd="NO")
+                    
+    # parse command line  
+    (cmdopts, args) = parser.parse_args()  
+    
+    # now pull in config file if defined
+    fileopts = {}
+    if cmdopts.config:
+        fileparser = SafeConfigParser()
+        if os.path.isfile(cmdopts.config): 
+            try:  
+                fileparser.read(cmdopts.config)
+                for opts in fileparser.items('OPTIONS'), fileparser.items('IO'):
+                    for i in opts:
+                        if i[0] == 'irc_ports':
+                            fileopts[i[0]] = [ int(n) for n in i[1].split(',') ]
+                        elif i[0] == 'irc_limit': 
+                            fileopts[i[0]] = int(i[1]) 
+                        elif i[0] == 'honeypots':
+                            fileopts[i[0]] = i[1].split()
+                        else:
+                            fileopts[i[0]] = i[1] 
+            except ConfigParser.Error:
+                print "Problem with the config file! Check format and permissions"
+                sys.exit(1)
+        else:
+            print "Config file %s not found!" % options['config']
+            sys.exit(1)
+    
+    options = {}
+    # now merge defaults, config file and command line
+    for opt in defaults.keys(): 
+        options[opt] = defaults[opt]
+        if fileopts.has_key(opt) and fileopts[opt]:
+            options[opt] = fileopts[opt]
+        if cmdopts.__dict__.has_key(opt) and cmdopts.__dict__[opt]:
+            options[opt] = cmdopts.__dict__[opt]  
+    
+    if not options.has_key('honeypots'):
+        print "No honeypots specified! Please use either -H or the config file to specify some"
+        sys.exit(1)
 
-    return parser.parse_args()
-
+    return (parser.print_help, options, args)
 
 def main():
-    cmdparser = OptionParser(option_class=MyOption)
-    values, args = configOptions(cmdparser)
-    if len(sys.argv) > 1:
-        if values.config:
-            parser = SafeConfigParser()
-            try:
-                parser.read(values.config)
-            except ConfigParser.Error:
-                print 'Bad config file!'
-                sys.exit(1)
-            config = values.config
-            if values.outputdir=='/tmp/analysis':
-                try:
-                    outputdir = parser.get("IO", "OUTPUT_DATA_DIRECTORY")
-                    values.outputdir = outputdir
-                except ConfigParser.Error:
-                    outputdir = values.outputdir
-            if values.tmpdir=='/tmp':
-                try:
-                    tmpdir = parser.get("IO", "TMP_FILE_DIRECTORY")
-                    values.tmpdir = tmpdir
-                except ConfigParser.Error:
-                    tmpdir = values.tmpdir
-            if not values.honeypots:
-                try:
-                    honeypots = parser.get("IO", "HONEYPOTS")
-                    honeypots = honeypots.split()
-                    values.honeypots = honeypots
-                except ConfigParser.Error:
-                    print "Must specify honeypots!"
-                    sys.exit(1)
-            if not values.wordfile:
-                try:
-                    wordfile = parser.get("IO", "WORDFILE")
-                    values.wordfile = wordfile
-                except ConfigParser.Error:
-                    values.wordfile = None
-            if values.filename is None:
-                try:
-                    fn = parser.get("IO", "OUTPUTFILE")
-                    values.filename = fn
-                except ConfigParser.Error:
-                    pass
-        else:
-            parser = None
-
-        # pull in the values from the option parser
-        options = values.__dict__
-        
-        if options['config'] is not None:
-            if os.path.isfile(options['config']): 
-                try:
-                    for i in parser.items("OPTIONS"): 
-                        if i[0] == 'irc_ports':
-                            options[i[0]] = [ int(n) for n in i[1].split(',') ]
-                        elif i[0] == 'irc_limit': 
-                            options[i[0]] = int(i[1])
-                        else:
-                            options[i[0]] = i[1] 
-                except ConfigParser.Error:
-                    print "Problem with the config file! Check format and permissions"
-                    sys.exit(1)
-            else:
-                print "Config file not found!"
-                sys.exit(1)
-        options["output_data_directory"] = values.outputdir
-        options["tmp_file_directory"] = values.tmpdir
-
-        if values.honeypots is None:
+    """Set everything off and handle files/stdin etc"""
+    
+    print_help, options, args = parseOptions()
+    
+    if len(sys.argv)>1:
+        if options['honeypots'] is None:
             print "No honeypots specified. Please use either -H or config file to specify honeypots.\n"
             sys.exit(2)
         hsingleton = HoneysnapSingleton.getInstance(options)
-        if not os.path.exists(values.outputdir):
-            make_dir(values.outputdir)
-        if os.path.exists(values.outputdir):
+        if not os.path.exists(options['output_data_directory']):
+            make_dir(options['output_data_directory'])
+        if os.path.exists(options['output_data_directory']):
             for i in options["honeypots"]:
                 make_dir(options["output_data_directory"]+"/"+i)
         # by default treat args as files to be processed
@@ -572,16 +544,16 @@ def main():
         if len(args):
             for f in args:
                 if os.path.exists(f) and os.path.isfile(f):  
-                    processFile(values.honeypots, f)
+                    processFile(f)
                 else:
                     print "File not found: %s" % f
                     sys.exit(2)
         # -d was an option
-        elif values.files:
-            if os.path.exists(values.files) and os.path.isdir(values.files):
-                for root, dirs, files in os.walk(values.files):
+        elif options['files']:
+            if os.path.exists(options['files']) and os.path.isdir(options['files']):
+                for root, dirs, files in os.walk(options['files']):
                     #print root, dirs, files
-                    if fnmatch(root, values.mask):
+                    if fnmatch(root, options['mask']):
                         # this root matches the mask function
                         # find all the log files
                         #f  = [j for j in files if fnmatch(j, "log*")]
@@ -589,9 +561,9 @@ def main():
                         # process each log file
                         if len(f):
                             for i in f:
-                                processFile(values.honeypots, root+"/"+i)
+                                processFile(root+"/"+i)
             else:
-                print "File not found: %s" % values.files
+                print "File not found: %s" % options['files']
                 sys.exit(2)
 
         # no args indicating files, read from stdin
@@ -605,13 +577,13 @@ def main():
             for l in fh:
                 tmph.write(l)
             tmph.close()
-            processFile(values.honeypots, tmpf)
+            processFile(tmpf)
             # all done, delete the tmp file
             os.unlink(tmpf)
 
-        cleanup(options)
-    else:
-        cmdparser.print_help()
+        cleanup(options)  
+    else:    
+        print_help()
 
 if __name__ == "__main__":
     #import profile

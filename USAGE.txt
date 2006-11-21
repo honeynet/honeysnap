@@ -145,7 +145,8 @@ All of these options can be combined at the command line:
 All the command line options are generally useful to do 
 quick one off runs against some pcap data.  If a configuration 
 file is provided, along with command line options, then any 
-options specified at in the config file take precedence.  
+options specified at the command line take precedence.
+
 The configuration file provided with the honeysnap distribution 
 (honeynet.cfg) is well commented and is a good place to start 
 in writing your own config file.
