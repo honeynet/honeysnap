@@ -1,0 +1,13 @@
+$Id$
+
+FAQ
+===
+
+Some common questions/problems.
+
+1). Honeysnap is showing all counts as zero even though I know 
+there are packets it should be counting!
+
+A) Check that your honeypot IP addresses are correct. If they
+are wrong, honeysnap will be looking for packets to hosts that
+may well not even be in the pcap file, hence the zero counts

@@ -4,4 +4,5 @@ include USAGE.txt
 include COPYING
 include honeynet.cfg
 include words      
-include TODO
+include TODO  
+include FAQ

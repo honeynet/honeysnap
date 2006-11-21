@@ -3,11 +3,12 @@
 # $Id$
 #
 
-import re, os
+import re, os                  
+from honeysnap.main import version
 from distutils.core import setup
 
 setup(name="honeysnap",
-      version="1.0rc3",
+      version=version,
       author="Jed Hale",
       author_email="jed.haile@thelogangroup.biz",  
       maintainer="Jed Haile/Arthur Clune",

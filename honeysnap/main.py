@@ -19,6 +19,8 @@
 ################################################################################
 
 # $Id$
+   
+VERSION="1.0rc3"
 
 import sys
 import socket
@@ -122,19 +124,6 @@ def processFile(file):
         deletetmp = 0
     options["tmpf"] = tmpf
 
-    """
-    if not os.path.exists(options["output_data_directory"]):
-        # the directory isn't there
-        try:
-            os.mkdir(options["output_data_directory"])
-            for i in options["honeypots"]:
-                os.mkdir(options["output_data_directory"]+"/"+i)
-            # now we can create the output file
-            #outfile = sys.stdout
-        except OSError:
-            print "Error creating output directory"
-            sys.exit(1)
-    """
     try:
         if options["filename"] is not None:
             out = rawPathOutput(options["filename"], mode="a+")
@@ -415,7 +404,7 @@ def parseOptions():
     		'tmp_file_directory': '/tmp'
     }  
          
-    parser = OptionParser(option_class=MyOption)         
+    parser = OptionParser(option_class=MyOption, version="%sprog %s" % ('%', VERSION))         
         
     parser.add_option("-c", "--config", dest="config",type="string",
         help="Config file")
