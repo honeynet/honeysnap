@@ -22,7 +22,8 @@
 
 from hsIRC import HoneySnapIRC   
 from singletonmixin import HoneysnapSingleton
-import math
+import math 
+import os
 import time    
 import sys
 import re
@@ -31,21 +32,30 @@ from util import orderByValue, make_dir
 from base import Base
 from output import stringMessage
 
+
+# global bot word list.
 botprefixes = [".", "-", "!", "\`",  "\\", "|"]
-botcoms = ["die", "esay", "flood", "m", "me", "part", "payment", "ping", "s", "say", "server",
-        "services", "startflood", "stopflood", "x", "antiaction", "antibold", "anticolour", "antinotice",
-        "antipub", "antirepeat", "antireverse", "antiunderline", "antiurl", "autovoice", "chanserv", 
-        "cycle", "dynamicexempts", "dynamicinvites", "enforcetopiclimit", "nodesynch", "locked",
-        "noop", "op", "passive", "private", "revenge", "revengebot", "secret", "seen", "seen",
-        "shared", "stats", "strictop", "suspended", "topic", "userexempts", "userinvites", "voice"]
+botcoms = ["die ", "esay ", "flood ", "m ", "me ", "part ", "payment ", "ping ", "s ", "say ", "server ",
+        "services ", "startflood ", "stopflood ", "x ", "antiaction ", "antibold ", "anticolour ", "antinotice ",
+        "antipub ", "antirepeat ", "antireverse ", "antiunderline ", "antiurl ", "autovoice ", "chanserv ", 
+        "cycle ", "dynamicexempts ", "dynamicinvites ", "enforcetopiclimit ", "nodesynch ", "locked ",
+        "noop ", "op ", "passive ", "private ", "revenge ", "revengebot ", "secret ", "seen ", "seen ",
+        "shared ", "stats ", "strictop ", "suspended ", "topic ", "userexempts ", "userinvites ", "voice "]
 
 botwords = []
 for i in botprefixes:
     tmp = [i+w for w in botcoms]
     botwords += tmp
-botwords = set(botwords)
 
-    
+# global wordlist. Added to via words file in __init__
+words = ['0day', 'access', 'account', 'admin','auth', 'bank', 'bash', '#!/bin', 'binaries', 'binary', 'bot',
+    'card', 'cash', 'cc', 'cent', 'connect', 'crack',
+    'credit' ,'dns', 'dollar', 'ebay', 'e-bay', 'egg', 'flood', 'ftp', 'hackexploit', 'http', 'install', 'leech', 'login', 
+    'money', '/msg', 'nologin', 'owns', 'ownz', 'password',
+    'paypal', 'phish', 'pirate', 'pound', 'probe', 'prv', 'putty', 'remote', 'resolved', 'root', 'rooted', 
+    'scam', 'scan', 'shell', 'smtp', 'sploit', 'sterling',
+    'sucess', 'sysop', 'sys-op', 'trade', 'uid', 'uname', 'uptime', 'userid', 'virus', 'warez']   
+ 
 class ircDecode(Base):
     """
     IRC analysis:
@@ -68,7 +78,9 @@ class ircDecode(Base):
     * top N ips
     """
 
-    def __init__(self):
+    def __init__(self):        
+        hs = HoneysnapSingleton.getInstance()
+        options = hs.getOptions()
         Base.__init__(self)
         self.cmds = {}
         self.sources = {}
@@ -77,19 +89,30 @@ class ircDecode(Base):
         self.users = {}
         self.channels = {}
         self.repeats = {}
-        self.lines = {}
-        self.botlines = {}
+        self.lines = {}      
+        self.botwords = botwords
+        self.words = words
+        self.wordlines = []
+        self.botlines = []
         self.privcount = 0     
         self.dir = ""
         self.fp = sys.stdout   
-        hs = HoneysnapSingleton.getInstance()
-        options = hs.getOptions() 
-        self.limit=options['irc_limit']      
+        self.limit=options['irc_limit']   
+        self.wordfile=options['wordfile'] 
+        if self.wordfile:
+            if os.path.exists(self.wordfile) and os.path.isfile(self.wordfile):
+                wfp = open(self.wordfile, 'rb')
+                filewords = wfp.readlines()
+                filewords = [w.strip() for w in filewords]
+                self.words = self.words + filewords 
+            else:
+                print "Can't open specified wordlist %s" % self.wordfile
+                sys.exit(1)
          
     def printLines(self, c, e):        
         """Simple print method"""
         if e.eventtype() != 'ping' and e.eventtype() != 'all_raw_messages':
-            self.fp.write(str(e))
+            self.fp.write( '%s\n' % str(e))
              
     def setOutdir(self, dir):
         """
@@ -129,34 +152,37 @@ class ircDecode(Base):
                 self.targets[target] = 0
             self.targets[target] += 1
             #self.ipsearch(c,e)
-            if cmd in ["privmsg", "pubmsg"]:
-                self.analyzePrivmsg(c, e)
+            if cmd in ["privmsg", "pubmsg", "notice", "privnotice"]:
+                self.analyzeMsg(c, e)
             
     def printSummary(self):
 ##        import pdb
 ##        pdb.set_trace()                                 
         if not (self.cmds or self.sources or self.targets):  
-            self.doOutput("No IRC seen\n")
+            self.doOutput("\tNo IRC seen\n")
             return
         self.doOutput("\nCommand counts:\n\n")
         for k,v in orderByValue(self.cmds, limit=self.limit):
-            self.doOutput("%s: %d\n" % (k, v))
+            self.doOutput("\t%s %d\n" % (k, v))
         self.doOutput("\nSource counts:\n\n")
         for k,v in orderByValue(self.sources, limit=self.limit):
-            self.doOutput("%s : %d\n" % (k, v))
+            self.doOutput("\t%s  %d\n" % (k, v))
         self.doOutput("\nTarget counts:\n\n")
         for k,v in orderByValue(self.targets, limit=self.limit):
-            self.doOutput("%s : %d\n" % (k, v))
-        self.doOutput("\nDetailed report for IRC keyword matches:\n")
+            self.doOutput("\t%s  %d\n" % (k, v))
+        self.doOutput("\nDetailed report for IRC keyword matches:\n\n")
         self.doOutput("\tRepeated Lines %d\n" % len(self.lines))
         self.doOutput("\tIPs %d\n" % len(self.ips))
         self.doOutput("\tUsers %d\n" % len(self.users))
         self.doOutput("\tChannels %d\n" % len(self.channels))
+        if len(self.wordlines) > 0:
+            self.doOutput("\tLines matching wordlist:\n")
+            for line, matches in self.wordlines:
+                self.doOutput("\t\t%s\n\t\t\t(matches %s)\n" % (line, matches))
         if len(self.botlines) > 0:
-            self.doOutput("\tPossible bot commands:\n")
-            for k,v in orderByValue(self.botlines, limit=self.limit):
-                self.doOutput("\t\t%s => %d\n" % (k, v))
-            
+            self.doOutput("\n\tPossible bot commands:\n")
+            for line, matches in self.botlines:
+                self.doOutput("\t\t%s\n\t\t\t(matches %s)" % (line, matches))
         """
         print "\n****** talking ips ******"
         for k,v in self.ips.items():
@@ -176,27 +202,26 @@ class ircDecode(Base):
             if e.source() is not None:
                 self.ips[srcip][e.source()] = 1
                 
-    def botcmds(self, c, e):
+    def botcmds(self, c, e):   
+        """Find lines matching botwords"""
         data = ' '.join(e.arguments())
-        matches = [w for w in botwords if w in data]
-        if len(matches) > 0:
-            self.botlines.setdefault(data, 0)
-            self.botlines[data] += 1
-        return matches
+        matches = [w for w in self.botwords if w in data]
+        if len(matches) > 0:  
+            self.botlines.append( [str(e), matches])
         
     def keywords(self, c, e):
-        """
-        #TODO: Use wordSearch to search for keywords!
-        Doing so will deprecate the need for pcapRE in this scope
-        """
-        pass
+        """Find lines matching word list"""
+        data = ' '.join(e.arguments())
+        matches = [w for w in self.words if w in data]
+        if len(matches) > 0: 
+            self.wordlines.append([str(e), matches])
     
-    def analyzePrivmsg(self, c, e):
+    def analyzeMsg(self, c, e):
         """
         arguments:
         c: instance of hsIRC.HnyServerConnection
         e: instance of irclib.Event
-        This function handles privmsg analysis for any privmsg events.
+        This function handles analysis for any IRC events.
         """
         channel = None
         targetuser = None
@@ -208,12 +233,10 @@ class ircDecode(Base):
         #t = time.asctime(time.localtime(c.ts))
         t = e.time
         cmd = e.eventtype()
-        if cmd == "pubmsg":
+        if cmd == "pubmsg" or cmd=="notice":
             channel = e.target()
-        if cmd == "privmsg":
+        if cmd == "privmsg" or cmd=="privnotice":
             targetuser = e.target()
-        #srcip = dnet.addr(c.pkt.src)
-        #dstip = dnet.addr(c.pkt.dst)
         srcip = e.src
         dstip = e.dst
         rest = " ".join(e.arguments())
@@ -233,7 +256,6 @@ class ircDecode(Base):
         self.lines.setdefault(rest, 0)
         self.lines[rest] += 1
         # search for keywords
-        # TODO: Move this functionality here from main
         self.keywords(c, e)
         self.botcmds(c, e)
         

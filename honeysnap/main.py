@@ -101,7 +101,8 @@ def processFile(file):
     This function will run any enabled options for each pcap file
     """
     hs = HoneysnapSingleton.getInstance()
-    options = hs.getOptions()
+    options = hs.getOptions()   
+    
     try:
         # This sucks. pcapy wants a path to a file, not a file obj
         # so we have to uncompress the gzipped data into
@@ -235,43 +236,29 @@ def processFile(file):
                 s.doOutput("\nOUTGOING CONNECTIONS FOR %s\n" % hp)                 
                 s.writeResults(limit=l)  
             del p
-
-
-    if options["do_irc_summary"] == "YES" or options["do_irc"] == "YES":
+   
+    if options["do_irc"] == "YES":
         """
         Here we will use PcapRE to find packets on irc_port with "PRIVMSG"
         in the payload.  Matching packets will be handed to wordsearch
         to hunt for any matching words.
-        """
+        """   
         for hp in options["honeypots"]:
-            for port in options["irc_ports"]:
-                out("\nIRC Summary for %s:%s\n\n" % (hp, port))
+            for port in options["irc_ports"]: 
+                out("\nLooking for packets containing PRIVMSG for %s\n\n" % hp)
                 p = pcap.pcap(tmpf)
-                words = '0day access account admin auth bank bash #!/bin binaries binary bot card cash cc cent connect crack credit dns dollar ebay e-bay egg flood ftp hackexploit http leech login money /msg nologin owns ownz password paypal phish pirate pound probe prv putty remote resolved root rooted scam scan shell smtp sploit sterling sucess sysop sys-op trade uid uname uptime userid virus warez'
-                if options["wordfile"]:
-                    wfile = options["wordfile"]
-                    if os.path.exists(wfile) and os.path.isfile(wfile):
-                        wfp = open(wfile, 'rb')
-                        words = wfp.readlines()
-                        words = [w.strip() for w in words]
-                        words = " ".join(words)
-                ws = wordSearch()
-                ws.setWords(words)
-                ws.setOutput(out)
-                #ws.setOutput(options["output_data_directory"] + "/results")
                 r = pcapReCounter(p)
-                r.setFilter("host %s and tcp and port %s" % (hp, port))
+                r.setFilter("host %s and tcp" % hp)
                 r.setRE('PRIVMSG') 
-                r.setWordSearch(ws)
                 r.setOutput(out)
                 r.start()
                 r.writeResults()
                 del p
 
-    if options["do_irc_detail"] == "YES" or options["do_irc"] == "YES":
-        out("\nAnaylsing IRC\n")          
+    if options["do_irc"] == "YES":
+        out("\nAnalysing IRC\n")          
         for hp in options["honeypots"]:
-            outdir = options["output_data_directory"] + "/%s/irc" % hp
+            outdir = options["output_data_directory"] + "/%s/irc" % hp 
             for port in options["irc_ports"] :
                 out("\nHoneypot %s, port %s\n\n" % (hp, port))
                 hirc = HoneySnapIRC()
@@ -279,7 +266,7 @@ def processFile(file):
                 hd = ircDecode()
                 hd.setOutput(out)
                 hd.setOutdir(outdir)
-                hd.setOutfile('irclog-%s.txt' % port)
+                hd.setOutfile('irclog-%s.txt' % port) 
                 hirc.addHandler("all_events", hd.decodeCB, -1)
                 hirc.ircobj.add_global_handler("all_events", hd.printLines, -1)
                 hirc.ircobj.process_once()
@@ -419,8 +406,6 @@ def parseOptions():
     		'do_ftp'			: 'YES',
     		'do_smtp'           : 'YES',
     		'do_irc'			: 'YES',
-    		'do_irc_summary'	: 'YES',
-    		'do_irc_detail'		: 'YES',
     		'irc_ports'			: [6667],
     		'irc_limit'			: 0,
     		'do_sebek'			: 'YES',
@@ -469,10 +454,6 @@ def parseOptions():
         help = "Extract smtp data")
     parser.add_option("--do-irc", dest="do_irc", action="store_const", const="YES",
         help = "Summarize IRC and do irc detail (same as --do-irc-detail and --do-irc-summary)")
-    parser.add_option("--do-irc-summary", dest="do_irc_summary", action="store_const", const="YES",
-        help = "Sumarize IRC messages, providing a hit count for key words, use --words to supply a word file")
-    parser.add_option("--do-irc-detail", dest="do_irc_detail", action="store_const", const="YES",
-        help = "Extract IRC sessions, do detailed IRC analysis")
     parser.add_option("--irc-ports", action="callback", callback=store_int_array, dest="irc_ports", type="string",
         help = "Ports for IRC traffic")   
     parser.add_option("--irc-limit", dest="irc_limit", type="int", help = "Limit IRC summary to top N items")

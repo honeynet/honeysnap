@@ -43,7 +43,7 @@ class pcapRE(Base):
         self.p = pcapObj    
         self.action = None
         self.doWordSearch = 0                                
-        format = "%(pattern)-10s %(proto)-5s %(source)-15s %(dest)-15s %(dport)-5s %(count)10s\n"  
+        format = "%(pattern)-10s %(proto)-5s %(source)-15s %(sport)-15s %(dest)-15s %(dport)-5s %(count)10s\n"  
         self.msg = stringFormatMessage(format=format)        
         
     def setRE(self, pattern):
@@ -90,17 +90,19 @@ class pcapRE(Base):
             if proto == socket.IPPROTO_TCP:
                 tcp = subpkt.data
                 pay = tcp.data
-                dport = tcp.dport
+                dport = tcp.dport 
+                sport = tcp.sport
             if proto == socket.IPPROTO_UDP:
                 udp = subpkt.data
                 pay = udp.data
                 dport = udp.dport
+                sport = udp.sport
         except dpkt.Error:
             return        
         if pay is not None and self.exp is not None:
             m = self.exp.search(pay)
             if m:                   
-                self.action(m, proto, shost, dhost, dport, pay)
+                self.action(m, proto, shost, sport, dhost, dport, pay)
      
 class pcapReCounter(pcapRE):
     """Extension of pcapRE to do simple counting of matching packets"""
@@ -109,9 +111,9 @@ class pcapReCounter(pcapRE):
         self.results = {}          
         self.action = self.simpleCounter
 
-    def simpleCounter(self, m, proto, shost, dhost, dport, pay):
+    def simpleCounter(self, m, proto, shost, sport, dhost, dport, pay):
         """Simple action that just counts matches"""  
-        key = (proto, shost, dhost, dport) 
+        key = (proto, shost, sport, dhost, dport) 
         if key not in self.results:
             self.results[key] = 0
         self.results[key] += 1
@@ -121,10 +123,10 @@ class pcapReCounter(pcapRE):
     def writeResults(self):
         """Summarise results for simpleCounter()"""  
         if self.results:     
-            self.msg.msg=dict(pattern="PATTERN", proto="PROTO", source="SOURCE", dest="DEST", dport="DPORT", count="COUNT")
+            self.msg.msg=dict(pattern="PATTERN", proto="PROTO", source="SOURCE", sport="SPORT", dest="DEST", dport="DPORT", count="COUNT")
             self.doOutput(self.msg)
             for key, val in self.results.items():
-                self.msg.msg=dict(pattern=self.pattern, proto=key[0], source=key[1], dest=key[2], dport=key[3], count=val)
+                self.msg.msg=dict(pattern=self.pattern, proto=key[0], source=key[1], sport=key[2], dest=key[3], dport=key[4], count=val)
                 self.doOutput(self.msg)  
         else:
             self.doOutput('No matching packets found\n')
@@ -167,7 +169,7 @@ class wordSearch(Base):
             self.doOutput(self.msg)
             for word, cons in self.results.items():
                 for k in cons: 
-                    self.msg.msg = dict(word=word, proto=k[0], source=k[1], dest=k[2], dport=k[3], count=self.results[word][k])
+                    self.msg.msg = dict(word=word, proto=k[0], source=k[1], sport=k[2], dest=k[3], dport=k[4], count=self.results[word][k])
                     self.doOutput(self.msg)   
         else:
              self.doOutput("No words found\n")
