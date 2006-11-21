@@ -7,7 +7,7 @@ import re, os
 from distutils.core import setup
 
 setup(name="honeysnap",
-      version="1.0rc2",
+      version="1.0rc3",
       author="Jed Hale",
       author_email="jed.haile@thelogangroup.biz",  
       maintainer="Jed Haile/Arthur Clune",
