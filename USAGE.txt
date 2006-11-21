@@ -67,9 +67,10 @@ using the 'words' file.  The words file is used by Honeysnap
 to search IRC traffic for specific key words.  You can specify 
 a words file in Honeysnap with --words at the cmd line or by 
 setting WORDFILE=/path/to/file in the config file.  The words 
-file should can contain as many lines of space delimited words 
-as the user requires.  If no words file is provided, Honeysnap 
-will use a built-in set of words.
+file should can contain as words as the user requires, one 
+per line.  If no words file is provided, Honeysnap 
+will use a built-in set of words. If a word file is provided,
+honeysnap will append the user-supplied list to its own list.
 
 EXAMPLES
 ========
