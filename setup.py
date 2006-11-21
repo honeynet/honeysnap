@@ -4,11 +4,11 @@
 #
 
 import re, os                  
-from honeysnap.main import version
+from honeysnap.main import VERSION
 from distutils.core import setup
 
 setup(name="honeysnap",
-      version=version,
+      version=VERSION,
       author="Jed Hale",
       author_email="jed.haile@thelogangroup.biz",  
       maintainer="Jed Haile/Arthur Clune",
