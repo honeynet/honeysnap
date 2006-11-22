@@ -233,16 +233,15 @@ def processFile(file):
         to hunt for any matching words.
         """   
         for hp in options["honeypots"]:
-            for port in options["irc_ports"]: 
-                out("\nLooking for packets containing PRIVMSG for %s\n\n" % hp)
-                p = pcap.pcap(tmpf)
-                r = pcapReCounter(p)
-                r.setFilter("host %s and tcp" % hp)
-                r.setRE('PRIVMSG') 
-                r.setOutput(out)
-                r.start()
-                r.writeResults()
-                del p
+            out("\nLooking for packets containing PRIVMSG for %s\n\n" % hp)
+            p = pcap.pcap(tmpf)
+            r = pcapReCounter(p)
+            r.setFilter("host %s and tcp" % hp)
+            r.setRE('PRIVMSG') 
+            r.setOutput(out)
+            r.start()
+            r.writeResults()
+            del p 
 
     if options["do_irc"] == "YES":
         out("\nAnalysing IRC\n")          
