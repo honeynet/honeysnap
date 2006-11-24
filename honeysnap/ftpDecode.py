@@ -106,7 +106,7 @@ class ftpDecode(Base):
                     if rstate is not None:
                         fn = renameFile(rstate, filename)
                         id, m5 = self.id.identify(rstate)
-                        self.msg.msg = "extracted: %s\nfiletype: %s\nmd5 sum: %s\n" %(fn,id,m5)
+                        self.msg.msg = "\tExtracted: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5)
                         self.doOutput(self.msg)
 
 
@@ -185,7 +185,7 @@ class ftpDecode(Base):
             if rstate is not None:
                 fn = renameFile(rstate, filename)
                 id, m5 = self.id.identify(rstate)
-                self.msg.msg = "extracted: %s\nfiletype: %s\nmd5 sum: %s\n" %(fn,id,m5)
+                self.msg.msg = "\tExtracted: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5)
                 self.doOutput(self.msg)
 
 

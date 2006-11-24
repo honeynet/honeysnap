@@ -91,7 +91,7 @@ class tcpFlow(object):
 
     def store_packet(self, flow, tcp):
         """Store a packet in a flow"""
-        bytes_per_flow = 100000000
+        bytes_per_flow = 10000000
         seq = tcp.seq
         data = tcp.data
         if len(data) <= 0 :
@@ -183,14 +183,15 @@ class tcpFlow(object):
         """
         pass
 
-if __name__ == "__main__":
-    import sys
+if __name__ == "__main__":                               
+    # for testing. Edit suitably
+    import sys                                          
+    options = { 'honeypots':['192.168.0.1', '192.168.0.2'] }
+    hsingleton = HoneysnapSingleton.getInstance(options)
     f = sys.argv[1]
     pcapObj = pcap.pcap(f)
-    tflow = tcpFlow(pcapObj)
+    tflow = tcpFlow(pcapObj)  
+    make_dir ('output')
+    tflow.setOutdir("output/%s/")
     tflow.setFilter("not port 445")
     tflow.start()
-
-
-
-

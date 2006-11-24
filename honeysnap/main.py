@@ -337,11 +337,12 @@ def cleanup(options):
     """
     datadir = options["output_data_directory"]
     for root, dirs, files in os.walk(datadir, topdown=False):
-        #print root, dirs, files
+        rootpath =  root.split(os.path.sep)
         for name in files:
             if os.stat(os.path.join(root, name)).st_size == 0:
-                #print "removing %s" % os.path.join(root, name)
-                os.remove(os.path.join(root, name))
+                if rootpath[-1] != 'incoming' and rootpath[-1] != 'outgoing':
+                    #print "removing %s" % os.path.join(root, name)
+                    os.remove(os.path.join(root, name))
         for name in dirs:
             if not len(os.listdir(os.path.join(root, name))):
                 #print "removing dir %s" % os.path.join(root, name)
