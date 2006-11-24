@@ -204,9 +204,6 @@ class httpDecode(Base):
                     print "response failed to decode: %s " % state.fname
                     pass
 
-            if r:
-                state.decoded = r
-
         if t == 'request':
             try:
                 #print 'decode:request:'
@@ -237,16 +234,23 @@ class httpDecode(Base):
                     print "request failed to decode: %s " % state.fname
                     pass
 
-            if r:
-                state.decoded = r
+        if r:
+            state.decoded = r
+        else:
+            return
         if t is not None:
             self.extractHeaders(state, d)
-        self._renameFlow(state, t)
+        rs = self.statemgr.find_flow_state(freverse(state.flow))
+        if rs.decoded:          
+            self._renameFlow(state, t) 
+        else:
+            self.decode(rs, self.statemgr)
+
 
     def _renameFlow(self, state, t):
         """state is a honeysnap.flow.flow_state object, t = response or request"""
-        #print "_renameFlow:state", state
-        rflow = freverse(state.flow)
+        #print "_renameFlow:state", state.fname
+        rflow = freverse(state.flow)   
         #print '_renameFlow:rflow   ', rflow
         rs = self.statemgr.find_flow_state(rflow)
         if rs is not None:
@@ -258,17 +262,25 @@ class httpDecode(Base):
                         url = urllib.splitquery(state.decoded.uri)[0]
                         realname = url.rsplit("/", 1)[-1]
                     except AttributeError:
-                        realname = 'index.html'
+                        realname = 'index.html' 
+                    # reverse flows to get right sense for file renaming    
+                    temp = rs
+                    rs = state
+                    state = temp
                 if t == 'response':
                     url = urllib.splitquery(r1.uri)[0]
                     realname = url.rsplit("/", 1)[-1]  
-                # map 'GET /' to 'index.html'    
                 if realname == '' or realname == '/' or not realname:
-                    realname = 'index.html'
+                    realname = 'index.html' 
                 fn = renameFile(state, realname)
-                id, m5 = self.id.identify(state)  
-                self.doOutput("Request %s\n" % url)
-                self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5)) 
+                id, m5 = self.id.identify(state)
+                if 'outgoing' in fn:
+                    self.doOutput("Honeypot requested %s\n" % url)
+                    self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5))
+                else: 
+                    pass
+                    #self.doOutput("Honeypot served %s\n" % url)
+                    #self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5))                         
 
     def extractHeaders(self, state, d):
         """
@@ -335,7 +347,7 @@ class httpDecode(Base):
                 line = k + " : " + v + "\n"
                 fp.write(line)
             fp.close()
-        if body is not None:
+        if body is not None:   
             base = state.fname
             #base += ".body"
             fp = open(base, "wb")
@@ -343,7 +355,7 @@ class httpDecode(Base):
                 body = "".join(body)
             fp.write(body)
             fp.close()
-        if data is not None:
+        if data is not None:  
             base = state.fname
             base += ".data"
             fp = open(base, "wb")

@@ -81,7 +81,8 @@ def setFilters(options):
         port = [ 'dst port %s' % port for port in irc_ports ]
         irc_filter = irc_filter + " or ".join(port) + ")"
     return [ 
-        ('All outbound IPv4 packets:', 'src host %s'),         
+        ('All outbound IPv4 packets:', 'src host %s'),  
+        ('All ICMP packets', 'host %s and icmp'),
         ('Outbound FTP packets:','src host %s and dst port 21'),
         ('Outbound SSH packets:','src host %s and dst port 22'),
         ('Outbound Telnet packets:','src host %s and dst port 23'),
