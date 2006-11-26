@@ -22,6 +22,7 @@
 
 import dpkt
 from flow import reverse as freverse
+from singletonmixin import HoneysnapSingleton
 import cStringIO
 import os
 from util import findName, renameFile
@@ -121,8 +122,10 @@ class httpDecode(Base):
 
     __msgtypes = ['response', 'request']
 
-    def __init__(self):
-        Base.__init__(self)
+    def __init__(self):   
+        hs = HoneysnapSingleton.getInstance()
+        Base.__init__(self) 
+        self.options = hs.getOptions()
         self.statemgr = None
         self.id = flowIdentify()
 
@@ -151,7 +154,7 @@ class httpDecode(Base):
         """
         Takes an instance of flow.flow_state, and an instance of
         flow.flow_state_manager
-        """
+        """   
         self.statemgr = statemgr
         # The following could be a problem for files having size in the 10s or
         # 100s of MB, I dunno:
@@ -240,10 +243,10 @@ class httpDecode(Base):
             return
         if t is not None:
             self.extractHeaders(state, d)
-        rs = self.statemgr.find_flow_state(freverse(state.flow))
-        if rs.decoded:          
-            self._renameFlow(state, t) 
-        else:
+        rs = self.statemgr.find_flow_state(freverse(state.flow)) 
+        if rs.decoded:      
+            self._renameFlow(state, t)
+        else:                                    
             self.decode(rs, self.statemgr)
 
 
@@ -257,30 +260,39 @@ class httpDecode(Base):
             if rs.decoded is not None and state.decoded is not None:
                 #print "Both halves decoded"
                 r1 = rs.decoded
+
                 if t == 'request':
                     try:
                         url = urllib.splitquery(state.decoded.uri)[0]
-                        realname = url.rsplit("/", 1)[-1]
+                        realname = url.rsplit("/", 1)[-1] 
                     except AttributeError:
-                        realname = 'index.html' 
+                        realname = 'index.html'
+                    try: 
+                        url = state.decoded.headers['host'] + url  
+                    except KeyError:
+                        pass
                     # reverse flows to get right sense for file renaming    
                     temp = rs
                     rs = state
                     state = temp
                 if t == 'response':
                     url = urllib.splitquery(r1.uri)[0]
-                    realname = url.rsplit("/", 1)[-1]  
+                    realname = url.rsplit("/", 1)[-1] 
+                    try:
+                        url = r1.headers['host'] + url
+                    except KeyError:
+                        # probably something like a CONNECT
+                        pass
                 if realname == '' or realname == '/' or not realname:
                     realname = 'index.html' 
                 fn = renameFile(state, realname)
                 id, m5 = self.id.identify(state)
                 if 'outgoing' in fn:
-                    self.doOutput("Honeypot requested %s\n" % url)
+                    self.doOutput("Requested %s\n" % url)
                     self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5))
-                else: 
-                    pass
-                    #self.doOutput("Honeypot served %s\n" % url)
-                    #self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5))                         
+                elif self.options['print_http_served'] == 'YES': 
+                    self.doOutput("Served %s\n" % url)
+                    self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5))                         
 
     def extractHeaders(self, state, d):
         """

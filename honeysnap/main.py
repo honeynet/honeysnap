@@ -20,7 +20,7 @@
 
 # $Id$
    
-VERSION="1.0"
+VERSION="1.0.1"
 
 import sys
 import socket
@@ -375,7 +375,7 @@ def parseOptions():
     Read options from both config file and command line and merge
     Precedence order: Command line > config file > defaults 
     
-    Returns an (options, args) pair
+    Returns a (help, options, args) tuple. Help is a function that prints help
     """
     
     # default values for all options.   
@@ -393,6 +393,7 @@ def parseOptions():
     		'verbose_summary'	: 'YES',
     		'print_verbose'		: 'NO',
     		'do_http'			: 'YES',
+    		'print_http_served' : 'NO',
     		'do_ftp'			: 'YES',
     		'do_smtp'           : 'YES',
     		'do_irc'			: 'YES',
@@ -437,7 +438,9 @@ def parseOptions():
     parser.add_option("--print-verbose", dest="print_verbose", action="store_const", const="YES",
         help = "Print verbose flow counts to screen as well as storing in a file") 
     parser.add_option("--do-http", dest="do_http", action="store_const", const="YES",
-        help = "Extract http data")
+        help = "Extract http data")   
+    parser.add_option("--print-http-served", dest="print_http_served", action="store_const", const="YES",
+        help = "Print extracted files served by the honeypot(s)")
     parser.add_option("--do-ftp", dest="do_ftp", action="store_const", const="YES",
         help = "Extract FTP data")
     parser.add_option("--do-smtp", dest="do_smtp", action="store_const", const="YES",
