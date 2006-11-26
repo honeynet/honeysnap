@@ -26,7 +26,7 @@ import pcap
 import dpkt
 from flow import flow, flow_state, flow_state_manager, reverse, fileHandleError
 from singletonmixin import HoneysnapSingleton
-from util import make_dir
+from util import make_dir   
 
 FLOW_FINISHED=(1 << 0)
 FLOW_FILE_EXISTS=(1 << 1)
@@ -172,8 +172,8 @@ class tcpFlow(object):
     def setOutput(self, file):
         self.outfile = file
 
-    def dump_extract(self, options):
-        for s in self.states.flow_hash.values():
+    def dump_extract(self, options):   
+        for s in self.states.getFlowStates():
             for func in self.plugins:
                 func(s, self.states)
 

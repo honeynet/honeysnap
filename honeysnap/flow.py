@@ -25,7 +25,7 @@ import sys
 from util import ipnum, make_dir
 from singletonmixin import HoneysnapSingleton
 
-HASH_SIZE=1009
+HASH_SIZE=2797
 FLOW_FINISHED=(1 << 0)
 FLOW_FILE_EXISTS=(1 << 1)
 
@@ -236,8 +236,8 @@ class flow_state_manager(object):
             states.append(s)
             while 1:
                 if s.next is not None:
-                    states.append(s)
                     s = s.next
+                    states.append(s)
                 else:
                     break
         return states
