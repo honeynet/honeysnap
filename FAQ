@@ -11,3 +11,24 @@ there are packets it should be counting!
 A) Check that your honeypot IP addresses are correct. If they
 are wrong, honeysnap will be looking for packets to hosts that
 may well not even be in the pcap file, hence the zero counts
+
+2) When Honeysnap processes separate pcap files it reports on
+each one separately. How do I get it to just report on all the
+files as one?
+
+A) There is no functionality in Honeysnap itself to do this
+currently, however it is easy to do. First use another program
+to merge the pcap files into one and then run honeysnap on 
+the result.
+
+One program that does this is pcapmerge, which is part of 
+tcpreplay, available from
+
+http://www.sourceforge.net/projects/tcpreplay/
+
+Install this, and then use
+
+pcapmerge -o outfile pcap1 pcap2
+
+to merge the files pcap1 and pcap2 into one file 'outfile'.
+Then run honeysnap over 'outfile'.
