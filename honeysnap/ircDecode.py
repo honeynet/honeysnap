@@ -106,7 +106,8 @@ class ircDecode(Base):
                 filewords = [w.strip() for w in filewords]
                 self.words = self.words + filewords 
             else:
-                print "Can't open specified wordlist %s" % self.wordfile
+                print "Can't open specified wordlist %s. Stopping" % self.wordfile
+                print "Please check the existence of the wordfile, or delete the WORDFILE option from the config if it's not wanted"
                 sys.exit(1)
          
     def printLines(self, c, e):        
