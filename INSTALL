@@ -58,7 +58,7 @@ Installation on a honeywall
 ---------------------------
 
 Note: You cannot do the above steps on the production honeywall,
-as it has no gcc compiler, make, etc.  Do:
+as it has no gcc compiler.  Do:
 
 	$ sudo yum install gcc 
 
@@ -69,13 +69,14 @@ For Fedora Core 3, create "/etc/yum.repos.d/python24.repo" with the following li
 
   [python24]
   name=Fedora Core $releasever - $basearch - Python 2.4
-  baseurl=http://www.python.org/ftp/python/2.4/rpms/fedora-$releasever/
+  baseurl=http://www.python.org/ftp/python/2.4/rpms/fedora-3/
   enabled=1
   gpgcheck=1
 
-Add the KRUD GPG key by running: 
+Add this line to "/etc/yum.repos.d/python24.repo" and yum
+will prompt for import of non-existant KRUD-GPG-KEY:
 
-$ sudo rpm --import http://www.python.org/ftp/python/2.4/rpms/KRUD-GPG-KEY"
+gpgkey=http://www.python.org/ftp/python/2.4/rpms/KRUD-GPG-KEY
 
 Install Python 2.4 by running: 
 
