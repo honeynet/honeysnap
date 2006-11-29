@@ -31,4 +31,8 @@ Install this, and then use
 pcapmerge -o outfile pcap1 pcap2
 
 to merge the files pcap1 and pcap2 into one file 'outfile'.
-Then run honeysnap over 'outfile'.
+Then run honeysnap over 'outfile'.   
+
+3) Does Honeysnap support Python 2.3
+
+No. Honeysnap requires Python 2.4 or greater.

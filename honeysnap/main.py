@@ -348,17 +348,6 @@ def cleanup(options):
             if not len(os.listdir(os.path.join(root, name))):
                 #print "removing dir %s" % os.path.join(root, name)
                 os.rmdir(os.path.join(root, name))
-    """
-    for dir in ["/irc", "/http", "/ftp", "/smtp", "/sebek"]:
-        if os.path.isdir(datadir+dir):
-            files = os.listdir(datadir+dir)
-        else:
-            continue
-        for f in files:
-            file = datadir + dir + "/" + f
-            if os.stat(file).st_size == 0:
-                os.unlink(file)
-    """
 
 def store_int_array(option, opt_str, value, parser):
     """Store comman seperated integer values from options into an array"""
@@ -387,23 +376,22 @@ def parseOptions():
         	'wordfile'          : None,
         	'files'             : None,
     		'do_pcap' 			: 'YES',
-    		'do_packets'		: 'YES',
-    		'do_incoming'		: 'YES',
-    		'do_outgoing'		: 'YES',
-    		'verbose_summary'	: 'YES',
+    		'do_packets'		: 'NO',
+    		'do_incoming'		: 'NO',
+    		'do_outgoing'		: 'NO',
+    		'verbose_summary'	: 'NO',
     		'print_verbose'		: 'NO',
-    		'do_http'			: 'YES',
+    		'do_http'			: 'NO',
     		'print_http_served' : 'NO',
-    		'do_ftp'			: 'YES',
-    		'do_smtp'           : 'YES',
-    		'do_irc'			: 'YES',
+    		'do_ftp'			: 'NO',
+    		'do_smtp'           : 'NO',
+    		'do_irc'			: 'NO',
     		'irc_ports'			: [6667],
     		'irc_limit'			: 0,
-    		'do_sebek'			: 'YES',
+    		'do_sebek'			: 'NO',
     		'sebek_port'		: 1101,
-    		'all_flows'			: 'YES', 
+    		'all_flows'			: 'NO', 
     		'output_data_directory'   : '/tmp/analysis',
-    		'tmp_file_directory': '/tmp'
     }  
          
     parser = OptionParser(option_class=MyOption, version="%sprog %s" % ('%', VERSION))         
@@ -414,8 +402,6 @@ def parseOptions():
         help="Write report to FILE", metavar="FILE")
     parser.add_option("-o", "--output", dest="output_data_directory",type="string",
         help="Write output to DIR, defaults to /tmp/analysis", metavar="DIR")
-    parser.add_option("-t", "--tmpdir", dest="tmp_file_directory",type="string",
-        help="Directory to use as a temporary directory, defaults to /tmp")
     parser.add_option("-H", "--honeypots", dest="honeypots", action="extend", type="string",
         help="Comma delimited list of honeypots")
     parser.add_option("-d", "--dir", dest="files", type="string",
@@ -491,6 +477,8 @@ def parseOptions():
             options[opt] = fileopts[opt]
         if cmdopts.__dict__.has_key(opt) and cmdopts.__dict__[opt]:
             options[opt] = cmdopts.__dict__[opt]  
+    
+    options['output_data_directory'] = os.path.abspath(options['output_data_directory'])
     
     if not options.has_key('honeypots'):
         print "No honeypots specified! Please use either -H or the config file to specify some"
