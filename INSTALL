@@ -14,7 +14,13 @@ irclib 0.4.6 or greater  	http://python-irclib.sourceforge.net/
 pypcap 1.1 or greater  		http://www.monkey.org/~dugsong/pypcap/
 dpkt		 	  			http://monkey.org/~dugsong/dpkt/
 magic						http://www.demonseed.net/~jp/code/magic.py
+      
+Installation on Windows
+-----------------------
 
+Honeysnap should work on Windows, but it has not been tested and the install
+process isn't documented. If you'd like to help with either of these issues,
+please get in touch!
       
 Installation on a workstation
 -----------------------------

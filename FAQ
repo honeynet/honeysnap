@@ -62,6 +62,11 @@ A) Please report a bug in Bugzilla! As a workaround, try increasing the
 number of open files. On a UNIX-like systems (Linux, OS X etc), run
 
 $ ulimit -n 4096
+                           
 
+7) Does Honeysnap work on Windows
+
+A) Probably, but we haven't tested it, and the install process is not
+documented. We'd be grateful for help with either of these areas!
 
 
