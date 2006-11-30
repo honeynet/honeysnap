@@ -95,7 +95,7 @@ class flow_state(object):
     def __ne__(self, other):
         return self.isn!=other.isn or self.flow != other.flow
 
-    def open(self, flag="ab"):
+    def _open(self, flag="ab"):
         #print "in flow_state.open: %s" % self.fname
         if self.fp is not None:
             if self.fp.closed:
@@ -123,13 +123,13 @@ class flow_state(object):
                 raise fileHandleError()
         return self.fp
      
-    def safeOpen(self, statemgr, flags="ab"):
-        """Open a state. Try once to allow for too many open files. If that fails, raise the error"""
+    def open(self, statemgr, flags="ab"):
+        """Open a state. Try twice to allow for too many open files. If that fails, raise the error"""
         try:
-            self.open(flags)
+            self._open(flags)
         except fileHandleError:
             statemgr.closeFiles()
-            self.open(flags)
+            self._open(flags)
             
 
     def close(self):
@@ -141,7 +141,7 @@ class flow_state(object):
 
     def writeData(self, data):
         if self.fp is None or self.fp.closed:
-            self.open()
+            self._open()
 
         if self.fp.tell() != self.pos:
             self.fp.seek(self.pos)

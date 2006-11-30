@@ -160,7 +160,7 @@ class httpDecode(Base):
         # 100s of MB, I dunno:
         #d = "".join(state.data)
         state.close()    
-        state.safeOpen(flags="rb", statemgr=self.statemgr)
+        state.open(flags="rb", statemgr=self.statemgr)
         d = state.fp.readlines()
         #print "decode:state ", state.fname
         if len(d) == 0:
@@ -192,7 +192,7 @@ class httpDecode(Base):
                 #print "\n"
             except dpkt.Error:
                 try:
-                    state.safeOpen(flags="rb", statemgr=self.statemgr)
+                    state.open(flags="rb", statemgr=self.statemgr)
                     l = state.fp.readline()
                     headers = parse_headers(state.fp)
                     r = myMessage()
@@ -222,7 +222,7 @@ class httpDecode(Base):
                 #print "\n"
             except dpkt.Error:
                 try:
-                    state.safeOpen(flags="rb", statemgr=self.statemgr)
+                    state.open(flags="rb", statemgr=self.statemgr)
                     l = state.fp.readline()
                     headers = parse_headers(state.fp)
                     r = myMessage()

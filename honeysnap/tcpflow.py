@@ -102,7 +102,7 @@ class tcpFlow(object):
         if state is None:
             #print "state not found, creating new"
             state = self.states.create_state(flow, seq)
-            self.safe_open(state)
+            self.open(state)
 
         if state.flags&FLOW_FINISHED:
             # print "flow finished: %s" % state.flow
@@ -141,17 +141,12 @@ class tcpFlow(object):
             length = bytes_per_flow - offset
             return
 
-        self.safe_open(state)
+        self.open(state)
         state.writeData(data)
 
-    def safe_open(self, state):
-        """Try and open a file. Close open files if necessary"""
-        try:
-            state.open()
-        except fileHandleError:
-            self.states.closeFiles()
-        # try again. If this fails, it's 'Not Our Fault'(tm) so just pass on the raised error
-        state.open()
+    def open(self, state):
+        """Open a file"""
+        state.open(statemgr=self.states)
 
     def start(self):
         """Iterate over a pcap object"""
