@@ -53,7 +53,7 @@ class ftpDecode(Base):
     def decode(self, state, statemgr):
         self.statemgr = statemgr
         state.close()
-        state.open(flag="rb")
+        state.safeOpen(flags="rb", statemgr = self.statemgr)
         d = state.fp.readlines()
         #t, req = self.determineType(d)
         d = "".join(d)
@@ -119,9 +119,10 @@ class ftpDecode(Base):
         rstate = self.statemgr.find_flow_state(rflow)
         if rstate is None:
             # no reverse state, bail
-            return
-        f = rstate.open("rb")
-        dchannel = f.readlines()
+            return 
+        rstate.safeOpen(flags="rb", statemgr=self.statemgr)
+        dchannel = rstate.fp.readlines()
+        rstate.close()
         lines = d.splitlines()
         iterlines = iter(lines)
         portlines = []

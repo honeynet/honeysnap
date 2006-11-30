@@ -20,7 +20,7 @@
 
 # $Id$
    
-VERSION="1.0.1"
+VERSION="1.0.2"
 
 import sys
 import socket
@@ -173,7 +173,8 @@ def processFile(file):
                 c.setOutput(out)
                 f = filt % hp
                 c.setFilter(f)
-                c.count()
+                c.count()   
+                del p
             out("\n")
 
     if options["do_incoming"] == "YES":
@@ -260,7 +261,8 @@ def processFile(file):
                 hirc.ircobj.add_global_handler("all_events", hd.printLines, -1)
                 hirc.ircobj.process_once()
                 hd.printSummary()
-                del hd
+                del hd  
+                del hirc
 
     if options["all_flows"] == "YES":
         out("\nExtracting all flows\n")
@@ -273,7 +275,8 @@ def processFile(file):
         de.setOutput(out)
         de.start()
         de.dump_extract(options)
-        del p
+        del de
+        del p                   
 
     if options["do_http"] == "YES":
         out("\nExtracting from HTTP\n\n")
@@ -287,6 +290,7 @@ def processFile(file):
         de.registerPlugin(decode.decode)
         de.start()
         de.dump_extract(options)
+        del de
         del p
 
 
@@ -301,7 +305,8 @@ def processFile(file):
         decode.setOutput(out)
         de.registerPlugin(decode.decode)
         de.start()
-        de.dump_extract(options)
+        de.dump_extract(options)  
+        del de
         del p
 
     if options["do_smtp"] == "YES":
@@ -316,6 +321,7 @@ def processFile(file):
         de.registerPlugin(decode.decode)
         de.start()
         de.dump_extract(options)
+        del de
         del p
 
     if options["do_sebek"] == "YES":
@@ -335,7 +341,9 @@ def processFile(file):
 def cleanup(options):
     """
     Clean up empty files, etc.
-    """
+    """         
+    # Windows python barfs if we try to remove an open file
+    # just catch the error and continue for now
     datadir = options["output_data_directory"]
     for root, dirs, files in os.walk(datadir, topdown=False):
         rootpath =  root.split(os.path.sep)
@@ -343,11 +351,17 @@ def cleanup(options):
             if os.stat(os.path.join(root, name)).st_size == 0:
                 if rootpath[-1] != 'incoming' and rootpath[-1] != 'outgoing':
                     #print "removing %s" % os.path.join(root, name)
-                    os.remove(os.path.join(root, name))
+                    try:
+                        os.remove(os.path.join(root, name))
+                    except OSError:
+                        continue
         for name in dirs:
             if not len(os.listdir(os.path.join(root, name))):
-                #print "removing dir %s" % os.path.join(root, name)
-                os.rmdir(os.path.join(root, name))
+                #print "removing dir %s" % os.path.join(root, name)   
+                try:
+                    os.rmdir(os.path.join(root, name))
+                except OSError:
+                    continue
 
 def store_int_array(option, opt_str, value, parser):
     """Store comman seperated integer values from options into an array"""

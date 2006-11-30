@@ -5,4 +5,5 @@ include COPYING
 include honeynet.cfg
 include words      
 include TODO  
-include FAQ
+include FAQ 
+include CREDITS

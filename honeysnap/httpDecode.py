@@ -21,12 +21,12 @@
 # $Id$
 
 import dpkt
-from flow import reverse as freverse
+from flow import reverse as freverse  
 from singletonmixin import HoneysnapSingleton
 import cStringIO
 import os
 from util import findName, renameFile
-from flowIdentify import flowIdentify
+from flowIdentify import flowIdentify 
 from base import Base
 import urllib
 
@@ -159,8 +159,8 @@ class httpDecode(Base):
         # The following could be a problem for files having size in the 10s or
         # 100s of MB, I dunno:
         #d = "".join(state.data)
-        state.close()
-        state.open(flag="rb")
+        state.close()    
+        state.safeOpen(flags="rb", statemgr=self.statemgr)
         d = state.fp.readlines()
         #print "decode:state ", state.fname
         if len(d) == 0:
@@ -192,7 +192,7 @@ class httpDecode(Base):
                 #print "\n"
             except dpkt.Error:
                 try:
-                    state.open(flag="rb")
+                    state.safeOpen(flags="rb", statemgr=self.statemgr)
                     l = state.fp.readline()
                     headers = parse_headers(state.fp)
                     r = myMessage()
@@ -222,7 +222,7 @@ class httpDecode(Base):
                 #print "\n"
             except dpkt.Error:
                 try:
-                    state.open(flag="rb")
+                    state.safeOpen(flags="rb", statemgr=self.statemgr)
                     l = state.fp.readline()
                     headers = parse_headers(state.fp)
                     r = myMessage()
@@ -244,6 +244,8 @@ class httpDecode(Base):
         if t is not None:
             self.extractHeaders(state, d)
         rs = self.statemgr.find_flow_state(freverse(state.flow)) 
+        if not rs:
+            return
         if rs.decoded:      
             self._renameFlow(state, t)
         else:                                    

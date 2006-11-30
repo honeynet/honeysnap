@@ -112,7 +112,7 @@ class flow_state(object):
                     self.close()
                     self.fp = open(self.fname, flag)
                 except IOError:
-                    print "Can't re-open %s in mode %s" % (self.fname, flag)
+                    #print "Can't re-open %s in mode %s" % (self.fname, flag)
                     self.fp = None
                     raise fileHandleError()
         else:
@@ -122,6 +122,15 @@ class flow_state(object):
                 #print self.fname
                 raise fileHandleError()
         return self.fp
+     
+    def safeOpen(self, statemgr, flags="ab"):
+        """Open a state. Try once to allow for too many open files. If that fails, raise the error"""
+        try:
+            self.open(flags)
+        except fileHandleError:
+            statemgr.closeFiles()
+            self.open(flags)
+            
 
     def close(self):
         if self.fp is not None:

@@ -37,7 +37,7 @@ and run setup.py as follows:
 
 	$ wget http://www.monkey.org/~dugsong/dpkt/dpkt-1.6.tar.gz
 	$ tar -xzf dpkt-1.6.tar.gz
-	$ pushd dpkt  
+	$ pushd dpkt-1.6 
 	$ make
 	$ python setup.py build && sudo python setup.py install
 	$ popd

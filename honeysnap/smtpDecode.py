@@ -34,8 +34,9 @@ class smtpDecode(Base):
         f = state.flow
         if f.dport == 25:
             state.close()
-            state.open("rb")
-            d = state.fp.readlines()
+            state.safeOpen(flags="rb", statemgr=self.statemgr)
+            d = state.fp.readlines()  
+            state.close()
             dlow = [l.lower() for l in d]
             to = [l for l in dlow if l.find("rcpt to") >= 0]
             subj = [l for l in dlow if l.find("subject") >=0]
