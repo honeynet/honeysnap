@@ -1,9 +1,10 @@
 # $Id$
 include INSTALL
-include USAGE.txt
+include USAGE
 include COPYING
 include honeynet.cfg
 include words      
 include TODO  
 include FAQ 
 include CREDITS
+include misc/do_files.sh

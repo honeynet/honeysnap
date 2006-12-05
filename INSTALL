@@ -41,6 +41,9 @@ and run setup.py as follows:
 	$ popd
 	$ rm -rf pypcap-1.1*
 
+(On debian unstable, you will need to have python-devel installed to
+install pypcap apt-get install python-dev)
+
 	$ wget http://www.monkey.org/~dugsong/dpkt/dpkt-1.6.tar.gz
 	$ tar -xzf dpkt-1.6.tar.gz
 	$ pushd dpkt-1.6 
