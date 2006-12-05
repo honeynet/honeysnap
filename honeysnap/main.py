@@ -52,7 +52,8 @@ from output import outputSTDOUT, rawPathOutput
 from packetCounter import Counter
 from pcapRE import pcapRE, wordSearch, pcapReCounter
 from sebekDecode import sebekDecode
-from util import make_dir
+from util import make_dir     
+from dnsDecode import dnsDecode
 
 class MyOption(Option):
     """
@@ -82,7 +83,8 @@ def setFilters(options):
         irc_filter = irc_filter + " or ".join(port) + ")"
     return [ 
         ('All outbound IPv4 packets:', 'src host %s'),  
-        ('All ICMP packets', 'host %s and icmp'),
+        ('All ICMP packets', 'host %s and icmp'),   
+        ('Outbound DNS packets:','src host %s and dst port 53'),
         ('Outbound FTP packets:','src host %s and dst port 21'),
         ('Outbound SSH packets:','src host %s and dst port 22'),
         ('Outbound Telnet packets:','src host %s and dst port 23'),
@@ -227,6 +229,18 @@ def processFile(file):
                 s.doOutput("\nOUTGOING CONNECTIONS FOR %s\n" % hp)                 
                 s.writeResults(limit=l)  
             del p
+                
+    if options["do_dns"] == "YES":
+        out("\nExtracting DNS data to file\n")
+        for hp in options["honeypots"]:
+            #out("\nHoneypot %s\n\n" % hp)
+            dns = dnsDecode(hp)
+            dns.setOutdir(options["output_data_directory"] + "/%s/dns" % hp)
+            dns.setOutput(out)
+            dns.run()
+            del dns 
+                     
+   
    
     if options["do_irc"] == "YES":
         """
@@ -394,7 +408,8 @@ def parseOptions():
     		'do_incoming'		: 'NO',
     		'do_outgoing'		: 'NO',
     		'verbose_summary'	: 'NO',
-    		'print_verbose'		: 'NO',
+    		'print_verbose'		: 'NO',    
+    		'do_dns'            : 'NO',
     		'do_http'			: 'NO',
     		'print_http_served' : 'NO',
     		'do_ftp'			: 'NO',
@@ -436,7 +451,9 @@ def parseOptions():
     parser.add_option("--verbose-summary", dest="verbose_summary", action="store_const", const="YES",
         help = "Do verbose flow counts, indexes flows by srcip, sport, dstip, dport")
     parser.add_option("--print-verbose", dest="print_verbose", action="store_const", const="YES",
-        help = "Print verbose flow counts to screen as well as storing in a file") 
+        help = "Print verbose flow counts to screen as well as storing in a file")
+    parser.add_option("--do-dns", dest="do_dns", action="store_const", const="YES",
+        help = "Extract DNS data") 
     parser.add_option("--do-http", dest="do_http", action="store_const", const="YES",
         help = "Extract http data")   
     parser.add_option("--print-http-served", dest="print_http_served", action="store_const", const="YES",

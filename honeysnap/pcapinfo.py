@@ -61,7 +61,10 @@ Average packet size: %(avg)s bytes \n \
             if ts>end:
                 end = ts
         fsize = os.stat(self.filename).st_size
-        duration = end - start
+        duration = end - start 
+        if duration == 0:
+            self.doOutput('\tFile has zero duration! Cannot generate pcap info')
+            return
         start = time.asctime(time.localtime(start))
         end = time.asctime(time.localtime(end))
         bytes = float(dsize)/duration
