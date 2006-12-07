@@ -20,14 +20,15 @@
 
 # $Id$
    
-VERSION="1.0.2"
+VERSION="1.0.3rc2"
 
 import sys
 import socket
 from optparse import OptionParser, Option, OptionValueError
 import re
 import string
-import gzip
+import gzip   
+import time
 import os
 from fnmatch import fnmatch
 import ConfigParser
@@ -231,15 +232,19 @@ def processFile(file):
             del p
                 
     if options["do_dns"] == "YES":
-        out("\nExtracting DNS data to file\n")
+        out("\nExtracting DNS data to file\n\n")
         for hp in options["honeypots"]:
-            #out("\nHoneypot %s\n\n" % hp)
-            dns = dnsDecode(hp)
+            #out("\nHoneypot %s\n\n" % hp)   
+            dns = dnsDecode(hp, direction="queried")
+            dns.setOutdir(options["output_data_directory"] + "/%s/dns" % hp)
+            dns.setOutput(out)
+            dns.run()      
+            del dns
+            dns = dnsDecode(hp, direction="served")
             dns.setOutdir(options["output_data_directory"] + "/%s/dns" % hp)
             dns.setOutput(out)
             dns.run()
-            del dns 
-                     
+            del dns  
    
    
     if options["do_irc"] == "YES":
@@ -402,7 +407,9 @@ def parseOptions():
             'filename'          : None,
         	'mask' 				: '*',
         	'wordfile'          : None,
-        	'files'             : None,
+        	'files'             : None, 
+        	'use_utc'           : 'NO', 
+        	'raw_time'          : 'NO',
     		'do_pcap' 			: 'YES',
     		'do_packets'		: 'NO',
     		'do_incoming'		: 'NO',
@@ -438,7 +445,12 @@ def parseOptions():
     parser.add_option("-m", "--mask", dest="mask", type="string",
         help = "Mask to limit which directories are recursed into.")
     parser.add_option("-w", "--words", dest="wordfile", type="string",
-        help = "Pull wordlist from FILE", metavar="FILE")
+        help = "Pull wordlist from FILE", metavar="FILE")     
+        
+    parser.add_option("--use-utc", dest="use_utc", action="store_const", const="YES",
+        help = "Times in UTC? (Otherwise use localtime)")
+    parser.add_option("--raw-time", dest="raw_time", action="store_const", const="YES",
+        help = "Just print raw timestamps? (Overrides --use-utc)")
 
     parser.add_option("--do-pcap", dest="do_pcap", action="store_const", const="YES",
         help = "Summarise pcap info")
@@ -509,7 +521,15 @@ def parseOptions():
         if cmdopts.__dict__.has_key(opt) and cmdopts.__dict__[opt]:
             options[opt] = cmdopts.__dict__[opt]  
     
-    options['output_data_directory'] = os.path.abspath(options['output_data_directory'])
+    options['output_data_directory'] = os.path.abspath(options['output_data_directory']) 
+
+    if options['use_utc'] == "YES":
+        options['time_convert_fn'] = lambda x: time.asctime(time.gmtime(x))
+    else:
+        options['time_convert_fn'] = lambda x: time.asctime(time.localtime(x))
+    if options['raw_time'] == "YES":
+        options['time_convert_fn'] = lambda x: x
+    
     
     if not options.has_key('honeypots'):
         print "No honeypots specified! Please use either -H or the config file to specify some"
