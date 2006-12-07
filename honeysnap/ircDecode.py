@@ -97,7 +97,8 @@ class ircDecode(Base):
         self.privcount = 0     
         self.dir = ""
         self.fp = sys.stdout   
-        self.limit=options['irc_limit']   
+        self.limit=options['irc_limit']     
+        self.timefn = options['time_convert_fn']
         self.wordfile=options['wordfile'] 
         if self.wordfile:
             if os.path.exists(self.wordfile) and os.path.isfile(self.wordfile):
@@ -112,8 +113,10 @@ class ircDecode(Base):
          
     def printLines(self, c, e):        
         """Simple print method"""
-        if e.eventtype() != 'ping' and e.eventtype() != 'all_raw_messages':
-            self.fp.write( '%s\n' % str(e))
+        if e.eventtype() != 'ping' and e.eventtype() != 'all_raw_messages':   
+            self.fp.write("%s\t%s:%s -> %s:%s\t%s\t%s\t%s\t%s\n" % (self.timefn(e.time), e.src, e.sport, e.dst, e.dport,
+                                         e.eventtype(), e.source(),
+                                         e.target(), ' '.join(e.arguments())))
              
     def setOutdir(self, dir):
         """

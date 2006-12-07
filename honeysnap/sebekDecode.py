@@ -82,8 +82,6 @@ controllist = ["\x1b[A", "\x1b[B","\x1b[C", "\x1b[D","\x1b[3~","\x1b[5~","\x1b[6
 # regex for other nonascii values
 nonascii = re.compile("[^\x20-\x7e]")
 
-tf = lambda x: time.asctime(time.localtime(x))
-
 class sebekDecode(base.Base):
 
     def __init__(self, hp):
@@ -92,7 +90,8 @@ class sebekDecode(base.Base):
         self.p = pcap.pcap(options["tmpf"], promisc=False)
         self.p.setfilter("host %s and udp port %s" % (hp, options["sebek_port"]))
         self.log = {}
-        self.fp = sys.stdout
+        self.fp = sys.stdout                   
+        self.tf = options['time_convert_fn']
 
     def setOutdir(self, dir):
         make_dir(dir)
@@ -153,10 +152,10 @@ class sebekDecode(base.Base):
                 # strip out nonascii junk
                 d = nonascii.sub("", d)
             if version == 3 and coms not in ["configure", "prelink", "sshd"]:
-                line = "[%s ip:%s parent:%s pid:%s uid:%s fd:%s inode:%s com:%s] %s\n" % (tf(t), self.log[k]["ip"], self.log[k]["parent_pid"],
+                line = "[%s ip:%s parent:%s pid:%s uid:%s fd:%s inode:%s com:%s] %s\n" % (self.tf(t), self.log[k]["ip"], self.log[k]["parent_pid"],
                     self.log[k]["pid"], uids, self.log[k]["fd"], self.log[k]["inode"], coms, d)
             elif coms not in ["configure", "prelink", "sshd"]:
-                line = "[%s ip:%s pid:%s uid:%s fd:%s com:%s] %s\n" % (tf(t), self.log[k]["ip"], self.log[k]["pid"],
+                line = "[%s ip:%s pid:%s uid:%s fd:%s com:%s] %s\n" % (self.tf(t), self.log[k]["ip"], self.log[k]["pid"],
                     uids,  self.log[k]["fd"], coms, d)
             self.doOutput(line)
             self.fp.write(line)

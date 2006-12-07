@@ -366,8 +366,8 @@ def cleanup(options):
     datadir = options["output_data_directory"]
     for root, dirs, files in os.walk(datadir, topdown=False):
         rootpath =  root.split(os.path.sep)
-        for name in files:
-            if os.stat(os.path.join(root, name)).st_size == 0:
+        for name in files:   
+            if os.stat(os.path.join(root, name)).st_size == 0:               
                 if rootpath[-1] != 'incoming' and rootpath[-1] != 'outgoing':
                     #print "removing %s" % os.path.join(root, name)
                     try:

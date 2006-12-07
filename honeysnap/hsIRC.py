@@ -45,14 +45,14 @@ class HnyEvent(irclib.Event):
     """ 
     def __init__(self, ts, pkt, eventtype, source, target, arguments=None): 
         irclib.Event.__init__(self, eventtype, source, target, arguments)
-        self.time  = datetime.fromtimestamp(ts)
+        self.time  = ts
         self.src   = inet_ntoa(pkt.src)
         self.dst   = inet_ntoa(pkt.dst)
         self.dport = pkt.data.dport
         self.sport = pkt.data.sport 
     
     def __str__(self):                                 
-         return "%s\t%s:%s -> %s:%s\t%s\t%s\t%s\t%s" % (self.time, self.src, self.sport, self.dst, self.dport,
+         return "%s\t%s:%s -> %s:%s\t%s\t%s\t%s\t%s" % (datetime.fromtimestamp(self.time), self.src, self.sport, self.dst, self.dport,
                                       self.eventtype(), self.source(),
                                       self.target(), ' '.join(self.arguments()))
                                       
