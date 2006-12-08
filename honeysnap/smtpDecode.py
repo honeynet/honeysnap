@@ -22,10 +22,15 @@
 
 from util import renameFile
 from base import Base
+from singletonmixin import HoneysnapSingleton
+
 
 class smtpDecode(Base):
     def __init__(self):
-        Base.__init__(self)
+        Base.__init__(self) 
+        hs = HoneysnapSingleton.getInstance()  
+        self.options = hs.getOptions()
+        self.tf = self.options['time_convert_fn']
         self.statemgr = None
         self.count = 0
         
@@ -48,6 +53,6 @@ class smtpDecode(Base):
             self.count +=1 
             fn = renameFile(state, realname)
             # assume the first entry in each list is the correct one
-            self.doOutput("file: %s\n" % fn)
+            self.doOutput("file: %s at %s\n" % (fn, self.tf(state.ts)))
             self.doOutput("\t%s\n" % to[0])
             self.doOutput("\t%s\n" % subj[0])

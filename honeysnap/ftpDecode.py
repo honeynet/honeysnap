@@ -35,7 +35,10 @@ cmds = ['STOR', 'STOU', 'RETR', 'LIST', 'NLST', 'APPE']
 class ftpDecode(Base):
 
     def __init__(self):
-        Base.__init__(self)
+        Base.__init__(self) 
+        hs = HoneysnapSingleton.getInstance()  
+        self.options = hs.getOptions() 
+        self.tf = self.options['time_convert_fn']
         self.statemgr = None
         # for some reason the data samples I'm using
         # often have UUUUUUPORT, compensate for that in the RE
@@ -106,7 +109,7 @@ class ftpDecode(Base):
                     if rstate is not None:
                         fn = renameFile(rstate, filename)
                         id, m5 = self.id.identify(rstate)
-                        self.msg.msg = "\tExtracted: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5)
+                        self.msg.msg = "\t%s Extracted: %s, filetype: %s, md5 sum: %s\n" %(self.tf(rstate.ts), fn,id,m5)
                         self.doOutput(self.msg)
 
 
@@ -164,15 +167,11 @@ class ftpDecode(Base):
             # passive ftp transactions happen on high ports
             # so the stream extractor has not extracted the data
             # create a new stream extractor to pull the data
-            # we need the HoneysnapSingleton so we can get config data
-            hs = HoneysnapSingleton.getInstance()
-            # configure the flow extractor
-            options = hs.getOptions()
-            p = pcap.pcap(options["tmpf"])
+            p = pcap.pcap(self.options["tmpf"])
             de = tcpflow.tcpFlow(p)
             filter = "src host %s and src port %d" % (rflow.src, rflow.sport)
             de.setFilter(filter)
-            de.setOutdir(options["output_data_directory"]+ "/%s/ftp")
+            de.setOutdir(self.options["output_data_directory"]+ "/%s/ftp")
             # run the flow extractor
             de.start()
             # now find the correct state
@@ -186,7 +185,7 @@ class ftpDecode(Base):
             if rstate is not None:
                 fn = renameFile(rstate, filename)
                 id, m5 = self.id.identify(rstate)
-                self.msg.msg = "\tExtracted: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5)
+                self.msg.msg = "\t%s Extracted: %s, filetype: %s, md5 sum: %s\n" %(self.tf(rstate.ts), fn,id,m5)
                 self.doOutput(self.msg)
 
 

@@ -125,7 +125,8 @@ class httpDecode(Base):
     def __init__(self):   
         hs = HoneysnapSingleton.getInstance()
         Base.__init__(self) 
-        self.options = hs.getOptions()
+        self.options = hs.getOptions()  
+        self.tf = self.options['time_convert_fn']
         self.statemgr = None
         self.id = flowIdentify()
 
@@ -264,7 +265,7 @@ class httpDecode(Base):
                 r1 = rs.decoded
 
                 if t == 'request':
-                    try:
+                    try:           
                         url = urllib.splitquery(state.decoded.uri)[0]
                         realname = url.rsplit("/", 1)[-1] 
                     except AttributeError:
@@ -290,10 +291,10 @@ class httpDecode(Base):
                 fn = renameFile(state, realname)
                 id, m5 = self.id.identify(state)
                 if 'outgoing' in fn:
-                    self.doOutput("Requested %s\n" % url)
+                    self.doOutput("Requested %s at %s\n" % (url, self.tf(state.ts)))
                     self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5))
                 elif self.options['print_http_served'] == 'YES': 
-                    self.doOutput("Served %s\n" % url)
+                    self.doOutput("Served %s at %s\n" % (url, self.tf(state.ts)))
                     self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5))                         
 
     def extractHeaders(self, state, d):

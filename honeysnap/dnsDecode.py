@@ -43,7 +43,7 @@ class dnsDecode(base.Base):
             self.p.setfilter("(dst host %s and udp and dst port 53) or (src host %s and udp and src port 53)" % (hp, hp))
         self.log = {}
         self.fp = sys.stdout   
-        self.timefn = options['time_convert_fn']
+        self.tf = options['time_convert_fn']
     
     def setOutdir(self, dir):
         make_dir(dir)             
@@ -71,7 +71,7 @@ class dnsDecode(base.Base):
                     answers.append(inet_ntoa(an.ip))
                 if an.type == dpkt.dns.DNS_PTR:
                     answers.append(an.ptrname)
-            line = "%s, Query %s, answer %s\n" % (self.timefn(ts), queried, ", ".join(answers))
+            line = "%s, Query %s, answer %s\n" % (self.tf(ts), queried, ", ".join(answers))
             #self.doOutput("\t%s" % line)
             self.fp.write(line)
         else:   
