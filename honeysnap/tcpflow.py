@@ -69,13 +69,13 @@ class tcpFlow(object):
 
         if proto == socket.IPPROTO_TCP:
             if shost in self.honeypots or dhost in self.honeypots:
-                self.process_tcp(pkt, shost, dhost)
+                self.process_tcp(ts, pkt, shost, dhost)
 
     def process_ip(self, pkt):
         """Process a dpkt.ip.IP object"""
         pass
 
-    def process_tcp(self, pkt, src, dst):
+    def process_tcp(self, ts, pkt, src, dst):
         """Process a tcp packet"""
         ip = pkt.data
         tcp = ip.data
@@ -87,9 +87,9 @@ class tcpFlow(object):
             return
         this_flow.sport = tcp.sport
         this_flow.dport = tcp.dport
-        self.store_packet(this_flow, tcp)
+        self.store_packet(ts, this_flow, tcp)
 
-    def store_packet(self, flow, tcp):
+    def store_packet(self, ts, flow, tcp):
         """Store a packet in a flow"""
         bytes_per_flow = 10000000
         seq = tcp.seq
@@ -101,7 +101,7 @@ class tcpFlow(object):
         state = self.states.find_flow_state(flow)
         if state is None:
             #print "state not found, creating new"
-            state = self.states.create_state(flow, seq)
+            state = self.states.create_state(ts, flow, seq)
             self.open(state)
 
         if state.flags&FLOW_FINISHED:

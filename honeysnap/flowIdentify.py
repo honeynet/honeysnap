@@ -1,5 +1,5 @@
 ################################################################################
-# (c) 20056, The Honeynet Project
+# (c) 2006, The Honeynet Project
 #   Author: Jed Haile  jed.haile@thelogangroup.biz
 #
 #   This program is free software; you can redistribute it and/or modify

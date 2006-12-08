@@ -71,11 +71,13 @@ class flow_state(object):
         self.flow = None # Description of the flow
         self.isn = None  # Initial Seq Number
         self.fp = None   # file pointer for this flows data
-        self.pos = 0
+        self.pos = 0  
+        self.ts = 0
         self.flags = 0
         self.last_access = 0 # time of last access
         self.size  = 0
         self.dport = 0
+        self.sport = 0
         self.lname = ""
         self.filetype = ""
         self.realname = ""
@@ -168,10 +170,11 @@ class flow_state_manager(object):
         hash =  (((flow.sport & 0xff) | ((flow.dport & 0xff) << 8) | ((ipnum(flow.src) & 0xff) << 16) | ((ipnum(flow.dst) & 0xff) << 24) ) % HASH_SIZE)
         return str(hash)
 
-    def create_state(self, flow, isn):
+    def create_state(self, ts, flow, isn):
         new_state = flow_state()
         new_state.flow = flow
-        new_state.isn = isn
+        new_state.isn  = isn  
+        new_state.ts   = ts
         new_state.last_access = self.current_time+1
         self.current_time +=1
         index = self.fhash(new_state.flow)
