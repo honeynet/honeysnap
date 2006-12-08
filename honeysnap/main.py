@@ -463,7 +463,7 @@ def parseOptions():
     parser.add_option("--verbose-summary", dest="verbose_summary", action="store_const", const="YES",
         help = "Do verbose flow counts, indexes flows by srcip, sport, dstip, dport")
     parser.add_option("--print-verbose", dest="print_verbose", action="store_const", const="YES",
-        help = "Print verbose flow counts to screen as well as storing in a file")
+        help = "Print verbose flow counts to screen as well as storing in a file (implies --verbose-sumamry)")
     parser.add_option("--do-dns", dest="do_dns", action="store_const", const="YES",
         help = "Extract DNS data") 
     parser.add_option("--do-http", dest="do_http", action="store_const", const="YES",
@@ -528,8 +528,14 @@ def parseOptions():
     else:
         options['time_convert_fn'] = lambda x: time.asctime(time.localtime(x))
     if options['raw_time'] == "YES":
-        options['time_convert_fn'] = lambda x: x
-    
+        if options['use_utc'] != 'YES':
+            options['time_convert_fn'] = lambda x: x
+        else:
+            print "Can't use --raw-time with --use-utc"
+            sys.exit(1)
+
+    if options['print_verbose'] == 'YES' and options['verbose_summary'] != 'YES':
+        options['verbose_summary'] = 'YES'
     
     if not options.has_key('honeypots'):
         print "No honeypots specified! Please use either -H or the config file to specify some"

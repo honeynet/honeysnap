@@ -26,9 +26,8 @@ import base
 import socket
 import sys
 import time
-from util import make_dir
-
-tf = lambda x: time.strftime("%d/%m/%y %H:%M:%S", time.localtime(x))
+from util import make_dir  
+from singletonmixin import HoneysnapSingleton
 
 class Summarize(base.Base):
     """
@@ -38,13 +37,17 @@ class Summarize(base.Base):
     Utimately you get a packet count for each outgoing connection.
     This class works best if you use setFilter to filter by "src $HONEYPOT"
     """
-    def __init__(self, pcapObj, verbose=0):
+    def __init__(self, pcapObj, verbose=0): 
+        hs = HoneysnapSingleton.getInstance()
+        options = hs.getOptions()
         self.tcpports = {}
         self.udpports = {}
         self.icmp = {}
         self.p = pcapObj
         self.verbose = verbose
         self.outdir = ""
+        self.tf = options['time_convert_fn']  
+        
 
     def setFilter(self, filter, file):
         self.filter = filter
@@ -125,9 +128,9 @@ class Summarize(base.Base):
             for key, val in self.tcpports.iteritems():
                 if val[2] > limit:
                     if self.verbose:
-                        self.doOutput("%-20s %-20s %-16s %-6s %-16s %-6s %10s %10s\n" % (tf(val[0]), tf(val[1]), key[0], key[3], key[1], key[2], str(val[2]), str(val[3])))
+                        self.doOutput("%-20s %-20s %-16s %-6s %-16s %-6s %10s %10s\n" % (self.tf(val[0]), self.tf(val[1]), key[0], key[3], key[1], key[2], str(val[2]), str(val[3])))
                     else:
-                        self.doOutput("%-20s %-20s %-16s %-16s %8s %10s %10s\n" % (tf(val[0]), tf(val[1]), key[0], key[1], key[2], str(val[2]), str(val[3])))
+                        self.doOutput("%-20s %-20s %-16s %-16s %8s %10s %10s\n" % (self.tf(val[0]), self.tf(val[1]), key[0], key[1], key[2], str(val[2]), str(val[3])))
                         
         if len(self.udpports) == 0:
             self.doOutput("No UDP traffic seen\n")
@@ -140,9 +143,9 @@ class Summarize(base.Base):
             for key, val in self.udpports.iteritems():
                 if val[2] > limit:
                     if self.verbose:
-                        self.doOutput("%-20s %-20s %-16s %-6s %-19s %-6s %10s %10s\n" % (tf(val[0]), tf(val[1]), key[0], key[3], key[1], key[2], str(val[2]), str(val[3])))
+                        self.doOutput("%-20s %-20s %-16s %-6s %-19s %-6s %10s %10s\n" % (self.tf(val[0]), self.tf(val[1]), key[0], key[3], key[1], key[2], str(val[2]), str(val[3])))
                     else:
-                        self.doOutput("%-20s %-20s %-16s %-16s %8s %10s %10s\n" % (tf(val[0]), tf(val[1]), key[0], key[1], key[2], str(val[2]), str(val[3])))
+                        self.doOutput("%-20s %-20s %-16s %-16s %8s %10s %10s\n" % (self.tf(val[0]), self.tf(val[1]), key[0], key[1], key[2], str(val[2]), str(val[3])))
                   
                    
 
