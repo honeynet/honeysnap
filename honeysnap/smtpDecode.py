@@ -41,18 +41,19 @@ class smtpDecode(Base):
             state.close()
             state.open(flags="rb", statemgr=self.statemgr)
             d = state.fp.readlines()  
-            state.close()
-            dlow = [l.lower() for l in d]
-            to = [l for l in dlow if l.find("rcpt to") >= 0]
-            subj = [l for l in dlow if l.find("subject") >=0]
+            state.close()          
+            dlow = [l.lower() for l in d]  
+            to = [l.rstrip() for l in dlow if l.find("rcpt to") >= 0]
+            subject = [l.rstrip() for l in dlow if l.find("subject") >=0]
             if len(to) == 0:
-                return
-            if len(subj) == 0:
-                subj.append("")
+                return     
+            to = set(to)
             realname = "mail-message-%d" % self.count
             self.count +=1 
             fn = renameFile(state, realname)
-            # assume the first entry in each list is the correct one
-            self.doOutput("file: %s at %s\n" % (fn, self.tf(state.ts)))
-            self.doOutput("\t%s\n" % to[0])
-            self.doOutput("\t%s\n" % subj[0])
+            # assume the first entry in each list is the correct one 
+            if len(subject) == 0:
+                self.doOutput("%s sent SMTP to %s, %s at %s\n" % (state.flow.src, state.flow.dst, ",".join(to), self.tf(state.ts)))
+            else:
+                self.doOutput("%s sent SMTP %s, subject %s at %s\n" % (state.flow.src, state.flow.dst, ",".join(to), " ".join(subject), self.tf(state.ts))) 
+            self.doOutput("\tfile: %s\n" % fn)

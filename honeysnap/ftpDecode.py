@@ -108,9 +108,9 @@ class ftpDecode(Base):
                     # rename the data file
                     if rstate is not None:
                         fn = renameFile(rstate, filename)
-                        id, m5 = self.id.identify(rstate)
-                        self.msg.msg = "\t%s Extracted: %s, filetype: %s, md5 sum: %s\n" %(self.tf(rstate.ts), fn,id,m5)
-                        self.doOutput(self.msg)
+                        id, m5 = self.id.identify(rstate) 
+                        self.doOutput("%s requested %s from %s at %s\n" % (rstate.flow.dst, filename, rstate.flow.src, self.tf(rstate.ts)))
+                        self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5))
 
 
     def extractPassive(self, state, d):
@@ -184,9 +184,9 @@ class ftpDecode(Base):
             # rename the data file
             if rstate is not None:
                 fn = renameFile(rstate, filename)
-                id, m5 = self.id.identify(rstate)
-                self.msg.msg = "\t%s Extracted: %s, filetype: %s, md5 sum: %s\n" %(self.tf(rstate.ts), fn,id,m5)
-                self.doOutput(self.msg)
+                id, m5 = self.id.identify(rstate)           
+                self.doOutput("%s requested %s from %s at %s\n" % (rstate.flow.dst, filename, rstate.flow.src, self.tf(rstate.ts)))
+                self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5))
 
 
 

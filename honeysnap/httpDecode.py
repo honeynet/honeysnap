@@ -291,10 +291,10 @@ class httpDecode(Base):
                 fn = renameFile(state, realname)
                 id, m5 = self.id.identify(state)
                 if 'outgoing' in fn:
-                    self.doOutput("Requested %s at %s\n" % (url, self.tf(state.ts)))
+                    self.doOutput("%s requested %s at %s\n" % (state.flow.dst, url, self.tf(state.ts)))
                     self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5))
                 elif self.options['print_http_served'] == 'YES': 
-                    self.doOutput("Served %s at %s\n" % (url, self.tf(state.ts)))
+                    self.doOutput("%s served %s at %s\n" % (state.flow.src, url, self.tf(state.ts)))
                     self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5))                         
 
     def extractHeaders(self, state, d):
