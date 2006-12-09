@@ -475,7 +475,7 @@ def parseOptions():
     parser.add_option("--do-smtp", dest="do_smtp", action="store_const", const="YES",
         help = "Extract smtp data")
     parser.add_option("--do-irc", dest="do_irc", action="store_const", const="YES",
-        help = "Summarize IRC and do irc detail (same as --do-irc-detail and --do-irc-summary)")
+        help = "Summarize IRC and extract irc detail")
     parser.add_option("--irc-ports", action="callback", callback=store_int_array, dest="irc_ports", type="string",
         help = "Ports for IRC traffic")   
     parser.add_option("--irc-limit", dest="irc_limit", type="int", help = "Limit IRC summary to top N items")
