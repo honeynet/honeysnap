@@ -45,7 +45,9 @@ class ftpDecode(Base):
         # It turns out these are being stuck in the stream due to duplicate ACKS
         self.activeRE = re.compile("^U*PORT", re.M)
         self.passiveRE = re.compile("PASV")
-        self.portIPRE = re.compile("(\d+,){5}\d+")
+        self.portIPRE = re.compile("(\d+,){5}\d+") 
+        self.userRE = re.compile("USER\s(.*)")
+        self.passRE = re.compile("PASS\s(.*)")
         # response code 227 is PASV
         # response code 229 is EPASV
         self._227re = re.compile("^227|^229", re.M)
@@ -55,12 +57,11 @@ class ftpDecode(Base):
 
     def decode(self, state, statemgr):
         self.statemgr = statemgr
-        state.close()
         state.open(flags="rb", statemgr = self.statemgr)
-        d = state.fp.readlines()
+        d = state.fp.readlines()   
+        state.close()
         #t, req = self.determineType(d)
         d = "".join(d)
-        state.close()
         f = state.flow
         #print '%s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)
         if f.dport == 21:
@@ -83,7 +84,15 @@ class ftpDecode(Base):
         # split data into a list of lines
         lines = d.splitlines()
         iterlines = iter(lines)
-        for l in iterlines:
+        for l in iterlines:     
+            m = self.userRE.search(l)
+            if m:
+                username = m.group(1) 
+                continue
+            m = self.passRE.search(l)
+            if m:
+                password = m.group(1)
+                continue
             if l.find("PORT")>=0:
                 try:
                     nextl = iterlines.next()
@@ -108,13 +117,15 @@ class ftpDecode(Base):
                     # rename the data file
                     if rstate is not None:
                         fn = renameFile(rstate, filename)
-                        id, m5 = self.id.identify(rstate) 
-                        self.doOutput("%s requested %s from %s at %s\n" % (rstate.flow.dst, filename, rstate.flow.src, self.tf(rstate.ts)))
+                        id, m5 = self.id.identify(rstate)  
+                        print 'Printing in activeftp'
+                        self.doOutput("%s requested %s from %s (%s, %s) at %s\n" % (rstate.flow.dst, filename, 
+                            rstate.flow.src, username, password, self.tf(rstate.ts)))
                         self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5))
 
 
     def extractPassive(self, state, d):
-        # print "Passive FTP"
+        #print "Passive FTP"
         # repr(port/256), repr(port%256)
         # first we have to find the reverse flow/state
         # from it we will extract the ip and port info
@@ -133,13 +144,21 @@ class ftpDecode(Base):
         # find all the lines from the server
         # that open a data port
         # find all the 227 lines in the data channel
-        for l in dchannel:
+        for l in dchannel:  
             m = self._227re.search(l)
             if m is not None:
                 portlines.append(l)
         # find all the client lines that use
         # a data port
-        for l in lines:
+        for l in lines:             
+            m = self.userRE.search(l)
+            if m:
+                username = m.group(1) 
+                continue
+            m = self.passRE.search(l)
+            if m:
+                password = m.group(1)
+                continue
             w = [i for i in cmds if i in l.split()[0]]
             if len(w) == 0:
                 # this line doesn't contain a data command
@@ -172,7 +191,7 @@ class ftpDecode(Base):
             filter = "src host %s and src port %d" % (rflow.src, rflow.sport)
             de.setFilter(filter)
             de.setOutdir(self.options["output_data_directory"]+ "/%s/ftp")
-            # run the flow extractor
+            # run the flow extractor 
             de.start()
             # now find the correct state
             flows  = [f for f in de.states.getFlows() if f.isSrcSport(ip, port)]
@@ -184,8 +203,10 @@ class ftpDecode(Base):
             # rename the data file
             if rstate is not None:
                 fn = renameFile(rstate, filename)
-                id, m5 = self.id.identify(rstate)           
-                self.doOutput("%s requested %s from %s at %s\n" % (rstate.flow.dst, filename, rstate.flow.src, self.tf(rstate.ts)))
+                id, m5 = self.id.identify(rstate) 
+                print 'Printing in passiveftp'          
+                self.doOutput("%s requested %s from %s (%s, %s) at %s\n" % (rstate.flow.dst, filename, 
+                    rstate.flow.src, username, password, self.tf(rstate.ts)))
                 self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5))
 
 

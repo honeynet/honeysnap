@@ -167,8 +167,9 @@ class tcpFlow(object):
     def setOutput(self, file):
         self.outfile = file
 
-    def dump_extract(self, options):   
+    def dump_extract(self):  
         for s in self.states.getFlowStates():
+            s.close()
             for func in self.plugins:
                 func(s, self.states)
 

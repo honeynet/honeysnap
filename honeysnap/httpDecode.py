@@ -160,9 +160,9 @@ class httpDecode(Base):
         # The following could be a problem for files having size in the 10s or
         # 100s of MB, I dunno:
         #d = "".join(state.data)
-        state.close()    
         state.open(flags="rb", statemgr=self.statemgr)
-        d = state.fp.readlines()
+        d = state.fp.readlines()  
+        state.close()
         #print "decode:state ", state.fname
         if len(d) == 0:
             return
@@ -171,7 +171,6 @@ class httpDecode(Base):
             # binary data
             return
         d = "".join(d)
-        state.close()
         r = None
         f = state.flow
         #print 'decode: %s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)

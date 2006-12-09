@@ -293,7 +293,7 @@ def processFile(file):
         de.setOutdir(options["output_data_directory"]+ "/%s/flows")
         de.setOutput(out)
         de.start()
-        de.dump_extract(options)
+        de.dump_extract()
         del de
         del p                   
 
@@ -308,7 +308,7 @@ def processFile(file):
         decode.setOutput(out)
         de.registerPlugin(decode.decode)
         de.start()
-        de.dump_extract(options)
+        de.dump_extract()
         del de
         del p
 
@@ -324,7 +324,7 @@ def processFile(file):
         decode.setOutput(out)
         de.registerPlugin(decode.decode)
         de.start()
-        de.dump_extract(options)  
+        de.dump_extract()  
         del de
         del p
 
@@ -339,7 +339,7 @@ def processFile(file):
         decode.setOutput(out)
         de.registerPlugin(decode.decode)
         de.start()
-        de.dump_extract(options)
+        de.dump_extract()
         del de
         del p
 
