@@ -102,7 +102,7 @@ class tcpFlow(object):
         if state is None:
             #print "state not found, creating new"
             state = self.states.create_state(ts, flow, seq)
-            self.open(state)
+            self.open(state, flags="wb")
 
         if state.flags&FLOW_FINISHED:
             # print "flow finished: %s" % state.flow
@@ -141,12 +141,12 @@ class tcpFlow(object):
             length = bytes_per_flow - offset
             return
 
-        self.open(state)
+        self.open(state, flags="ab")
         state.writeData(data)
 
-    def open(self, state):
+    def open(self, state, flags):
         """Open a file"""
-        state.open(statemgr=self.states)
+        state.open(statemgr=self.states, flags=flags)
 
     def start(self):
         """Iterate over a pcap object"""

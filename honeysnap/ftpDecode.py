@@ -56,7 +56,7 @@ class ftpDecode(Base):
 
 
     def decode(self, state, statemgr):
-        self.statemgr = statemgr
+        self.statemgr = statemgr  
         state.open(flags="rb", statemgr = self.statemgr)
         d = state.fp.readlines()   
         state.close()
@@ -84,7 +84,7 @@ class ftpDecode(Base):
         # split data into a list of lines
         lines = d.splitlines()
         iterlines = iter(lines)
-        for l in iterlines:     
+        for l in iterlines:  
             m = self.userRE.search(l)
             if m:
                 username = m.group(1) 
@@ -118,13 +118,12 @@ class ftpDecode(Base):
                     if rstate is not None:
                         fn = renameFile(rstate, filename)
                         id, m5 = self.id.identify(rstate)  
-                        print 'Printing in activeftp'
                         self.doOutput("%s requested %s from %s (%s, %s) at %s\n" % (rstate.flow.dst, filename, 
                             rstate.flow.src, username, password, self.tf(rstate.ts)))
                         self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5))
 
 
-    def extractPassive(self, state, d):
+    def extractPassive(self, state, d): 
         #print "Passive FTP"
         # repr(port/256), repr(port%256)
         # first we have to find the reverse flow/state
@@ -204,7 +203,6 @@ class ftpDecode(Base):
             if rstate is not None:
                 fn = renameFile(rstate, filename)
                 id, m5 = self.id.identify(rstate) 
-                print 'Printing in passiveftp'          
                 self.doOutput("%s requested %s from %s (%s, %s) at %s\n" % (rstate.flow.dst, filename, 
                     rstate.flow.src, username, password, self.tf(rstate.ts)))
                 self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5))
