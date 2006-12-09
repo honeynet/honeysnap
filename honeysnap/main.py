@@ -20,7 +20,7 @@
 
 # $Id$
    
-VERSION="1.0.3rc2"
+VERSION="1.0.3rc3"
 
 import sys
 import socket
