@@ -56,9 +56,12 @@ class dnsDecode(base.Base):
         """ts timestamp, ip dpkt.ip.IP, payload = dns udp data"""    
         # this is very basic
         # dpkt extracts many more types                      
-        try:
+        try:                    
             msg = dpkt.dns.DNS(payload)
         except dpkt.Error:    
+            return
+        except (IndexError, TypeError):
+            # dpkt shouldn't do this, but it does in some cases
             return
         if msg.rcode == dpkt.dns.DNS_RCODE_NOERR and len(msg.an)>0:
             #print 'msg is %s' % `msg`
