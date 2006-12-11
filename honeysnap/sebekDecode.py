@@ -66,6 +66,8 @@ sbk2 = "!IHHIIIIII12sI"
 sbk3 = "!IHHIIIIIIII12sI"
 size2 = struct.calcsize(sbk2)
 size3 = struct.calcsize(sbk3)
+       
+SBK_KEYSTROKE = 0
 
 # mapping of control characters
 controlmap = {"\x1b[A":"[U-ARROW]",
@@ -87,11 +89,14 @@ class sebekDecode(base.Base):
     def __init__(self, hp):
         hs = HoneysnapSingleton.getInstance()
         options = hs.getOptions()
+        self.excludes = options['sebek_excludes']
         self.p = pcap.pcap(options["tmpf"], promisc=False)
-        self.p.setfilter("host %s and udp port %s" % (hp, options["sebek_port"]))
+        self.p.setfilter("src host %s and udp dst port %s" % (hp, options["sebek_port"]))
         self.log = {}
+        self.output = {}
+        self.output['keystrokes'] = []
         self.fp = sys.stdout                   
-        self.tf = options['time_convert_fn']
+        self.tf = options['time_convert_fn']     
 
     def setOutdir(self, dir):
         make_dir(dir)
@@ -121,8 +126,11 @@ class sebekDecode(base.Base):
         else:
             magic, version, type, counter, t, tu, parent_pid, pid, uid, fd, inode, com, length = struct.unpack(sbk3, sbkhdr)
         src = inet_ntoa(ip.src)
-        if type == 0:
-            self.keystrokes(version, t, src, pid, fd, uid, com, rest, parent_pid, inode)
+        if type == SBK_KEYSTROKE:
+            self.keystrokes(version, t, src, pid, fd, uid, com, rest, parent_pid, inode)   
+        else:
+            # not keystroke data. Ignore for now
+            pass
 
     def keystrokes(self, version, t, srcip, pid, fd, uid, com, data, parent_pid, inode):
         """
@@ -151,16 +159,31 @@ class sebekDecode(base.Base):
                 d = d.replace(i, controlmap[i])
                 # strip out nonascii junk
                 d = nonascii.sub("", d)
-            if version == 3 and coms not in ["configure", "prelink", "sshd"]:
-                line = "[%s ip:%s parent:%s pid:%s uid:%s fd:%s inode:%s com:%s] %s\n" % (self.tf(t), self.log[k]["ip"], self.log[k]["parent_pid"],
-                    self.log[k]["pid"], uids, self.log[k]["fd"], self.log[k]["inode"], coms, d)
-            elif coms not in ["configure", "prelink", "sshd"]:
-                line = "[%s ip:%s pid:%s uid:%s fd:%s com:%s] %s\n" % (self.tf(t), self.log[k]["ip"], self.log[k]["pid"],
-                    uids,  self.log[k]["fd"], coms, d)
-            self.doOutput(line)
-            self.fp.write(line)
+            if version == 3:       
+                 line = "[%s ip:%s parent:%s pid:%s uid:%s fd:%s inode:%s com:%s]" % (self.tf(t), self.log[k]["ip"], self.log[k]["parent_pid"],
+                        self.log[k]["pid"], uids, self.log[k]["fd"], self.log[k]["inode"], coms)
+            else:
+                line = "[%s ip:%s pid:%s uid:%s fd:%s com:%s]" % (self.tf(t), self.log[k]["ip"], self.log[k]["pid"],
+                        uids,  self.log[k]["fd"], coms)
+            self.output["keystrokes"].append([coms, line, d])
             del self.log[k]
 
+    def print_summary(self):
+        """Print our data"""
+        excludes = self.excludes
+        if len(self.output['keystrokes'])==0:
+            print 'No sebek data seen'
+        else:
+            count = 0
+            for data in self.output["keystrokes"]:
+                (coms, line, d) = data
+                if coms not in excludes and d != "":
+                    self.doOutput('%s %s\n' % (line, d))
+                    count += 1
+                self.fp.write('%s %s\n' % (line, d)) 
+            self.doOutput('\nScreen output excludes commands %s\n' % excludes)
+            self.doOutput('Total lines seen %s, printed %s\n\n' % (len(self.output['keystrokes']), count) )     
+         
     def run(self):
         # since we set a filter on pcap, all the
         # packets we pull should be handled

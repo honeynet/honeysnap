@@ -351,6 +351,7 @@ def processFile(file):
             sbd.setOutdir(options["output_data_directory"] + "/%s/sebek" % hp)
             sbd.setOutput(out)
             sbd.run()
+            sbd.print_summary()
             del sbd
 
     # delete the tmp file we used to hold unzipped data
@@ -425,7 +426,8 @@ def parseOptions():
     		'irc_ports'			: [6667],
     		'irc_limit'			: 0,
     		'do_sebek'			: 'NO',
-    		'sebek_port'		: 1101,
+    		'sebek_port'		: 1101, 
+    		'sebek_excludes'    : ["configure", "prelink", "sshd", "sa2", "makewhatis"],
     		'all_flows'			: 'NO', 
     		'output_data_directory'   : '/tmp/analysis',
     }  
@@ -481,7 +483,9 @@ def parseOptions():
     parser.add_option("--irc-limit", dest="irc_limit", type="int", help = "Limit IRC summary to top N items")
     parser.add_option("--do-sebek", dest="do_sebek", action="store_const", const="YES",
         help = "Extract Sebek data")
-    parser.add_option("--sebek-port", dest="sebek_port", type="int", help = "Port for sebek traffic")
+    parser.add_option("--sebek-port", dest="sebek_port", type="int", help = "Port for sebek traffic")    
+    parser.add_option("--sebek-excludes", dest="sebek_excludes", action="extend", type="string",
+        help = "Exclude these commands when printing sebek output")
     parser.add_option("--all-flows", dest="all_flows", action="store_const", const="YES",
         help = "Extract data from all tcp flows")
                     
@@ -501,7 +505,7 @@ def parseOptions():
                             fileopts[i[0]] = [ int(n) for n in i[1].split(',') ]
                         elif i[0] == 'irc_limit': 
                             fileopts[i[0]] = int(i[1]) 
-                        elif i[0] == 'honeypots':
+                        elif i[0] == 'honeypots' or 'sebek_exclude':
                             fileopts[i[0]] = i[1].split()
                         else:
                             fileopts[i[0]] = i[1] 
