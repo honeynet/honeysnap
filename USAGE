@@ -9,6 +9,26 @@ It's assumed you have already read and understood the INSTALL
 and README docs that accompany the distribution.
 
 
+GETTING STARTED
+===============
+
+The easiest way to get started is to take the sample
+honeynet.cfg file, alter the IP address of the honeypot
+to match your setup (the line HONEYPOTS=). Then to run
+honeysnap over a data file 'myfile.pcap' with most of the
+options turned on, run
+
+honeysnap -c honeynet.cfg myfile.pcap
+
+This should print a large set of output to the screen
+and store a chunk of data in a directory called 'analysis'
+(unless you changed that in the config file). 
+
+Doing this should give you a basic idea as to what honeysnap
+can do. In general, you may find it simpler to stick with
+the config file method until you are happy with all the options 
+rather than using the (many) command line switches.
+
 MULTIPLE FILES
 ==============
 
