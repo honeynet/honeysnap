@@ -16,18 +16,22 @@ on the data.  It has been designed to be easily extended to
 perform more diagnostic duties.  It has also been designed to 
 be minimally dependent on third party executables like tcpflow, 
 etc.
-
-The primary value of Honeysnap is to give you an overview of a
-single or multiple pcap data files that has been captured from
-network activity.  Its primary design is for analyzing pcap data
-recovered from a honeypot or compromised system.  What makes 
-Honeysnap unique is it does not just focus on transactional data
-(IP addresses, time/date stamps, etc) but also focuses on the 
-packet payload.  It has the ability to decode and analyze a variety
-of protocls, such as HTTP, SMTP, and IRC.  It can also recover 
+   
+The primary intention is to provide a first cut analysis of
+a directory full of pcap data, data that has probably come 
+from a honeynet deployment using the Honeynet Project's Roo 
+v1.x CDROM. It has the ability to decode and analyze a variety
+of protocols, such as HTTP, SMTP, and IRC abd can also recover 
 files transfered.  In addition it has the ability to analyze 
 honeypot specific data sets such as SEBEK.  Because of its 
 modular nature, it is possible to add other protocols.
+                                                     
+Honeysnap can be run as a daily automated cron 
+job against live honeynet  data, to provide analysts with a 
+starting point for more detailed forensic analysis. Currently 
+the analysis performed is static, in that per run results 
+are being stored to disk but not to a database (although
+h DB persistance and trending will be added in future releases). 
 
 Honeysnap.py is derived/inspired by work of David Watson, 
 Steve Mumford, and Arthur Clune of the UK Honeynet Project,
@@ -38,9 +42,9 @@ An overview of what Honeysnap includes:
 * Outgoing packet counts for telnet, ssh, http, https, ftp, smtp, 
   and irc. This can be easily extended.
 * Incoming and outgoing connection summaries
-* Binary extraction from http, smtp, irc, and ftp.
-* Word based inspection of IRC traffic.
-* Support for sebek data
+* Binary extraction from http, smtp, irc, and ftp. 
+* Word based inspection of IRC traffic for basic keyword profiling.
+* Support for reading v2 and v3 Sebek keystroke data 
 
 INSTALLATION
 ============
