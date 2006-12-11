@@ -30,17 +30,17 @@ class pcapInfo(base.Base):
     def __init__(self, filename):
         base.Base.__init__(self)
         self.filename = filename        
-        format =  " \
-File name: %(filename)s\n \
-Number of packets: %(pktcount)d\n \
-File size: %(fsize)d bytes \n \
-Data size: %(dsize)d bytes \n \
-Capture duration: %(duration)s seconds \n \
-Start time: %(start)s \n \
-End time: %(end)s \n \
-Data rate: %(bytes)s bytes/s \n \
-Data rate: %(bits)s bits/s \n \
-Average packet size: %(avg)s bytes \n \
+        format =  "\
+\tFile name: %(filename)s\n \
+\tNumber of packets: %(pktcount)d\n \
+\tFile size: %(fsize)d bytes \n \
+\tData size: %(dsize)d bytes \n \
+\tCapture duration: %(duration)s seconds \n \
+\tStart time: %(start)s \n \
+\tEnd time: %(end)s \n \
+\tData rate: %(bytes)s bytes/s \n \
+\tData rate: %(bits)s bits/s \n \
+\tAverage packet size: %(avg)s bytes \n \
         "
         self.msg = stringFormatMessage(format = format)
     
