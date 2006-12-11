@@ -19,7 +19,7 @@
 ################################################################################
 
 # $Id$
-
+                                                                  
 """
 v2
 struct sbk_h{
@@ -67,7 +67,10 @@ sbk3 = "!IHHIIIIIIII12sI"
 size2 = struct.calcsize(sbk2)
 size3 = struct.calcsize(sbk3)
        
-SBK_KEYSTROKE = 0
+SBK_READ  = 0
+SBK_WRITE = 1
+SBK_SOCK  = 2
+SBK_OPEN  = 3
 
 # mapping of control characters
 controlmap = {"\x1b[A":"[U-ARROW]",
@@ -94,7 +97,11 @@ class sebekDecode(base.Base):
         self.p.setfilter("src host %s and udp dst port %s" % (hp, options["sebek_port"]))
         self.log = {}
         self.output = {}
-        self.output['keystrokes'] = []
+        self.output['keystrokes'] = [] 
+        self.output['sbk_write'] = []
+        self.output['sbk_sock'] = []
+        self.output['sbk_open'] = []     
+        self.verbose = options['sebek_all_data']
         self.fp = sys.stdout                   
         self.tf = options['time_convert_fn']     
 
@@ -104,7 +111,6 @@ class sebekDecode(base.Base):
 
     def packetHandler(self, ts, ip, payload):
         """ts timestamp, ip dpkt.ip.IP, payload = sebek udp data"""
-
         if len(payload) > 5:
             magic, version = struct.unpack("!IH", payload[0:6])
             if version == 1:
@@ -120,21 +126,54 @@ class sebekDecode(base.Base):
         rest = payload[size:]
         # next two bits of info not in ver2 sebek data
         parent_pid = 0
-        inode = 0
+        inode = 0     
+        #import pdb
+        #pdb.set_trace()
         if version == 1:
             magic, version, type, counter, t, tu, pid, uid, fd, com, length = struct.unpack(sbk2, sbkhdr)
         else:
             magic, version, type, counter, t, tu, parent_pid, pid, uid, fd, inode, com, length = struct.unpack(sbk3, sbkhdr)
-        src = inet_ntoa(ip.src)
-        if type == SBK_KEYSTROKE:
-            self.keystrokes(version, t, src, pid, fd, uid, com, rest, parent_pid, inode)   
+        src = inet_ntoa(ip.src)   
+        if type == SBK_READ:     
+            self.sbk_keystrokes(version, t, src, pid, fd, uid, com, rest, parent_pid, inode) 
+        if type == SBK_WRITE:
+            self.sbk_write(version, t, src, pid, fd, uid, com, rest, parent_pid, inode)
+        elif type == SBK_SOCK and self.verbose=='YES': 
+            self.sbk_sock(version, t, src, pid, fd, uid, com, rest, parent_pid, inode) 
+        elif type == SBK_OPEN and self.verbose=='YES':                                                           
+            self.sbk_open(version, t, src, pid, fd, uid, com, rest, parent_pid, inode) 
+      
+    def sbk_write(self, version, t, srcip, pid, fd, uid, com, data, parent_pid, inode):
+        """Decode sebek write data. Store data for stdin, stdout and stderr only for now"""
+        if version == 1: 
+            return  
+        if fd<3:      
+            com = nonascii.sub("", com)
+            line = "[%s ip:%s parent:%s pid:%s uid:%s fd:%s inode:%s com:%s] %s" % (self.tf(t), srcip, parent_pid, uid, pid, fd, inode, com, data)
         else:
-            # not keystroke data. Ignore for now
-            pass
+            # should hex-encode data here or something
+            return
+        self.output["sbk_write"].append(line)  
+        
+    def sbk_sock(self, version, t, srcip, pid, fd, uid, com, data, parent_pid, inode):
+        """Decode sebek socket data"""  
+        if version == 1:
+            return    
+        com = nonascii.sub("", com) 
+        line = "[%s ip:%s parent:%s pid:%s uid:%s fd:%s inode:%s com:%s]" % (self.tf(t), srcip, parent_pid, uid, pid, fd, inode, com)
+        self.output["sbk_sock"].append(line)
+        
+    def sbk_open(self, version, t, srcip, pid, fd, uid, com, data, parent_pid, inode):
+        """Decode sebek file open data"""   
+        if version == 1:
+            return
+        com = nonascii.sub("", com)     
+        line = "[%s ip:%s parent:%s pid:%s uid:%s fd:%s inode:%s com:%s]" % (self.tf(t), srcip, parent_pid, uid, pid, fd, inode, com)   
+        self.output["sbk_open"].append(line)
 
-    def keystrokes(self, version, t, srcip, pid, fd, uid, com, data, parent_pid, inode):
+    def sbk_keystrokes(self, version, t, srcip, pid, fd, uid, com, data, parent_pid, inode):
         """
-        [$datetime  $addr $pid $com_str $uid_str]$log
+        Extract sebek keystroke/sbk_read data
         """
         k = " ".join([srcip, str(pid), str(fd)])
         com = com.replace("\00", "")
@@ -171,18 +210,26 @@ class sebekDecode(base.Base):
     def print_summary(self):
         """Print our data"""
         excludes = self.excludes
-        if len(self.output['keystrokes'])==0:
+        if len(self.output['keystrokes'])==0 and len(self.output['sbk_write'])==0 and len(self.output['sbk_sock'])==0:
             print 'No sebek data seen'
-        else:
-            count = 0
-            for data in self.output["keystrokes"]:
-                (coms, line, d) = data
-                if coms not in excludes and d != "":
-                    self.doOutput('%s %s\n' % (line, d))
-                    count += 1
-                self.fp.write('%s %s\n' % (line, d)) 
-            self.doOutput('\nScreen output excludes commands %s\n' % excludes)
-            self.doOutput('Total lines seen %s, printed %s\n\n' % (len(self.output['keystrokes']), count) )     
+        else:                                                                                                
+            if len(self.output['keystrokes'])>0:
+                count = 0
+                for data in self.output["keystrokes"]:
+                    (coms, line, d) = data
+                    if coms not in excludes and d != "":
+                        self.doOutput('%s %s\n' % (line, d))
+                        count += 1
+                    self.fp.write('%s %s\n' % (line, d))                          
+                self.doOutput('\nSaw %s sbk_read/keystroke lines and printed %s\n' % (len(self.output['keystrokes']), count) )     
+                self.doOutput('(screen output excludes commands %s)\n' % excludes)
+            for type in ['sbk_write', 'sbk_sock', 'sbk_open']:
+                if len(self.output[type])>0: 
+                    self.fp.write('\nSebek %s data\n\n' % type)   
+                    for data in self.output[type]:
+                        for line in self.output[type]:
+                            self.fp.write('%s\n' % line)
+                    self.doOutput('\n%s %s lines saved in file\n' % (len(self.output[type]), type)) 
          
     def run(self):
         # since we set a filter on pcap, all the
@@ -195,7 +242,7 @@ class sebekDecode(base.Base):
             payload = buf[self.p.dloff+20+8:]  #frame+iphdr+udphdr
             try:
                 self.packetHandler(ts, ip, payload)
-            except Exception, e:
+            except struct.error, e:
                 #print "sebekDecode caught error:"
                 #print e
                 #print dpkt.dpkt.hexdump(buf)

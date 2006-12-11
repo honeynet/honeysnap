@@ -427,7 +427,8 @@ def parseOptions():
     		'irc_limit'			: 0,
     		'do_sebek'			: 'NO',
     		'sebek_port'		: 1101, 
-    		'sebek_excludes'    : ["configure", "prelink", "sshd", "sa2", "makewhatis"],
+    		'sebek_excludes'    : ["configure", "prelink", "sshd", "sa2", "makewhatis"],  
+    		'sebek_all_data'    : 'NO',
     		'all_flows'			: 'NO', 
     		'output_data_directory'   : '/tmp/analysis',
     }  
@@ -485,7 +486,9 @@ def parseOptions():
         help = "Extract Sebek data")
     parser.add_option("--sebek-port", dest="sebek_port", type="int", help = "Port for sebek traffic")    
     parser.add_option("--sebek-excludes", dest="sebek_excludes", action="extend", type="string",
-        help = "Exclude these commands when printing sebek output")
+        help = "Exclude these commands when printing sebek output")  
+    parser.add_option("--sebek-all-data", dest="sebek_all_data", action="store_const", const="YES",
+        help = "Extract all sebek data? Warning - produces a very large amount of data (gigabytes)")
     parser.add_option("--all-flows", dest="all_flows", action="store_const", const="YES",
         help = "Extract data from all tcp flows")
                     
