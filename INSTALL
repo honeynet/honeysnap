@@ -37,6 +37,7 @@ http://www.monkey.org/~dugsong/pypcap
 $ tar -xzf pypcap-1.1.tar.gz
 $ cd pypcap-1.1
 $ make
+$ python setup.py config
 $ python setup.py build && sudo python setup.py install
 $ cd ..
 
@@ -54,6 +55,10 @@ further to just
 
 $ sudo easy_install honeysnap-1.0.4.tar.gz
 
+If you already have an older version of easy_install installed, you
+can upgrade it if the install processes complains with
+
+$ sudo easy_install --upgrade setuptools
 
 2) Installation on Windows
 --------------------------
