@@ -30,45 +30,43 @@ For libpcap, either install from the website, or, for most UNIX-like
 systems, it should be in your package management system (apt-get, yum,
 DarwinPorts etc.). You will need libcap and also libpcap-devel if that
 is listed separately.
+        
+Next install pypcap. Download pypcap from 
+http://www.monkey.org/~dugsong/pypcap
 
-For the python modules, untar the distribution file, then cd into the directory
-and run setup.py as follows:
+$ tar -xzf pypcap-1.1.tar.gz
+$ cd pypcap-1.1
+$ make
+$ python setup.py build && sudo python setup.py install
+$ cd ..
 
-	$ wget http://www.monkey.org/~dugsong/pypcap/pypcap-1.1.tar.gz
-	$ tar -xzf pypcap-1.1.tar.gz
-	$ pushd pypcap-1.1
-	$ make
-	$ python setup.py build && sudo python setup.py install
-	$ popd
-	$ rm -rf pypcap-1.1*
+You should then be able to install Honeysnap and all its remaining
+dependencies (provided you have a network connection) by untar'ing 
+the honeysnap distribution, cd'ing into the resulting directory and 
+running setup.py install. E.g. for version 1.0.4:
 
-(On debian unstable, you will need to have python-devel installed to
-install pypcap apt-get install python-dev)
+$ tar xvzf honeysnap-1.0.4
+$ cd honeysnap-1.0.4
+$ sudo python setup.py install
+       
+If you already have easy_install installed, you can simplify this set
+further to just
 
-	$ wget http://www.monkey.org/~dugsong/dpkt/dpkt-1.6.tar.gz
-	$ tar -xzf dpkt-1.6.tar.gz
-	$ pushd dpkt-1.6 
-	$ make
-	$ python setup.py build && sudo python setup.py install
-	$ popd
-	$ rm -rf dpkt-1.6*
+$ sudo easy_install honeysnap-1.0.4.tar.gz
 
-irclib and magic can also be installed with easy_install.
-                               
-	$ sudo easy_install python-irclib
-	$ sudo easy_install magic
-
-If you don't have easy_install, get it by doing the following:
-
-	$ wget http://peak.telecommunity.com/dist/ez_setup.py
-	$ sudo python ez_setup.py
 
 2) Installation on Windows
 --------------------------
 
-Honeysnap should work on Windows, but it has not been tested and the install
-process isn't documented. If you'd like to help with either of these issues,
-please get in touch!
+Download  and install the following, in order.
+
+	* Python 2.4 (from http://www.python.org/downloads). You can install
+	from the Windows MSI installer linked from that page.
+
+	* winpcap from
+	http://www.winpcap.org/install/default.htm
+
+   [yadda, yadda, yadda...todo]
         
                  
 3) Installation on a honeywall
@@ -103,19 +101,8 @@ Then follow the instructions above, but replacing calls to 'python' with 'python
 
 $ sudo python2.4 setup.py install
 
-You will also need to use python 2.4 to install easy_install
-
-$ sudo python2.4 ez_setup.py
-
-
 Running honeysnap
 =================
-
-To install honeysnap, run
-
-	$ sudo python setup.py install
-
-from within the honeysnap directory.
 
 Try to execute 'honeysnap':
 

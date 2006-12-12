@@ -20,8 +20,6 @@
 
 # $Id$
    
-VERSION="1.0.3rc3"
-
 import sys
 import socket
 from optparse import OptionParser, Option, OptionValueError
@@ -34,11 +32,12 @@ from fnmatch import fnmatch
 import ConfigParser
 from ConfigParser import SafeConfigParser
 import tempfile
-import pcap
+import pcap      
+import pkg_resources
 
 # all the honeysnap imports
 # eventually all these will become UDAF modules
-# and you will get them all by importing DA
+# and you will get them all by importing DA     
 import httpDecode
 import ftpDecode
 import smtpDecode
@@ -55,6 +54,9 @@ from pcapRE import pcapRE, wordSearch, pcapReCounter
 from sebekDecode import sebekDecode
 from util import make_dir     
 from dnsDecode import dnsDecode
+                    
+
+VERSION=pkg_resources.get_distribution('honeysnap')
 
 class MyOption(Option):
     """
