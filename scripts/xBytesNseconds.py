@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 ################################################################################
 # (c) 2006, The Honeynet Project
 #   Author: Jed Haile  jed.haile@thelogangroup.biz
