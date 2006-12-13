@@ -25,18 +25,27 @@ The rest of this document is in three parts:
       
 1) Installation on a workstation
 --------------------------------
-          
+                  
+You will need python 2.4 and its header file.
+
 For libpcap, either install from the website, or, for most UNIX-like
 systems, it should be in your package management system (apt-get, yum,
 DarwinPorts etc.). You will need libcap and also libpcap-devel if that
 is listed separately.
-        
+                                             
+e.g. On Debian/Ubuntu
+
+$ sudo apt-get install python24-dev
+$ sudo apt-get install libpcap libpcap-dev
+
+On OS X python2.4 and libpcap are available from either Fink
+or MacPorts (previously DarwinPorts)
+
 Next install pypcap. Download pypcap from 
 http://www.monkey.org/~dugsong/pypcap
 
 $ tar -xzf pypcap-1.1.tar.gz
 $ cd pypcap-1.1
-$ make
 $ python setup.py config
 $ python setup.py build && sudo python setup.py install
 $ cd ..
@@ -56,9 +65,15 @@ further to just
 $ sudo easy_install honeysnap-1.0.4.tar.gz
 
 If you already have an older version of easy_install installed, you
-can upgrade it if the install processes complains with
+can upgrade it if needed with:
 
-$ sudo easy_install --upgrade setuptools
+$ sudo easy_install --upgrade setuptools    
+
+Please note that this will install the honeysnap script into your
+PATH, usually in /usr/bin. If this isn't what you want, specify
+--script-dir. e.g
+
+$ sudo python setup.py --script-dir=/usr/local/bin install
 
 2) Installation on Windows
 --------------------------
@@ -69,10 +84,30 @@ Download  and install the following, in order.
 	from the Windows MSI installer linked from that page.
 
 	* winpcap from
-	http://www.winpcap.org/install/default.htm
+	http://www.winpcap.org/install/default.htm  
+	
+	* pypcap from http://www.moneyket.org/~dugsong/pypcap
+	
+	You need to download and run the 'Windows Python 2.4 Installer'
 
-   [yadda, yadda, yadda...todo]
-        
+To make Python easily available on the command line, right click
+on "My Computer" and select Properties. Then go to Advanced and
+choose Environment Variables. Add to the end of the PATH variable 
+
+;%SystemRoot%\Python24;%SystemRoot%\Python24\Scripts
+
+(assuming you installed Python to the default location)
+
+Now download ez_setup.py from
+
+http://peak.telecommunity.com/dist/ez_setup.py
+
+and run it. This will install easy_setup. Finally run
+
+easy_install http://www.honeynet.org/tools/honeysnap
+                                                    
+This should download and install honeysnap and all its
+dependencies.
                  
 3) Installation on a honeywall
 ------------------------------
@@ -102,7 +137,8 @@ Install Python 2.4 by running:
 
 $ sudo yum install python2.4
 
-Then follow the instructions above, but replacing calls to 'python' with 'python2.4'. e.g.
+Then follow the instructions for a workstation asabove, but replacing calls to 'python' 
+with 'python2.4'. e.g.
 
 $ sudo python2.4 setup.py install
 
@@ -120,20 +156,6 @@ You should see:
 
 	Please see the accompanying documentation for instructions on
 	configuration.
-
-If this fails, you may need to add the python bin directory to your PATH.
-          
-To find the prefix, use sys.prefix
-
-$ python  
-Python 2.4.3 (#1, Sep 26 2006, 19:00:44) 
-[GCC 4.0.0 20041026 (Apple Computer, Inc. build 4061)] on darwin
-Type "help", "copyright", "credits" or "license" for more information.
->>> import sys
->>> sys.prefix
-'/opt/local/Library/Frameworks/Python.framework/Versions/2.4'
-
-The add <prefix>/bin to your PATH.
 
        
 Some notes on python 2.5 and OS/X

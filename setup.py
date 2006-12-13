@@ -28,7 +28,7 @@ setup(name="honeysnap",
     ],
     # This doesn't work
     # easy_install http://monkey.org/~dugsong/pypcap/pypcap-1.1.tar.gz
-    # doesn't compile for me
+    # as it needs a 'setup.py config' stage that is non-standard
     #dependency_links = [    
     #    "http://monkey.org/~dugsong/pypcap/pypcap-1.1.tar.gz"
     #],

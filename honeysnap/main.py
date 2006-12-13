@@ -364,8 +364,6 @@ def cleanup(options):
     """
     Clean up empty files, etc.
     """         
-    # Windows python barfs if we try to remove an open file
-    # just catch the error and continue for now
     datadir = options["output_data_directory"]
     for root, dirs, files in os.walk(datadir, topdown=False):
         rootpath =  root.split(os.path.sep)
@@ -432,7 +430,7 @@ def parseOptions():
     		'sebek_excludes'    : ["configure", "prelink", "sshd", "sa2", "makewhatis"],  
     		'sebek_all_data'    : 'NO',
     		'all_flows'			: 'NO', 
-    		'output_data_directory'   : '/tmp/analysis',
+    		'output_data_directory'   : 'output',
     }  
          
     parser = OptionParser(option_class=MyOption, version="%sprog %s" % ('%', VERSION))         
