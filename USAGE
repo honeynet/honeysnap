@@ -190,5 +190,46 @@ file handling happens here as well.  Looking at the processFile
 function in main.py will show you how Honeysnap's modules are used 
 to do the actual processing of the data.  Next look at how some of 
 the modules that do the actual processing work.  We suggest 
-starting with packetCounter.py, httpDecode.py, smtpDecode.py, etc.  
+starting with packetCounter.py, httpDecode.py, smtpDecode.py, etc.
+
+It's also possible to use Honeysnap without changing the code. e.g.
+At some point somebody had made a feature request for honeysnap to 
+extract flow statistics of all flows where greater than N bytes 
+were transferred in less than X seconds.  To keep adding endless 
+variations of analysis to honeysnap will only make it more and 
+more complex to use, and more prone to bugs. 
+
+We've used this specific feature request as an opportunity 
+to illustrate how to use honeysnap modules to write a specific 
+application.  xBytesNseconds.py does one thing: it reads pcap 
+files and reports flows that are contain more than X bytes in 
+N seconds.  It will read regular or gzip compressed pcap files 
+or from standard in.   If you look at the code you will see 
+the bulk of the program is involved with details of handling 
+command line options, file handling, and output.  The actual 
+data analysis work itself is contained in only 1 function.  
+
+The code is heavily commented to help the reader follow along.
+
+Here's the basic usage:
+ xBytesNseconds.py [options]
+Options:
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  -b BYTES, --bytes=BYTES
+                        Look for flows greater than bytes, defaults to 0
+  -s SECONDS, --seconds=SECONDS
+                        Ceiling in seconds for candidate flows, defaults to
+                        sys.maxint
+  -H HONEYPOTS, --honeypots=HONEYPOTS
+                        Comma delimited list of honeypots
+
+For examples:
+xBytesNseconds.py -H10.0.0.2,10.0.0.3 -b 1000 -s 10 /data/pcaps/somepcap.gz
+
+This will examine /data/pcaps/somepcap.gz for any flows of less than 
+10 seconds duration with more than 1000 bytes transmitted. The code
+is included in the scripts/ directory in this distribution.
+
+  
 
