@@ -21,8 +21,9 @@
 
 # $Id: xBytesNseconds.py 4518 2006-10-11 21:54:24Z jed $
 
-import honeysnap
-import sys, optparse, pcap, os, tempfile, gzip, time
+import honeysnap   
+from honeysnap.util import check_pcap_file
+import sys, optparse, pcap, os, time
 
 VERSION=1.0
 
@@ -39,29 +40,7 @@ class xBytesnSecs(object):
 
     def run(self, f):
         # code to handle compressed or uncompressed pcap files
-        try:
-            tmph, tmpf = tempfile.mkstemp()
-            tmph = open(tmpf, 'wb')
-            gfile = gzip.open(f)
-            tmph.writelines(gfile.readlines())
-            gfile.close()
-            del gfile
-            tmph.close()
-            deletetmp = 1
-        except IOError:
-            # got an error, must not be gzipped
-            # should probably do a better check here
-            tmpf = f
-            deletetmp = 0
-        # quick and dirty check file is a valid pcap file
-        try:
-            if os.path.exists(tmpf) and os.path.getsize(tmpf)>0 and os.path.isfile(tmpf):
-                p = pcap.pcap(tmpf)
-            else:
-                raise OSError
-        except OSError:
-            print "File %s is not a pcap file or does not exist" % file
-            sys.exit(1)
+        tmpf, deletetmp = check_pcap_file(f)
 
         # we will just write to stdout
         out = honeysnap.output.outputSTDOUT()

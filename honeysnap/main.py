@@ -25,7 +25,6 @@ import socket
 from optparse import OptionParser, Option, OptionValueError
 import re
 import string
-import gzip   
 import time
 import os
 from fnmatch import fnmatch
@@ -52,7 +51,7 @@ from output import outputSTDOUT, rawPathOutput
 from packetCounter import Counter
 from pcapRE import pcapRE, wordSearch, pcapReCounter
 from sebekDecode import sebekDecode
-from util import make_dir     
+from util import make_dir, check_pcap_file     
 from dnsDecode import dnsDecode
                     
 
@@ -111,23 +110,7 @@ def processFile(file):
     hs = HoneysnapSingleton.getInstance()
     options = hs.getOptions()   
     
-    try:
-        # This sucks. pcapy wants a path to a file, not a file obj
-        # so we have to uncompress the gzipped data into
-        # a tmp file, and pass the path of that file to pcapy
-        tmph, tmpf = tempfile.mkstemp()
-        tmph = open(tmpf, 'wb')
-        gfile = gzip.open(file)
-        tmph.writelines(gfile.readlines())
-        gfile.close()
-        del gfile
-        tmph.close()
-        deletetmp = 1
-    except IOError:
-        # got an error, must not be gzipped
-        # should probably do a better check here
-        tmpf = file
-        deletetmp = 0
+    tmpf, deletetmp = check_pcap_file(file)
     options["tmpf"] = tmpf
 
     try:
@@ -143,16 +126,6 @@ def processFile(file):
         else:
             print "Unknown Error creating output file"
             sys.exit(1)
-
-    # quick and dirty check file is a valid pcap file
-    try:
-        if os.path.exists(tmpf) and os.path.getsize(tmpf)>0 and os.path.isfile(tmpf):
-            p = pcap.pcap(tmpf)
-        else:
-            raise OSError
-    except OSError:
-        print "File %s is not a pcap file or does not exist" % file
-        sys.exit(1)
                                    
     out("\n\nAnalysing file: %s\n\n" % file)  
                       

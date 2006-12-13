@@ -24,6 +24,9 @@ import os
 import md5       
 import sys
 from operator import itemgetter
+import tempfile
+import pcap 
+import gzip
 
 def ipnum(ip) :
     "Return a numeric address for an ip string"
@@ -83,3 +86,35 @@ def make_dir(path):
         except OSError:
             print "Unable to create dir: %s Check permissions." % (path)
             sys.exit(2)    
+                                      
+def check_pcap_file(file):
+    """Return a path to a valid pcap file, ungzipping if needed
+    Returns a (filename, tempfile) pair where tempfile is a boolean
+    indicating if we are returning a temp file 
+    """
+    try:
+        # This sucks. pcapy wants a path to a file, not a file obj
+        # so we have to uncompress the gzipped data into
+        # a tmp file, and pass the path of that file to pcapy
+        tmph, tmpf = tempfile.mkstemp()
+        tmph = open(tmpf, 'wb')
+        gfile = gzip.open(file)
+        tmph.writelines(gfile.readlines())
+        gfile.close()
+        del gfile
+        tmph.close()
+        is_tempfile = True
+    except IOError:
+        # got an error, must not be gzipped
+        # should probably do a better check here
+        tmpf = file
+        is_tempfile = False 
+    # quick and dirty check file is a valid pcap file
+    try:
+        if os.path.exists(tmpf) and os.path.getsize(tmpf)>0 and os.path.isfile(tmpf):
+            p = pcap.pcap(tmpf)
+    except OSError:
+        print "File %s is not a pcap file or does not exist" % file
+        sys.exit(1) 
+    return (file, is_tempfile)
+    

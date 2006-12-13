@@ -87,7 +87,6 @@ Download  and install the following, in order.
 	http://www.winpcap.org/install/default.htm  
 	
 	* pypcap from http://www.moneyket.org/~dugsong/pypcap
-	
 	You need to download and run the 'Windows Python 2.4 Installer'
 
 To make Python easily available on the command line, right click
@@ -98,13 +97,14 @@ choose Environment Variables. Add to the end of the PATH variable
 
 (assuming you installed Python to the default location)
 
-Now download ez_setup.py from
+If you don't already have setuptools installed, you'll need
+to download ez_setup.py from
 
 http://peak.telecommunity.com/dist/ez_setup.py
 
 and run it. This will install easy_setup. Finally run
 
-easy_install http://www.honeynet.org/tools/honeysnap
+easy_install honeysnap-1.0.4-py2.4.egg
                                                     
 This should download and install honeysnap and all its
 dependencies.
@@ -112,8 +112,8 @@ dependencies.
 3) Installation on a honeywall
 ------------------------------
 
-Note: You cannot do the above steps on the production honeywall,
-as it has no gcc compiler.  Do:
+Note: You cannot install in the same way as for a workstation on
+a production honeywall, as it has no gcc compiler. Instead, do:
 
 	$ sudo yum install gcc 
 

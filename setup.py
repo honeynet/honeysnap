@@ -7,7 +7,7 @@ import ez_setup
 ez_setup.use_setuptools()
                        
 from setuptools import setup
-VERSION="1.0.3rc4"
+VERSION="1.0.3rc5"
 
 setup(name="honeysnap",
     version=VERSION,
