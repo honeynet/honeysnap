@@ -48,10 +48,9 @@ $ sudo python setup.py install --install-scripts=/usr/local/bin
 $ sudo python setup.py install
 every time I make a change is annoying!
 
-A) Install setuptools (http://peak.telecommunity.com/DevCenter/setuptools),
-then instead of the standard 'python setup.py install' run:
+A) Instead of the standard 'python setup.py install' run:
 
-python -c "import setuptools; execfile('setup.py')" develop
+python setup.py develop
 
 This will point the path at your install directory so honeysnap
 will run directly from there. Specify --uninstall to undo.    
