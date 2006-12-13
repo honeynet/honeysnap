@@ -116,5 +116,5 @@ def check_pcap_file(file):
     except OSError:
         print "File %s is not a pcap file or does not exist" % file
         sys.exit(1) 
-    return (file, is_tempfile)
+    return (tmpf, is_tempfile)
     

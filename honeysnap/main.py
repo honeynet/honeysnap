@@ -111,8 +111,8 @@ def processFile(file):
     options = hs.getOptions()   
     
     tmpf, deletetmp = check_pcap_file(file)
-    options["tmpf"] = tmpf
-
+    options["tmpf"] = tmpf   
+    
     try:
         if options["filename"] is not None:
             out = rawPathOutput(options["filename"], mode="a+")
@@ -476,14 +476,14 @@ def parseOptions():
             try:  
                 fileparser.read(cmdopts.config)
                 for opts in fileparser.items('OPTIONS'), fileparser.items('IO'):
-                    for i in opts:
+                    for i in opts: 
                         if i[0] == 'irc_ports':
                             fileopts[i[0]] = [ int(n) for n in i[1].split(',') ]
                         elif i[0] == 'irc_limit': 
                             fileopts[i[0]] = int(i[1]) 
-                        elif i[0] == 'honeypots' or 'sebek_exclude':
+                        elif i[0] == 'honeypots' or i[0]=='sebek_exclude':
                             fileopts[i[0]] = i[1].split()
-                        else:
+                        else:  
                             fileopts[i[0]] = i[1] 
             except ConfigParser.Error:
                 print "Problem with the config file! Check format and permissions"
@@ -491,7 +491,7 @@ def parseOptions():
         else:
             print "Config file %s not found!" % options['config']
             sys.exit(1)
-    
+
     options = {}
     # now merge defaults, config file and command line
     for opt in defaults.keys(): 
@@ -500,9 +500,9 @@ def parseOptions():
             options[opt] = fileopts[opt]
         if cmdopts.__dict__.has_key(opt) and cmdopts.__dict__[opt]:
             options[opt] = cmdopts.__dict__[opt]  
-    
+                                                        
     options['output_data_directory'] = os.path.abspath(options['output_data_directory']) 
-
+                        
     if options['use_utc'] == "YES":
         options['time_convert_fn'] = lambda x: time.asctime(time.gmtime(x))
     else:
