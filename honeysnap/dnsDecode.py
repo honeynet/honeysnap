@@ -23,12 +23,18 @@
 import struct, dpkt, time, re
 import base
 from singletonmixin import HoneysnapSingleton
-import pcap
-from socket import inet_ntoa
+import pcap        
+import platform
 import sys
 from util import make_dir          
-
-from socket import inet_ntoa, inet_ntop, AF_INET6
+       
+# Windows socket doesn't include inet_ntop
+if platform.platform().startswith('Windows'):
+    inet_ntop = lambda x, y: '[Honeysnap] IPv6 decoding not implemented on Windows'
+    AF_INET6 = None
+    from socket import inet_ntoa
+else:
+    from socket import inet_ntoa, inet_ntop, AF_INET6
 
 class dnsDecode(base.Base):
     

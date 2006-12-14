@@ -92,13 +92,13 @@ site as Mac pkg, do not install from source.
 
 Download  and install the following, in order.
 
-  * Python 2.4 (from http://www.python.org/downloads). You can install
+  * Python 2.4 (from http://www.python.org/download). You can install
   from the Windows MSI installer linked from that page.
 
   * winpcap from
   http://www.winpcap.org/install/default.htm  
 	
-  * pypcap from http://www.moneyket.org/~dugsong/pypcap
+  * pypcap from http://www.monkey.org/~dugsong/pypcap
   You need to download and run the 'Windows Python 2.4 Installer'
 
 To make Python easily available on the command line, right click
