@@ -28,7 +28,7 @@ from socket import inet_ntoa
 import sys
 from util import make_dir          
 
-from socket import inet_ntoa
+from socket import inet_ntoa, inet_ntop, AF_INET6
 
 class dnsDecode(base.Base):
     
@@ -54,8 +54,6 @@ class dnsDecode(base.Base):
     
     def packetHandler(self, ts, ip, payload):
         """ts timestamp, ip dpkt.ip.IP, payload = dns udp data"""    
-        # this is very basic
-        # dpkt extracts many more types                      
         try:                    
             msg = dpkt.dns.DNS(payload)  
             srcip = inet_ntoa(ip.src)
@@ -64,8 +62,7 @@ class dnsDecode(base.Base):
         except (IndexError, TypeError):
             # dpkt shouldn't do this, but it does in some cases
             return
-        if msg.rcode == dpkt.dns.DNS_RCODE_NOERR and len(msg.an)>0:
-            print 'msg is %s' % `msg`
+        if msg.qr == dpkt.dns.DNS_A and msg.rcode == dpkt.dns.DNS_RCODE_NOERR and len(msg.an)>0:
             queried = "%s for " % srcip
             if msg.qd[0].type == dpkt.dns.DNS_A:
                 queried = queried + "%s (A)" % (msg.qd[0].name)
@@ -83,13 +80,11 @@ class dnsDecode(base.Base):
                 queried = queried + "%s (MX)" % (msg.qd[0].name)
             if msg.qd[0].type == dpkt.dns.DNS_TXT: 
                 queried = queried + "%s (TXT)" % (msg.qd[0].name)
-            if msg.qd[0].type == dpkt.dns.DNS_AAAA:
+            if msg.qd[0].type == dpkt.dns.DNS_AAAA:            
                 queried = queried + "%s (AAAA)" % (msg.qd[0].name)
             if msg.qd[0].type == dpkt.dns.DNS_SRV:
                 queried = queried + "%s (SRV)" % (msg.qd[0].name)     
 
-            #additional  = [x.name for x in msg.ar]
-            #authorities = [x.name for x in msg.ns]
             answers = []
             for an in msg.an:
                 if an.type == dpkt.dns.DNS_A:
@@ -115,8 +110,7 @@ class dnsDecode(base.Base):
                 elif an.type == dpkt.dns.DNS_TXT:
                     answers.append(an.rdata) 
                 elif an.type == dpkt.dns.DNS_AAAA:
-                    # this sucks. Must work out how to decode ipv6 addresses
-                    answers.append(str(an.rdata))
+                    answers.append(inet_ntop(AF_INET6,an.ip6))
                 elif an.type == dpkt.dns.DNS_SRV:
                     # do something with SRV
                     pass
@@ -124,7 +118,6 @@ class dnsDecode(base.Base):
                     # un-handled type
                     answers.append("[Honeysnap: Undecoded response]")
                     continue
-
             line = "%s, Queried %s, answer %s\n" % (self.tf(ts), queried, ", ".join(answers))
             #self.doOutput("\t%s" % line)
             self.fp.write(line)

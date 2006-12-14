@@ -88,12 +88,15 @@ def setFilters(options):
         ('Total TCP packets:', 'host %s and tcp'),
         ('Total UDP packets (excluding sebek port):', 'host %s and udp and not port %s' % ('%s', options['sebek_port'])),
         ('Total ICMP packets:', 'host %s and icmp'),
-        ('Total OTHER packets', 'host %s and not ip and not icmp'),
+        ('Total OTHER packets', 'host %s and not udp and not tcp and not icmp'),
         ('Outbound DNS packets:','src host %s and dst port 53'),
+        ('Inbound DNS packets:','dst host %s and dst port 53'),
         ('Outbound FTP packets:','src host %s and dst port 21'),
         ('Inbound FTP packets:','dst host %s and dst port 21'),
         ('Outbound SSH packets:','src host %s and dst port 22'),
-        ('Outbound Telnet packets:','src host %s and dst port 23'),
+        ('Inbound SSH packets:','dst host %s and dst port 22')
+        ('Outbound Telnet packets:','src host %s and dst port 23'), 
+        ('Inbound Telnet packets:','dst host %s and dst port 23')
         ('Outbound SMTP packets:','src host %s and dst port 25'),
         ('Inbound SMTP packets:','dst host %s and dst port 25'),  
         ('Outbound HTTP packets:','src host %s and dst port 80'),
