@@ -84,21 +84,25 @@ def setFilters(options):
         port = [ 'dst port %s' % port for port in irc_ports ]
         irc_filter = irc_filter + " or ".join(port) + ")"
     return [ 
-        ('All outbound IPv4 packets:', 'src host %s'),  
-        ('All ICMP packets', 'host %s and icmp'),   
+        ('Total IPv4 packets:', 'host %s and ip'), 
+        ('Total TCP packets:', 'host %s and tcp'),
+        ('Total UDP packets (excluding sebek port):', 'host %s and udp and not port %s' % ('%s', options['sebek_port'])),
+        ('Total ICMP packets:', 'host %s and icmp'),
+        ('Total OTHER packets', 'host %s and not ip and not icmp'),
         ('Outbound DNS packets:','src host %s and dst port 53'),
         ('Outbound FTP packets:','src host %s and dst port 21'),
+        ('Inbound FTP packets:','dst host %s and dst port 21'),
         ('Outbound SSH packets:','src host %s and dst port 22'),
         ('Outbound Telnet packets:','src host %s and dst port 23'),
         ('Outbound SMTP packets:','src host %s and dst port 25'),
+        ('Inbound SMTP packets:','dst host %s and dst port 25'),  
         ('Outbound HTTP packets:','src host %s and dst port 80'),
-        ('Outbound HTTPS packets:','src host %s and dst port 443'),        
-        ('Outbound Sebek packets:','src host %s and udp port %s' % ('%s', options["sebek_port"])),
-        ('Outbound IRC packets:','src host %s and tcp and %s' % ('%s', irc_filter)),
-        ('Inbound FTP packets:','dst host %s and dst port 21'),
-        ('Inbound SMTP packets:','dst host %s and dst port 25'),
         ('Inbound HTTP packets:','dst host %s and dst port 80'),
-        ('Inbound HTTPS packets:','dst host %s and dst port 443'),
+        ('Outbound HTTPS packets:','src host %s and dst port 443'),        
+        ('Inbound HTTPS packets:','dst host %s and dst port 443'), 
+        ('Outbound IRC packets:','src host %s and tcp and %s' % ('%s', irc_filter)),
+        ('Inbound IRC packets:','dst host %s and tcp and %s' % ('%s', irc_filter)),
+        ('Sebek packets:','src host %s and udp port %s' % ('%s', options["sebek_port"])),
         ]
 
 def processFile(file):
@@ -413,7 +417,7 @@ def parseOptions():
     parser.add_option("-f", "--file", dest="filename",type="string",
         help="Write report to FILE", metavar="FILE")
     parser.add_option("-o", "--output", dest="output_data_directory",type="string",
-        help="Write output to DIR, defaults to /tmp/analysis", metavar="DIR")
+        help="Write output to DIR, defaults to 'analysis'", metavar="DIR")
     parser.add_option("-H", "--honeypots", dest="honeypots", action="extend", type="string",
         help="Comma delimited list of honeypots")
     parser.add_option("-d", "--dir", dest="files", type="string",

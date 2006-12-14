@@ -72,9 +72,13 @@ PATH, usually in /usr/bin. If this isn't what you want, specify
 If you already have easy_install installed, you can simplify the
 installation process further by simply executing the following.
 
-  $ sudo easy_install honeysnap-1.0.4.tar.gz
+  $ sudo easy_install honeysnap-1.0.4.tar.gz 
 
-Some notes on python 2.5 and OS/X
+This is exactly the same as untar'ing the distribution and
+running 'sudo python setup.py install'
+
+Some notes on python 2.5 and OS/X     
+---------------------------------
 
 If upgrading Python on a Mac, and you hit problems, try getting the Python 
 pkg from www.python.org, not from Darwin ports.  Get pycap from Dug Song's 
@@ -157,9 +161,13 @@ Try to execute 'honeysnap':
   $ honeysnap
 
 You should see:
+                               
+usage: honeysnap [options]
 
-  Usage:
-  honeysnap.py <config file>
+options:
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  [.... more options snipped....]
 
   Please see the accompanying documentation for instructions on
   configuration.

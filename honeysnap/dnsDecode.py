@@ -57,28 +57,79 @@ class dnsDecode(base.Base):
         # this is very basic
         # dpkt extracts many more types                      
         try:                    
-            msg = dpkt.dns.DNS(payload)
+            msg = dpkt.dns.DNS(payload)  
+            srcip = inet_ntoa(ip.src)
         except dpkt.Error:    
             return
         except (IndexError, TypeError):
             # dpkt shouldn't do this, but it does in some cases
             return
         if msg.rcode == dpkt.dns.DNS_RCODE_NOERR and len(msg.an)>0:
-            #print 'msg is %s' % `msg`
-            queried     = msg.qd[0].name
+            print 'msg is %s' % `msg`
+            queried = "%s for " % srcip
+            if msg.qd[0].type == dpkt.dns.DNS_A:
+                queried = queried + "%s (A)" % (msg.qd[0].name)
+            if msg.qd[0].type == dpkt.dns.DNS_NS:
+                queried = queried + "%s (NS)" % (msg.qd[0].name)
+            if msg.qd[0].type == dpkt.dns.DNS_CNAME:
+                queried = queried + "%s (CNAME)" % (msg.qd[0].name)
+            if msg.qd[0].type == dpkt.dns.DNS_SOA:
+                queried = queried + "%s (SOA)" % (msg.qd[0].name)
+            if msg.qd[0].type == dpkt.dns.DNS_PTR:
+                queried = queried + "%s (PTR)" % (msg.qd[0].name)
+            if msg.qd[0].type == dpkt.dns.DNS_HINFO:
+                queried = queried + "%s (HINFO)" % (msg.qd[0].name)
+            if msg.qd[0].type == dpkt.dns.DNS_MX:
+                queried = queried + "%s (MX)" % (msg.qd[0].name)
+            if msg.qd[0].type == dpkt.dns.DNS_TXT: 
+                queried = queried + "%s (TXT)" % (msg.qd[0].name)
+            if msg.qd[0].type == dpkt.dns.DNS_AAAA:
+                queried = queried + "%s (AAAA)" % (msg.qd[0].name)
+            if msg.qd[0].type == dpkt.dns.DNS_SRV:
+                queried = queried + "%s (SRV)" % (msg.qd[0].name)     
+
             #additional  = [x.name for x in msg.ar]
             #authorities = [x.name for x in msg.ns]
             answers = []
             for an in msg.an:
                 if an.type == dpkt.dns.DNS_A:
                     answers.append(inet_ntoa(an.ip))
-                if an.type == dpkt.dns.DNS_PTR:
+                elif an.type == dpkt.dns.DNS_PTR:
                     answers.append(an.ptrname)
-            line = "%s, Query %s, answer %s\n" % (self.tf(ts), queried, ", ".join(answers))
+                elif an.type == dpkt.dns.DNS_NS:
+                    answers.append(an.nsname)
+                elif an.type == dpkt.dns.DNS_CNAME:
+                    answers.append(an.cname)
+                elif an.type == dpkt.dns.DNS_SOA:
+                    answers.append(an.mname)
+                    answers.append(an.rname)
+                    answers.append(str(an.serial))
+                    answers.append(str(an.refresh))
+                    answers.append(str(an.retry))
+                    answers.append(str(an.expire))
+                    answers.append(str(an.minimum)) 
+                elif an.type == dpkt.dns.DNS_HINFO:
+                    answers.append(an.text)
+                elif an.type == dpkt.dns.DNS_MX:
+                    answers.append(an.mxname)
+                elif an.type == dpkt.dns.DNS_TXT:
+                    answers.append(an.rdata) 
+                elif an.type == dpkt.dns.DNS_AAAA:
+                    # this sucks. Must work out how to decode ipv6 addresses
+                    answers.append(str(an.rdata))
+                elif an.type == dpkt.dns.DNS_SRV:
+                    # do something with SRV
+                    pass
+                else:
+                    # un-handled type
+                    answers.append("[Honeysnap: Undecoded response]")
+                    continue
+
+            line = "%s, Queried %s, answer %s\n" % (self.tf(ts), queried, ", ".join(answers))
             #self.doOutput("\t%s" % line)
             self.fp.write(line)
         else:   
-            # question. Fix this later
+            # question.   
             pass
     
     def run(self):

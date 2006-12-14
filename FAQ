@@ -3,7 +3,36 @@ $Id$
 FAQ
 ===
 
-Some common questions/problems.
+Some common questions/problems.    
+  
+Questions
+=========
+
+1). Honeysnap is showing all counts as zero even though I know 
+there are packets it should be counting!
+
+2) When Honeysnap processes separate pcap files it reports on
+each one separately. How do I get it to just report on all the
+files as one?
+             
+3) Does Honeysnap support Python 2.3 
+
+4) Honeysnap installs the binaries in a stupid place! How do I 
+change where they go?
+
+5) I want to hack on the code, but running $ sudo python setup.py install
+every time I make a change is annoying!    
+
+6) I'm getting 'Too many open file' errors or 'honeysnap.flow.fileHandleError' 
+
+7) Does Honeysnap work on Windows
+
+8) I noticed TCP protocols such as HTTP, SMTP and FTP each show packets
+going outbound, but all 3 show 0 packets inbound.  How is that possible?  
+Since TCP is a stateful packet, should there also be a lot of return packets?
+
+Answers
+=======
 
 1). Honeysnap is showing all counts as zero even though I know 
 there are packets it should be counting!
@@ -55,6 +84,9 @@ python setup.py develop
 This will point the path at your install directory so honeysnap
 will run directly from there. Specify --uninstall to undo.    
 
+You'll need to re-run this everytime the version number changes
+or you'll get a traceback.
+
 6) I'm getting 'Too many open file' errors or 'honeysnap.flow.fileHandleError'
 
 A) Please report a bug in Bugzilla! As a workaround, try increasing the
@@ -65,7 +97,15 @@ $ ulimit -n 4096
 
 7) Does Honeysnap work on Windows
 
-A) Probably, but we haven't tested it, and the install process is not
-documented. We'd be grateful for help with either of these areas!
+A) As of 1.0.3, it should work fine. See the INSTALL docs for details. 
+If you have problems, please report a bug!
 
+8) I noticed TCP protocols such as HTTP, SMTP and FTP each show packets
+going outbound, but all 3 show 0 packets inbound.  How is that possible?  
+Since TCP is a stateful packet, should there also be a lot of return packets?
+
+A) As an example, The tcpdump filter for HTTP is "src HP and dst port 80"
+for outbound. For inbound it's "dst HP and dst port 80" so will only show 
+a count if a HTTP server is running (which would be interesting). Replies 
+to requests go to a high port so don't get counted.
 
