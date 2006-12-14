@@ -115,11 +115,10 @@ ez_setup.py from
 
 and run it. This will install easy_setup. Finally run
 
-  easy_install honeysnap-1.0.4-py2.4.egg
+  easy_install honeysnap-1.0.4.zip
                                                     
 This should download and install honeysnap and all its
 dependencies.
-
                  
 4: INSTALLATION ON A HONEYWALL
 ==============================

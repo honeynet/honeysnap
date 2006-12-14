@@ -1,6 +1,6 @@
 ################################################################################
 # (c) 2006, The Honeynet Project
-#   Authors: Arthur Clune and David Barroso (tomac@yersinia.net)
+#   Authors: David Barroso (tomac@yersinia.net) and Arthur Clune
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -110,11 +110,11 @@ class dnsDecode(base.Base):
                     answers.append(str(an.expire))
                     answers.append(str(an.minimum)) 
                 elif an.type == dpkt.dns.DNS_HINFO:
-                    answers.append(an.text)
+                    answers.append(" ".join(an.text))
                 elif an.type == dpkt.dns.DNS_MX:
                     answers.append(an.mxname)
                 elif an.type == dpkt.dns.DNS_TXT:
-                    answers.append(an.rdata) 
+                    answers.append(" ".join(an.text)) 
                 elif an.type == dpkt.dns.DNS_AAAA:
                     answers.append(inet_ntop(AF_INET6,an.ip6))
                 elif an.type == dpkt.dns.DNS_SRV:
