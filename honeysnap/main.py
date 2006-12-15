@@ -176,7 +176,7 @@ def processFile(file):
                 l = 0
             else:
                 l = 10  
-            fileout = rawPathOutput(outdir+"/incoming.txt", mode="w") 
+            fileout = rawPathOutput(outdir+"/incoming.txt", mode="a") 
             if options["print_verbose"] == "YES":
                 outputs = (fileout, out)
             else:
@@ -202,7 +202,7 @@ def processFile(file):
                 l = 0
             else:
                 l = 10  
-            fileout = rawPathOutput(outdir+"/outgoing.txt", mode="w")  
+            fileout = rawPathOutput(outdir+"/outgoing.txt", mode="a")  
             if options["print_verbose"] == "YES":
                 outputs = (fileout, out)
             else:
@@ -535,7 +535,7 @@ def main():
     
     print_help, options, args = parseOptions()
     
-    if len(sys.argv)>1:
+    if len(sys.argv)>1:   
         if options['honeypots'] is None:
             print "No honeypots specified. Please use either -H or config file to specify honeypots.\n"
             sys.exit(2)
@@ -587,14 +587,19 @@ def main():
             # all done, delete the tmp file
             os.unlink(tmpf)
 
-        cleanup(options)  
+        cleanup(options)   
     else:    
         print_help()
+          
+def start():
+    """This is nothing but an entry-point for setuptools in which we can trap ctrl-c"""
+    try:          
+        main()
+    except KeyboardInterrupt:
+        print 'Caught KeyboardInterrupt - Goodbye!'
+        sys.exit(0)
 
 if __name__ == "__main__":
-    #import profile
-    #profile.run('main()', 'mainprof')
-
     main()
 
 

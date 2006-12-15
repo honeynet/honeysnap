@@ -54,9 +54,9 @@ class dnsDecode(base.Base):
     def setOutdir(self, dir):
         make_dir(dir)             
         if self.direction == "queried":   
-            self.fp = open(dir + "/dns_queries.txt", "w")
+            self.fp = open(dir + "/dns_queries.txt", "a")
         else:                          
-            self.fp = open(dir + "/dns_served.txt", "w")
+            self.fp = open(dir + "/dns_served.txt", "a")
     
     def packetHandler(self, ts, ip, payload):
         """ts timestamp, ip dpkt.ip.IP, payload = dns udp data"""    

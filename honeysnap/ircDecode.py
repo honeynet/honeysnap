@@ -132,7 +132,7 @@ class ircDecode(Base):
         If you just want output to stdout, don't call this function
         """
         if self.dir:
-            self.fp = open(self.dir + "/%s" % filename, "w")  
+            self.fp = open(self.dir + "/%s" % filename, "a")  
         else:
             raise IOError("Cannot create file %s - directory not specified" % filename) 
     

@@ -7,7 +7,7 @@ import ez_setup
 ez_setup.use_setuptools()
                        
 from setuptools import setup
-VERSION="1.0.3rc11"
+VERSION="1.0.3rc12"
 
 setup(name="honeysnap",
     version=VERSION,
@@ -34,7 +34,7 @@ setup(name="honeysnap",
     #],
     entry_points = {
         'console_scripts': [
-            'honeysnap = honeysnap.main:main',
+            'honeysnap = honeysnap.main:start',
           ]
     }
 )    

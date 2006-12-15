@@ -28,55 +28,11 @@ Doing this should give you a basic idea as to what honeysnap
 can do. In general, you may find it simpler to stick with
 the config file method until you are happy with all the options 
 rather than using the (many) command line switches.
-
-MULTIPLE FILES
-==============
-
-One of the key functions of Honeysnap is it can handle multiple
-pcap files, compressed or un-compressed.  You have several options
-on how to do this.
-
-Multiple Files
-Honeysnap can handle plain pcap files or gzip compressed pcap files.
-You can pass multiple files at the cmd line as we have done here.
-
- honeysnap -c honeysnap.cfg pcap1 pcap2 pcap3
-
-Multiple Files in a Directory
-In addiion, you can simply point Honeysnap at a directory that
-contains multiple pcap files.  You use -d to point to a full
-directory.
-
- honeysnap -c honeysnap.cfg -d /home/user/pcaps
-
-One suggestion is to keep pcap files in directories that are 
-date coded by day, so you can use -m to only parse files for 
-a certain time period.  In this example each 24 hour period of 
-pcaps has its own directory:
-
- /home/user/pcaps:
- october0106/
- october0206/
- october0306/
-
-To parse all of October's data do:
-
- honeysnap -c honeysnap.cfg -d /home/user/pcaps -m *october*
-
-You can also redirect stdout to honeysnap:
-
- tar -xfO  tarballofpcaps.tar | honeysnap -c honeysnap.cfg
-or
- honeysnap -c honeysnap.cfg < pcap.gz
-                                                 
-
-All the output from each run will be placed in the same output
-directory (as given in the config file or on the commandline),
-even when multiple files are specified. If this isn't what you
-want, the easiest solution is to use a script to run overall
-the files, adjusting the output directory suitably. See the 
-misc/ directory for sample code.
-
+ 
+Remember to use a new output directory for each run. In order
+to handle multiple files, honeysnap will append to existing files
+for things like IRC and sebek output. This is probably not what
+you want for un-related files!
                                     
 WORDS
 =====
@@ -231,5 +187,54 @@ This will examine /data/pcaps/somepcap.gz for any flows of less than
 10 seconds duration with more than 1000 bytes transmitted. The code
 is included in the scripts/ directory in this distribution.
 
-  
+MULTIPLE FILES
+==============
+
+Honeysnap can handle multiple pcap files, compressed or 
+un-compressed.  You have several options on how to do this.
+
+Multiple Files 
+
+ honeysnap -c honeysnap.cfg pcap1 pcap2 pcap3
+
+Multiple Files in a Directory
+
+In addition, you can simply point Honeysnap at a directory that
+contains multiple pcap files.  You use -d to point to a full
+directory.
+
+ honeysnap -c honeysnap.cfg -d /home/user/pcaps
+
+One suggestion is to keep pcap files in directories that are 
+date coded by day, so you can use -m to only parse files for 
+a certain time period.  In this example each 24 hour period of 
+pcaps has its own directory:
+
+ /home/user/pcaps:
+ october0106/
+ october0206/
+ october0306/
+
+To parse all of October's data do:
+
+ honeysnap -c honeysnap.cfg -d /home/user/pcaps -m *october*
+
+You can also redirect stdout to honeysnap:
+
+ tar -xfO  tarballofpcaps.tar | honeysnap -c honeysnap.cfg
+or
+ honeysnap -c honeysnap.cfg < pcap.gz
+                                                 
+All the output from each run will be placed in the same output
+directory (as given in the config file or on the commandline),
+even when multiple files are specified. If this isn't what you
+want, the easiest solution is to use a script to run overall
+the files, adjusting the output directory suitably. See the 
+misc/ directory for sample code.
+    
+In general, using a script is a better solution that giving
+multiple files on the command line unless you only have a couple 
+of files as it will make the output much easier to deal with and 
+reduce the risk of overlapping filenames.
+ 
 

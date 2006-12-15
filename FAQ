@@ -29,7 +29,10 @@ every time I make a change is annoying!
 
 8) I noticed TCP protocols such as HTTP, SMTP and FTP each show packets
 going outbound, but all 3 show 0 packets inbound.  How is that possible?  
-Since TCP is a stateful packet, should there also be a lot of return packets?
+Since TCP is a stateful packet, should there also be a lot of return packets? 
+
+9) The packet counts show traffic on a protocol, but honeysnap doesn't seem
+to have decoded it even though it can! 
 
 Answers
 =======
@@ -108,4 +111,12 @@ A) As an example, The tcpdump filter for HTTP is "src HP and dst port 80"
 for outbound. For inbound it's "dst HP and dst port 80" so will only show 
 a count if a HTTP server is running (which would be interesting). Replies 
 to requests go to a high port so don't get counted.
+   
+9) The packet counts show traffic on a protocol, but honeysnap doesn't seem
+to have decoded it even though it can!
+
+A) Have a look at the data in ethereal/a packet sniffer. The packet counts
+don't look at tcp state, while the flow extraction does, so packets will
+still be counted even if they are out-of-state (e.g. Checksum incorrect)
+but will not be decoded.
 

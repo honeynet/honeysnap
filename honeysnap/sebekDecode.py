@@ -107,7 +107,7 @@ class sebekDecode(base.Base):
 
     def setOutdir(self, dir):
         make_dir(dir)
-        self.fp = open(dir + "/sebek.txt", "w")
+        self.fp = open(dir + "/sebek.txt", "a")
 
     def packetHandler(self, ts, ip, payload):
         """ts timestamp, ip dpkt.ip.IP, payload = sebek udp data"""
@@ -211,7 +211,7 @@ class sebekDecode(base.Base):
         """Print our data"""
         excludes = self.excludes
         if len(self.output['keystrokes'])==0 and len(self.output['sbk_write'])==0 and len(self.output['sbk_sock'])==0:
-            print 'No sebek data seen'
+            self.doOutput('No sebek data seen\n')
         else:                                                                                                
             if len(self.output['keystrokes'])>0:
                 count = 0
