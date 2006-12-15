@@ -37,14 +37,13 @@ class Summarize(base.Base):
     Utimately you get a packet count for each outgoing connection.
     This class works best if you use setFilter to filter by "src $HONEYPOT"
     """
-    def __init__(self, pcapObj, verbose=0): 
+    def __init__(self, pcapObj): 
         hs = HoneysnapSingleton.getInstance()
         options = hs.getOptions()
         self.tcpports = {}
         self.udpports = {}
         self.icmp = {}
         self.p = pcapObj
-        self.verbose = verbose
         self.outdir = ""
         self.tf = options['time_convert_fn']  
         
@@ -81,10 +80,7 @@ class Summarize(base.Base):
                 tcp = subpkt.data
                 dport = tcp.dport
                 sport = tcp.sport
-                if self.verbose:
-                    key = (shost, dhost, dport, sport)
-                else:
-                    key = (shost, dhost, dport)
+                key = (shost, dhost, dport, sport)
                 if key not in self.tcpports:
                     # tuple is [start time, end time, count, bytes]
                     self.tcpports[key] = [ts, 0, 0, 0]
@@ -95,10 +91,7 @@ class Summarize(base.Base):
                 udp = subpkt.data
                 dport = udp.dport
                 sport = udp.sport
-                if self.verbose:
-                    key = (shost, dhost, dport, sport)
-                else:
-                    key = (shost, dhost, dport)
+                key = (shost, dhost, dport, sport)
                 if key not in self.udpports:
                     # tuple is [start time, end time, count, bytes]
                     self.udpports[key] = [ts, 0, 0, 0]
@@ -108,12 +101,6 @@ class Summarize(base.Base):
         except dpkt.Error:
             return
 
-    def printResults(self):
-        if self.verbose:
-            self.writeResults(limit=0)
-        else:
-            self.writeResults(limit=10)
-
     def writeResults(self, limit=0):
         """Write results. Optionally only print more significant options""" 
         
@@ -121,31 +108,19 @@ class Summarize(base.Base):
             self.doOutput("No TCP traffic seen\n")
         else:
             self.doOutput("\nTCP TRAFFIC SUMMARY:\n\n")
-            if self.verbose:
-                self.doOutput("%-20s %-20s %-16s %-6s %-16s %-6s %10s %10s\n" % ("Start", "End", "Source", "Sport", "Dest", "Dport", "Count", "Bytes"))
-            else:
-                self.doOutput("%-20s %-20s %-16s %-16s %8s %10s %10s\n" % ("Start", "End", "Source", "Dest", "Dport", "Count", "Bytes"))
+            self.doOutput("%-25s %-25s %-16s %-6s %-19s %-6s %10s %10s\n" % ("Start", "End", "Source", "Sport", "Dest", "Dport", "Count", "Bytes"))
             for key, val in self.tcpports.iteritems():
                 if val[2] > limit:
-                    if self.verbose:
-                        self.doOutput("%-20s %-20s %-16s %-6s %-16s %-6s %10s %10s\n" % (self.tf(val[0]), self.tf(val[1]), key[0], key[3], key[1], key[2], str(val[2]), str(val[3])))
-                    else:
-                        self.doOutput("%-20s %-20s %-16s %-16s %8s %10s %10s\n" % (self.tf(val[0]), self.tf(val[1]), key[0], key[1], key[2], str(val[2]), str(val[3])))
+                    self.doOutput("%-25s %-25s %-16s %-6s %-19s %-6s %10s %10s\n" % (self.tf(val[0]), self.tf(val[1]), key[0], key[3], key[1], key[2], str(val[2]), str(val[3])))
                         
         if len(self.udpports) == 0:
             self.doOutput("No UDP traffic seen\n")
         else:
             self.doOutput("\n\nUDP TRAFFIC SUMMARY:\n\n")
-            if self.verbose:
-                self.doOutput("%-20s %-20s %-16s %-6s %-16s %-6s %10s %10s\n" % ("Start", "End", "Source", "Sport", "Dest", "Dport", "Count", "Bytes"))
-            else:
-                self.doOutput("%-20s %-20s %-16s %-16s %8s %10s %10s\n" % ("Start", "End", "Source", "Dest", "Dport", "Count", "Bytes"))
+            self.doOutput("%-25s %-25s %-16s %-6s %-19s %-6s %10s %10s\n" % ("Start", "End", "Source", "Sport", "Dest", "Dport", "Count", "Bytes"))
             for key, val in self.udpports.iteritems():
                 if val[2] > limit:
-                    if self.verbose:
-                        self.doOutput("%-20s %-20s %-16s %-6s %-19s %-6s %10s %10s\n" % (self.tf(val[0]), self.tf(val[1]), key[0], key[3], key[1], key[2], str(val[2]), str(val[3])))
-                    else:
-                        self.doOutput("%-20s %-20s %-16s %-16s %8s %10s %10s\n" % (self.tf(val[0]), self.tf(val[1]), key[0], key[1], key[2], str(val[2]), str(val[3])))
+                    self.doOutput("%-25s %-25s %-16s %-6s %-19s %-6s %10s %10s\n" % (self.tf(val[0]), self.tf(val[1]), key[0], key[3], key[1], key[2], str(val[2]), str(val[3])))
                   
                    
 

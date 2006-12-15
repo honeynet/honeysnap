@@ -143,7 +143,8 @@ def processFile(file):
         pi.getStats()
         myout = rawPathOutput(options["output_data_directory"] +"/pcapinfo.txt")
         pi.setOutput(myout)
-        pi.getStats()
+        pi.getStats() 
+        out("\n")
 
     if options["do_packets"] == "YES":
         out("\nIP packet summary for common ports:\n\n")
@@ -164,18 +165,14 @@ def processFile(file):
 
     if options["do_incoming"] == "YES":
         for hp in options["honeypots"]:
+            out("Counting incoming connections for %s\n" % hp)
             outdir = options["output_data_directory"] + "/%s/conns" % hp
             make_dir(outdir)
             p = pcap.pcap(tmpf)
-            v = options["verbose_summary"]
-            s = Summarize(p, verbose=v)
+            s = Summarize(p)
             filt = 'dst host %s' % hp
             s.setFilter(filt, file)
             s.start()
-            if v=="YES":
-                l = 0
-            else:
-                l = 10  
             fileout = rawPathOutput(outdir+"/incoming.txt", mode="a") 
             if options["print_verbose"] == "YES":
                 outputs = (fileout, out)
@@ -184,24 +181,20 @@ def processFile(file):
             for output in outputs:
                 s.setOutput(output)
                 s.doOutput("\nINCOMING CONNECTIONS FOR %s\n" % hp)             
-                s.writeResults(limit=l)
+                s.writeResults(limit=options["flow_count_limit"])
             del p
 
 
     if options["do_outgoing"] == "YES":
-        for hp in options["honeypots"]:
+        for hp in options["honeypots"]:     
+            out("Counting outgoing connections for %s\n" % hp)
             outdir = options["output_data_directory"] + "/%s/conns" % hp
             make_dir(outdir)
             p = pcap.pcap(tmpf)
-            v = options["verbose_summary"]
-            s = Summarize(p, verbose=v)
+            s = Summarize(p)
             filt = 'src host %s' % hp
             s.setFilter(filt, file)
             s.start()
-            if v=="YES":
-                l = 0
-            else:
-                l = 10  
             fileout = rawPathOutput(outdir+"/outgoing.txt", mode="a")  
             if options["print_verbose"] == "YES":
                 outputs = (fileout, out)
@@ -210,13 +203,13 @@ def processFile(file):
             for output in outputs:
                 s.setOutput(output) 
                 s.doOutput("\nOUTGOING CONNECTIONS FOR %s\n" % hp)                 
-                s.writeResults(limit=l)  
+                s.writeResults(limit=options["flow_count_limit"])  
             del p
                 
     if options["do_dns"] == "YES":
         out("\nExtracting DNS data to file\n\n")
         for hp in options["honeypots"]:
-            #out("\nHoneypot %s\n\n" % hp)   
+            #out("\nHoneypot %s\n\n" % hp) 
             dns = dnsDecode(hp, direction="queried")
             dns.setOutdir(options["output_data_directory"] + "/%s/dns" % hp)
             dns.setOutput(out)
@@ -395,8 +388,8 @@ def parseOptions():
     		'do_packets'		: 'NO',
     		'do_incoming'		: 'NO',
     		'do_outgoing'		: 'NO',
-    		'verbose_summary'	: 'NO',
-    		'print_verbose'		: 'NO',    
+    		'print_verbose'		: 'NO',
+    		'flow_count_limit'  :  0,
     		'do_dns'            : 'NO',
     		'do_http'			: 'NO',
     		'print_http_served' : 'NO',
@@ -443,10 +436,9 @@ def parseOptions():
         help = "Summarise incoming traffic flows")
     parser.add_option("--do-outgoing", dest="do_outgoing", action="store_const", const="YES",
         help = "Summarise outgoing traffic flows")
-    parser.add_option("--verbose-summary", dest="verbose_summary", action="store_const", const="YES",
-        help = "Do verbose flow counts, indexes flows by srcip, sport, dstip, dport")
     parser.add_option("--print-verbose", dest="print_verbose", action="store_const", const="YES",
-        help = "Print verbose flow counts to screen as well as storing in a file (implies --verbose-sumamry)")
+        help = "Print verbose flow counts to screen as well as storing in a file (needs --do-incoming or --do-outgoing)")  
+    parser.add_option("--flow-count-limit", dest="flow_count_limit", type="int", help = "Limit flow counts to top N items")
     parser.add_option("--do-dns", dest="do_dns", action="store_const", const="YES",
         help = "Extract DNS data") 
     parser.add_option("--do-http", dest="do_http", action="store_const", const="YES",
@@ -521,9 +513,6 @@ def parseOptions():
             print "Can't use --raw-time with --use-utc"
             sys.exit(1)
 
-    if options['print_verbose'] == 'YES' and options['verbose_summary'] != 'YES':
-        options['verbose_summary'] = 'YES'
-    
     if not options.has_key('honeypots'):
         print "No honeypots specified! Please use either -H or the config file to specify some"
         sys.exit(1)

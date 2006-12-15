@@ -182,7 +182,7 @@ class ircDecode(Base):
         if len(self.wordlines) > 0:
             self.doOutput("\tLines matching wordlist:\n")
             for line, matches in self.wordlines:
-                self.doOutput("\t\t%s\n\t\t\t(matches %s)\n" % (line, matches))
+                self.doOutput("\t\t%s\t[Honeysnap: line matches %s]\n" % (line, matches))
         if len(self.botlines) > 0:
             self.doOutput("\n\tPossible bot commands:\n")
             for line, matches in self.botlines:
