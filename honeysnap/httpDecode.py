@@ -261,8 +261,8 @@ class httpDecode(Base):
         if rs is not None:
             if rs.decoded is not None and state.decoded is not None:
                 #print "Both halves decoded"
+                user_agent = "UNKNOWN"
                 r1 = rs.decoded
-
                 if t == 'request':
                     try:           
                         url = urllib.splitquery(state.decoded.uri)[0]
@@ -271,6 +271,7 @@ class httpDecode(Base):
                         realname = 'index.html'
                     try: 
                         url = state.decoded.headers['host'] + url  
+                        user_agent = state.decoded.headers['user-agent']
                     except KeyError:
                         pass
                     # reverse flows to get right sense for file renaming    
@@ -280,8 +281,9 @@ class httpDecode(Base):
                 if t == 'response':
                     url = urllib.splitquery(r1.uri)[0]
                     realname = url.rsplit("/", 1)[-1] 
-                    try:
-                        url = r1.headers['host'] + url
+                    try:              
+                        user_agent = r1.headers['user-agent']
+                        url = r1.headers['host'] + url 
                     except KeyError:
                         # probably something like a CONNECT
                         pass
@@ -290,10 +292,10 @@ class httpDecode(Base):
                 fn = renameFile(state, realname)
                 id, m5 = self.id.identify(state)
                 if 'outgoing' in fn:
-                    self.doOutput("%s requested %s at %s\n" % (state.flow.dst, url, self.tf(state.ts)))
+                    self.doOutput("%s requested %s (%s) at %s\n" % (state.flow.dst, url, user_agent, self.tf(state.ts)))
                     self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5))
                 elif self.options['print_http_served'] == 'YES': 
-                    self.doOutput("%s served %s at %s\n" % (state.flow.src, url, self.tf(state.ts)))
+                    self.doOutput("%s served %s (%s) at %s\n" % (state.flow.src, url, user_agent, self.tf(state.ts)))
                     self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5))                         
 
     def extractHeaders(self, state, d):
@@ -316,7 +318,7 @@ class httpDecode(Base):
             headers = state.decoded.headers
             body = state.decoded.body
             try:
-                request = state.decoded.request
+                request = state.decoded.request 
             except dpkt.Error:
                 request = ""
             try:
@@ -349,7 +351,7 @@ class httpDecode(Base):
             body = None
 
         # write headers, body, data to files
-        if headers is not None:
+        if headers is not None: 
             base = state.fname
             base += ".hdr"
             fp = open(base, "wb")
