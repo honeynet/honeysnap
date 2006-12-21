@@ -167,6 +167,7 @@ class httpDecode(Base):
             if self.requested_log[hp] or self.served_log[hp]:  
                 for item in ['requested_files', 'served_files']:  
                     if item == 'served_files' and self.options['print_http_served'] != 'YES':
+                        self.doOutput('\n%s requests served by honeypot\n' % len(self.served_log[hp]))
                         break
                     self.doOutput("\n%s:\n\n" % item)                    
                     a = self.__dict__[item][hp]
@@ -176,6 +177,8 @@ class httpDecode(Base):
                             self.doOutput(outstring)
                 if self.options['print_http_logs'] == 'YES':
                     for item in ['requested_log', 'served_log']: 
+                        if item == 'served_log' and self.options['print_http_served'] != 'YES':
+                            break
                         a = self.__dict__[item][hp]
                         if a:
                             a.sort()
