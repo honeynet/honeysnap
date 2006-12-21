@@ -284,8 +284,7 @@ def processFile(file):
         de.registerPlugin(decode.decode)
         de.start()
         de.dump_extract()   
-        if options["print_http_logs"] == "YES":
-            decode.print_logfiles()
+        decode.print_summary()
         del de
         del p
 
@@ -442,7 +441,7 @@ def parseOptions():
     parser.add_option("--do-http", dest="do_http", action="store_const", const="YES",
         help = "Extract http data")   
     parser.add_option("--print-http-served", dest="print_http_served", action="store_const", const="YES",
-        help = "Print extracted files served by the honeypot(s)")  
+        help = "Print extracted files served by the honeypot(s)? (Requires --do-http)")  
     parser.add_option("--print-http-logs", dest="print_http_logs", action="store_const", const="YES",
         help = "Print http requests in log file format? (Requires --do-http)")    
     parser.add_option("--do-ftp", dest="do_ftp", action="store_const", const="YES",

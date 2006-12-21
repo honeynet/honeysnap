@@ -129,8 +129,15 @@ class httpDecode(Base):
         self.tf = self.options['time_convert_fn']
         self.statemgr = None
         self.id = flowIdentify() 
-        self.served_log = []
-        self.request_log = []
+        self.served_log = {}
+        self.requested_log = {} 
+        self.requested_files = {}
+        self.served_files = {}
+        for hp in self.options['honeypots']: 
+            self.served_log[hp] = []
+            self.requested_log[hp] = []  
+            self.served_files[hp] = [] 
+            self.requested_files[hp] = []
      
     # next two functions adapted from dsniff    
     def _get_http_user(self, r):
@@ -153,18 +160,34 @@ class httpDecode(Base):
         d['ts'] = state.ts
         return d
     
-    def print_logfiles(self):            
-        self.request_log.sort()          
-        self.served_log.sort()       
-        for item in ['request_log', 'served_log']:
-            if self.__dict__[item]:
-                self.doOutput("\n%s:\n\n" % item)
-                for (ts, log) in self.__dict__[item]:
-                    log['ts'] = self.tf(log['ts'])
-                    self.doOutput(repr('%(ip)s - %(user)s [%(ts)s] '
-                        '"%(method)s http://%(host)s%(uri)s" - - '
-                        '"%(referer)s" "%(user-agent)s"' % log).strip("'")) 
-                    self.doOutput('\n')
+    def print_summary(self):            
+        """Print summary info"""  
+        for hp in self.options['honeypots']:                 
+            self.doOutput('\nHTTP summary for %s\n\n' % hp)
+            if self.requested_log[hp] or self.served_log[hp]:  
+                for item in ['requested_files', 'served_files']:  
+                    if item == 'served_files' and self.options['print_http_served'] != 'YES':
+                        break
+                    self.doOutput("\n%s:\n\n" % item)                    
+                    a = self.__dict__[item][hp]
+                    if a:
+                        a.sort()
+                        for (ts, outstring) in a:  
+                            self.doOutput(outstring)
+                if self.options['print_http_logs'] == 'YES':
+                    for item in ['requested_log', 'served_log']: 
+                        a = self.__dict__[item][hp]
+                        if a:
+                            a.sort()
+                            self.doOutput("\n%s:\n\n" % item)
+                            for (ts, log) in a:
+                                log['ts'] = self.tf(log['ts'])  
+                                outstring = repr('%(ip)s - %(user)s [%(ts)s] '
+                                    '"%(method)s http://%(host)s%(uri)s" - - '
+                                    '"%(referer)s" "%(user-agent)s"' % log).strip("'") 
+                                self.doOutput('%s\n' % outstring)  
+            else:
+                self.doOutput('\tNo traffic seen\n\n') 
 
     def determineType(self, data):
         """
@@ -251,9 +274,9 @@ class httpDecode(Base):
                 r = dpkt.http.Request(d) 
                 log = self._get_log_entry(r, state)
                 if log['ip'] in self.options['honeypots']:
-                     self.request_log.append([log['ts'], log])  
+                     self.requested_log[log['ip']].append([log['ts'], log])  
                 else:
-                     self.served_log.append([log['ts'], log])
+                     self.served_log[f.dst].append([log['ts'], log])
                 state.decoded = r
                 r.request = req
                 if not getattr(r, "data"):
@@ -332,12 +355,14 @@ class httpDecode(Base):
                     realname = 'index.html' 
                 fn = renameFile(state, realname)
                 id, m5 = self.id.identify(state)
-                if 'outgoing' in fn:
-                    self.doOutput("%s requested %s (%s) at %s\n" % (state.flow.dst, url, user_agent, self.tf(state.ts)))
-                    self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5))
-                elif self.options['print_http_served'] == 'YES': 
-                    self.doOutput("%s served %s (%s) at %s\n" % (state.flow.src, url, user_agent, self.tf(state.ts)))
-                    self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5))                         
+                if 'outgoing' in fn:                   
+                    outstring = "%s requested %s (%s) at %s\n" % (state.flow.dst, url, user_agent, self.tf(state.ts))
+                    outstring = outstring + "\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5)
+                    self.requested_files[state.flow.dst].append([state.ts, outstring])
+                else:
+                    outstring = "%s served %s (%s) at %s\n" % (state.flow.src, url, user_agent, self.tf(state.ts))
+                    outstring = outstring + "\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5)
+                    self.served_files[state.flow.src].append([state.ts, outstring])
 
     def extractHeaders(self, state, d):
         """
