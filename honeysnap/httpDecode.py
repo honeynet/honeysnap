@@ -128,7 +128,43 @@ class httpDecode(Base):
         self.options = hs.getOptions()  
         self.tf = self.options['time_convert_fn']
         self.statemgr = None
-        self.id = flowIdentify()
+        self.id = flowIdentify() 
+        self.served_log = []
+        self.request_log = []
+     
+    # next two functions adapted from dsniff    
+    def _get_http_user(self, r):
+        if 'authorization' in r.headers:
+            scheme, auth = r.headers['authorization'].split(None, 1)
+            if scheme == 'Basic':
+                return base64.decodestring(auth).split(':')[0]
+        return '-'    
+    
+    def _get_log_entry(self, r, state):
+        """return a dict of header info ready for printing
+        r = dpkt.http.Response, state = honeysnap.flow.state
+        """    
+        f = state.flow
+        d = { 'method':r.method, 'uri':r.uri, 'ip': f.src }
+        d['user'] = self._get_http_user(r)
+        d['host'] = r.headers.get('host', f.dst)
+        for k in ('referer', 'user-agent'):
+            d[k] = r.headers.get(k, '-')
+        d['ts'] = state.ts
+        return d
+    
+    def print_logfiles(self):            
+        self.request_log.sort()          
+        self.served_log.sort()       
+        for item in ['request_log', 'served_log']:
+            if self.__dict__[item]:
+                self.doOutput("\n%s:\n\n" % item)
+                for (ts, log) in self.__dict__[item]:
+                    log['ts'] = self.tf(log['ts'])
+                    self.doOutput(repr('%(ip)s - %(user)s [%(ts)s] '
+                        '"%(method)s http://%(host)s%(uri)s" - - '
+                        '"%(referer)s" "%(user-agent)s"' % log).strip("'")) 
+                    self.doOutput('\n')
 
     def determineType(self, data):
         """
@@ -212,7 +248,12 @@ class httpDecode(Base):
                 #print 'decode:request:'
                 #print 'decode: %s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)
                 # The following line does essentially all the work:
-                r = dpkt.http.Request(d)
+                r = dpkt.http.Request(d) 
+                log = self._get_log_entry(r, state)
+                if log['ip'] in self.options['honeypots']:
+                     self.request_log.append([log['ts'], log])  
+                else:
+                     self.served_log.append([log['ts'], log])
                 state.decoded = r
                 r.request = req
                 if not getattr(r, "data"):
