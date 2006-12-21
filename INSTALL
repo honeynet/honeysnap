@@ -10,7 +10,7 @@ broken down into the following parts.
 1: Dependencies
 2: Installation on a Linux/Unix/OS X Workstation
 3: Installation on Windows
-4: Installation on a Honeywapp
+4: Installation on a Honeywall
 5: Running Honeysnap
 
 
@@ -105,7 +105,7 @@ To make Python easily available on the command line, right click
 on "My Computer" and select Properties. Then go to Advanced and
 choose Environment Variables. Add to the end of the PATH variable 
 
- ;%SystemRoot%\Python24;%SystemRoot%\Python24\Scripts
+ ;C:\Python24;C:\Python24\Scripts
 
 (assuming you installed Python to the default location). If you 
 don't already have setuptools installed, you'll need to download 
@@ -122,35 +122,72 @@ dependencies.
                  
 4: INSTALLATION ON A HONEYWALL
 ==============================
+                 
+You cannot install in the same way as for a workstation on
+a production honeywall, as it has no gcc compiler and
+python 2.3 not 2.4. Follow these steps instead.
 
-Note: You cannot install in the same way as for a workstation on
-a production honeywall, as it has no gcc compiler. Instead, do:
+i) Install gcc
 
-  $ sudo yum install gcc 
+Edit legacy-base and legacy-updates repo files to enable the repos and
+disable GPG key checking
 
-Then you must install python 2.4 or later. libpcap will already be 
-installed, so only the python parts need installing.  For Fedora Core 
-3, create "/etc/yum.repos.d/python24.repo" with the following lines:
+Edit /etc/yum.repos.d/legacy-base.repo to read:
 
-  [python24]
-  name=Fedora Core $releasever - $basearch - Python 2.4
-  baseurl=http://www.python.org/ftp/python/2.4/rpms/fedora-3/
-  enabled=1
-  gpgcheck=1
+[legacy-base]
+name=Fedora Legacy 3 - $basearch - Base
+baseurl=http://download.fedoralegacy.org/fedora/3/os/$basearch
+exclude=perl-GD snort wireshark
+enabled=1
+gpgcheck=0
+gpgkey=http://www.fedoralegacy.org/FEDORA-LEGACY-GPG-KEY
 
-Add this line to "/etc/yum.repos.d/python24.repo" and yum
-will prompt for import of non-existant KRUD-GPG-KEY:
+Edit /etc/yum.repos.d/legacy-updates.repo to read:
 
+[legacy-updates]
+name=Fedora Legacy 3 - $basearch - Updates
+baseurl=http://download.fedoralegacy.org/fedora/3/updates/$basearch
+exclude=perl-GD snort wireshark
+enabled=1
+gpgcheck=0
+gpgkey=http://www.fedoralegacy.org/FEDORA-LEGACY-GPG-KEY
+
+ii) Install gcc
+
+$ yum install gcc
+
+iii) Install python 2.4
+
+Create "/etc/yum.repos.d/python24.repo":
+
+[python24]
+name=Fedora Core $releasever - $basearch - Python 2.4
+baseurl=http://www.python.org/ftp/python/2.4/rpms/fedora-3/
+enabled=1
+gpgcheck=1
 gpgkey=http://www.python.org/ftp/python/2.4/rpms/KRUD-GPG-KEY
 
-Install Python 2.4 by running: 
+$ yum install python2.4 python2.4-devel
 
-  $ sudo yum install python2.4
+iv) Install pypcap
 
-Then follow the instructions for a workstation asabove, but replacing calls to 'python' 
-with 'python2.4'. e.g.
+$ wget http://www.monkey.org/~dugsong/pypcap/pypcap-1.1.tar.gz
+$ tar xzvf pypcap-1.1.tar.gz
+$ cd pypcap-1.1
+$ python2.4 setup.py config
+$ python2.4 setup.py build
+$ python2.4 setup.py install
 
-  $ sudo python2.4 setup.py install
+v) Install Honeysnap
+
+$ wget http://www.honeynet.org/tools/honeysnap/honeysnap-1.0.3.tar.gz
+$ tar xzvf honeysnap-1.0.3.tar.gz
+$ cd honeysnap-1.0.3
+$ python2.4 setup.py install
+
+vi) Test!
+
+$ honeysnap --version
 
 
 5: Running honeysnap

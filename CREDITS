@@ -5,6 +5,7 @@ Code:
 Jed Haile and Arthur Clune
 
 IRC Decoding code: Jeff Nathan
+DNS Code: David Barroso
 
 Original shell Honeysnap concept:
 
@@ -14,8 +15,8 @@ With thanks to the following for bug fixes, suggestions and comments:
 
 Dave Dittrich
 William Salusky
-David Barosso  (DNS code)
 David Watson  
 Ralph Logan
 Mike Davies
-Adli Abdul Wahid
+Adli Abdul Wahid  
+Steve Mumford

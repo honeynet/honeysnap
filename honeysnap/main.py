@@ -379,7 +379,6 @@ def parseOptions():
             'honeypots'         : None,
             'config'            : None,
             'filename'          : None,
-        	'mask' 				: '*',
         	'wordfile'          : None,
         	'files'             : None, 
         	'use_utc'           : 'NO', 
@@ -406,7 +405,7 @@ def parseOptions():
     		'output_data_directory'   : 'output',
     }  
          
-    parser = OptionParser(option_class=MyOption, version="%sprog %s" % ('%', VERSION))         
+    parser = OptionParser(option_class=MyOption, version="%s" % VERSION)         
         
     parser.add_option("-c", "--config", dest="config",type="string",
         help="Config file")
@@ -416,10 +415,6 @@ def parseOptions():
         help="Write output to DIR, defaults to 'analysis'", metavar="DIR")
     parser.add_option("-H", "--honeypots", dest="honeypots", action="extend", type="string",
         help="Comma delimited list of honeypots")
-    parser.add_option("-d", "--dir", dest="files", type="string",
-        help="Directory containing timestamped log directories. If this flag is set then honeysnap will run in batch mode. To limit which directories to parse, use -m (--mask)", metavar="FILE")
-    parser.add_option("-m", "--mask", dest="mask", type="string",
-        help = "Mask to limit which directories are recursed into.")
     parser.add_option("-w", "--words", dest="wordfile", type="string",
         help = "Pull wordlist from FILE", metavar="FILE")     
         
@@ -523,7 +518,6 @@ def main():
     """Set everything off and handle files/stdin etc"""
     
     print_help, options, args = parseOptions()
-    
     if len(sys.argv)>1:   
         if options['honeypots'] is None:
             print "No honeypots specified. Please use either -H or config file to specify honeypots.\n"
@@ -543,24 +537,6 @@ def main():
                 else:
                     print "File not found: %s" % f
                     sys.exit(2)
-        # -d was an option
-        elif options['files']:
-            if os.path.exists(options['files']) and os.path.isdir(options['files']):
-                for root, dirs, files in os.walk(options['files']):
-                    #print root, dirs, files
-                    if fnmatch(root, options['mask']):
-                        # this root matches the mask function
-                        # find all the log files
-                        #f  = [j for j in files if fnmatch(j, "log*")]
-                        f  = [j for j in files]
-                        # process each log file
-                        if len(f):
-                            for i in f:
-                                processFile(root+"/"+i)
-            else:
-                print "File not found: %s" % options['files']
-                sys.exit(2)
-
         # no args indicating files, read from stdin
         else:
             # can't really do true stdin input, since we repeatedly parse
