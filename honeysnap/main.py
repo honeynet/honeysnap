@@ -180,19 +180,19 @@ def processFile(file):
                 outputs = (fileout,)                  
             for output in outputs:
                 s.setOutput(output)
-                s.doOutput("\nINCOMING CONNECTIONS FOR %s\n" % hp)             
+                s.doOutput("\nIncoming connections for %s\n" % hp)             
                 s.writeResults(limit=options["flow_count_limit"])
             del p
 
 
     if options["do_outgoing"] == "YES":
         for hp in options["honeypots"]:     
-            out("Counting outgoing connections for %s\n" % hp)
+            out("\nCounting outgoing connections for %s\n" % hp)
             outdir = options["output_data_directory"] + "/%s/conns" % hp
             make_dir(outdir)
             p = pcap.pcap(tmpf)
             s = Summarize(p)
-            filt = 'src host %s' % hp
+            filt = 'src host %s' % hp   
             s.setFilter(filt, file)
             s.start()
             fileout = rawPathOutput(outdir+"/outgoing.txt", mode="a")  
@@ -202,7 +202,7 @@ def processFile(file):
                 outputs = (fileout,)
             for output in outputs:
                 s.setOutput(output) 
-                s.doOutput("\nOUTGOING CONNECTIONS FOR %s\n" % hp)                 
+                s.doOutput("\nOutgoing connections for %s\n" % hp)                 
                 s.writeResults(limit=options["flow_count_limit"])  
             del p
                 
@@ -414,7 +414,7 @@ def parseOptions():
     parser.add_option("-f", "--file", dest="filename",type="string",
         help="Write report to FILE", metavar="FILE")
     parser.add_option("-o", "--output", dest="output_data_directory",type="string",
-        help="Write output to DIR, defaults to 'analysis'", metavar="DIR")
+        help="Write output to DIR, defaults to 'output'", metavar="DIR")
     parser.add_option("-H", "--honeypots", dest="honeypots", action="extend", type="string",
         help="Comma delimited list of honeypots")
     parser.add_option("-w", "--words", dest="wordfile", type="string",
@@ -435,7 +435,8 @@ def parseOptions():
         help = "Summarise outgoing traffic flows")
     parser.add_option("--print-verbose", dest="print_verbose", action="store_const", const="YES",
         help = "Print verbose flow counts to screen as well as storing in a file (needs --do-incoming or --do-outgoing)")  
-    parser.add_option("--flow-count-limit", dest="flow_count_limit", type="int", help = "Limit flow counts to top N items")
+    parser.add_option("--flow-count-limit", dest="flow_count_limit", type="int", 
+        help = "Only print/write to file flows with more than N packets? 0 = all")
     parser.add_option("--do-dns", dest="do_dns", action="store_const", const="YES",
         help = "Extract DNS data") 
     parser.add_option("--do-http", dest="do_http", action="store_const", const="YES",
@@ -451,11 +452,11 @@ def parseOptions():
     parser.add_option("--do-irc", dest="do_irc", action="store_const", const="YES",
         help = "Summarize IRC and extract irc detail")
     parser.add_option("--irc-ports", action="callback", callback=store_int_array, dest="irc_ports", type="string",
-        help = "Ports for IRC traffic")   
+        help = "Ports for IRC traffic (default 6667)")   
     parser.add_option("--irc-limit", dest="irc_limit", type="int", help = "Limit IRC summary to top N items")
     parser.add_option("--do-sebek", dest="do_sebek", action="store_const", const="YES",
         help = "Extract Sebek data")
-    parser.add_option("--sebek-port", dest="sebek_port", type="int", help = "Port for sebek traffic")    
+    parser.add_option("--sebek-port", dest="sebek_port", type="int", help = "Port for sebek traffic (default 1101)")    
     parser.add_option("--sebek-excludes", dest="sebek_excludes", action="extend", type="string",
         help = "Exclude these commands when printing sebek output")  
     parser.add_option("--sebek-all-data", dest="sebek_all_data", action="store_const", const="YES",
@@ -477,9 +478,9 @@ def parseOptions():
                     for i in opts: 
                         if i[0] == 'irc_ports':
                             fileopts[i[0]] = [ int(n) for n in i[1].split(',') ]
-                        elif i[0] == 'irc_limit': 
+                        elif i[0] == 'flow_count_limit' or i[0]=='irc_limit' or i[0]=='sebek_port':
                             fileopts[i[0]] = int(i[1]) 
-                        elif i[0] == 'honeypots' or i[0]=='sebek_exclude':
+                        elif i[0] == 'honeypots' or i[0]=='sebek_excludes':
                             fileopts[i[0]] = i[1].split()
                         else:  
                             fileopts[i[0]] = i[1] 

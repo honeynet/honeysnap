@@ -63,12 +63,6 @@ E.g. for version 1.0.4:
   $ cd honeysnap-1.0.4
   $ sudo python setup.py install
 
-Please note that this will install the honeysnap script into your
-PATH, usually in /usr/bin. If this isn't what you want, specify
---script-dir. e.g
-
-  $ sudo python setup.py --script-dir=/usr/local/bin install
-       
 If you already have easy_install installed, you can simplify the
 installation process further by simply executing the following.
 
@@ -76,6 +70,13 @@ installation process further by simply executing the following.
 
 This is exactly the same as untar'ing the distribution and
 running 'sudo python setup.py install'
+
+Please note that this will install the honeysnap script into your
+PATH, usually in /usr/bin. If this isn't what you want, specify
+--script-dir. e.g
+
+$ sudo easy_install --script-dir /usr/local/bin honeysnap-1.0.3.tar.gz
+
 
 Some notes on python 2.5 and OS/X     
 ---------------------------------
