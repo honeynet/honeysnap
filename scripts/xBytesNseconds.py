@@ -19,7 +19,7 @@
 #
 ################################################################################
 
-# $Id: xBytesNseconds.py 4518 2006-10-11 21:54:24Z jed $
+# $Id$
 
 import honeysnap   
 from honeysnap.util import check_pcap_file
