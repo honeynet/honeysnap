@@ -311,6 +311,7 @@ def processFile(file):
         de.registerPlugin(decode.decode)
         de.start()
         de.dump_extract()
+        decode.print_summary() 
         del de
         del p
 
@@ -326,6 +327,7 @@ def processFile(file):
         de.registerPlugin(decode.decode)
         de.start()
         de.dump_extract()
+        decode.print_summary() 
         del de
         del p
 
@@ -402,7 +404,7 @@ def parseOptions():
             'flow_count_limit'  :  0,
             'do_dns'            : 'NO',
             'do_http'           : 'NO',
-            'print_http_served' : 'NO',
+            'print_served'      : 'NO',
             'print_http_logs'   : 'NO',
             'do_ftp'            : 'NO',
             'do_smtp'           : 'NO',
@@ -436,8 +438,8 @@ def parseOptions():
     parser.add_option("--raw-time", dest="raw_time", action="store_const", const="YES",
         help = "Just print raw timestamps? (Overrides --use-utc)")
 
-    parser.add_option("--do-pcap", dest="do_pcap", action="store_const", const="YES",
-        help = "Summarise pcap info")
+    #parser.add_option("--do-pcap", dest="do_pcap", action="store_const", const="YES",
+    #    help = "Summarise pcap info")
     parser.add_option("--do-packets", dest="do_packets", action="store_const", const="YES",
         help = "Summarise packet counts")
     parser.add_option("--do-incoming", dest="do_incoming", action="store_const", const="YES",
@@ -452,8 +454,8 @@ def parseOptions():
         help = "Extract DNS data")
     parser.add_option("--do-http", dest="do_http", action="store_const", const="YES",
         help = "Extract http data")
-    parser.add_option("--print-http-served", dest="print_http_served", action="store_const", const="YES",
-        help = "Print extracted files served by the honeypot(s)? (Requires --do-http)")
+    parser.add_option("--print-served", dest="print_served", action="store_const", const="YES",
+        help = "Print extracted files served by the honeypot(s)? (Requires --do-http, --do-ftp or --do-smtp)")
     parser.add_option("--print-http-logs", dest="print_http_logs", action="store_const", const="YES",
         help = "Print http requests in log file format? (Requires --do-http)")
     parser.add_option("--do-ftp", dest="do_ftp", action="store_const", const="YES",

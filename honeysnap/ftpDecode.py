@@ -25,19 +25,16 @@ from util import renameFile
 from flow import reverse as freverse
 import tcpflow
 import pcap
-from singletonmixin import HoneysnapSingleton
 from flowIdentify import flowIdentify
-from base import Base
+from flowDecode import flowDecode
 from output import stringMessage
 
 cmds = ['STOR', 'STOU', 'RETR', 'LIST', 'NLST', 'APPE']
 
-class ftpDecode(Base):
+class ftpDecode(flowDecode):
 
     def __init__(self):
-        Base.__init__(self) 
-        hs = HoneysnapSingleton.getInstance()  
-        self.options = hs.getOptions() 
+        super(ftpDecode, self).__init__()
         self.tf = self.options['time_convert_fn']
         self.statemgr = None
         # for some reason the data samples I'm using
@@ -54,6 +51,9 @@ class ftpDecode(Base):
         self.id = flowIdentify()
         self.msg = stringMessage()
 
+    def print_summary(self):            
+        """Print summary info"""  
+        super(ftpDecode, self).print_summary('\nFTP summary for %s\n\n') 
 
     def decode(self, state, statemgr):
         self.statemgr = statemgr  
@@ -118,10 +118,10 @@ class ftpDecode(Base):
                     if rstate is not None:
                         fn = renameFile(rstate, filename)
                         id, m5 = self.id.identify(rstate)  
-                        self.doOutput("%s requested %s from %s (%s, %s) at %s\n" % (rstate.flow.dst, filename, 
-                            rstate.flow.src, username, password, self.tf(rstate.ts)))
-                        self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5))
-
+                        output = "%s requested %s from %s (%s, %s) at %s\n\tfile: %s, filetype: %s, md5 sum: %s\n" % (rstate.flow.dst, filename, 
+                            rstate.flow.src, username, password, self.tf(rstate.ts), fn, id, m5)
+                        hp, direction = self.find_sense(rstate.flow.src, rstate.flow.dst) 
+                        self.__dict__[direction][hp].append([state.ts, output])
 
     def extractPassive(self, state, d): 
         #print "Passive FTP"
@@ -203,10 +203,10 @@ class ftpDecode(Base):
             if rstate is not None:
                 fn = renameFile(rstate, filename)
                 id, m5 = self.id.identify(rstate) 
-                self.doOutput("%s requested %s from %s (%s, %s) at %s\n" % (rstate.flow.dst, filename, 
-                    rstate.flow.src, username, password, self.tf(rstate.ts)))
-                self.doOutput("\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5))
-
+                output = "%s -> %s, %s (%s, %s) at %s\n\tfile: %s, filetype: %s, md5 sum: %s\n" % (rstate.flow.dst, state.flow.src, 
+                    filename, username, password, self.tf(rstate.ts), fn, id, m5)
+                hp, direction = self.find_sense(rstate.flow.src, rstate.flow.dst) 
+                self.__dict__[direction][hp].append([state.ts, output])
 
 
 

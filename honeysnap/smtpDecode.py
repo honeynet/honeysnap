@@ -21,18 +21,19 @@
 # $Id$
 
 from util import renameFile
-from base import Base
-from singletonmixin import HoneysnapSingleton
+from flowDecode import flowDecode
 
 
-class smtpDecode(Base):
+class smtpDecode(flowDecode):
     def __init__(self):
-        Base.__init__(self) 
-        hs = HoneysnapSingleton.getInstance()  
-        self.options = hs.getOptions()
+        super(smtpDecode, self).__init__() 
         self.tf = self.options['time_convert_fn']
         self.statemgr = None
         self.count = 0
+       
+    def print_summary(self):            
+        """Print summary info"""  
+        super(smtpDecode, self).print_summary('\nSMTP summary for %s\n\n')       
         
     def decode(self, state, statemgr):
         self.statemgr = statemgr
@@ -50,9 +51,11 @@ class smtpDecode(Base):
             realname = "mail-message-%d" % self.count
             self.count +=1 
             fn = renameFile(state, realname)
-            # assume the first entry in each list is the correct one 
+            # assume the first entry in each list is the correct one
+            hp, direction = self.find_sense(state.flow.src, state.flow.dst)
             if len(subject) == 0:
-                self.doOutput("%s sent SMTP to %s, %s at %s\n" % (state.flow.src, state.flow.dst, ",".join(to), self.tf(state.ts)))
+                self.__dict__[direction][hp].append([state.ts, \
+                    "%s -> %s, %s at %s\n\tfile: %s\n" % (state.flow.src, state.flow.dst, ",".join(to), self.tf(state.ts), fn)])
             else:
-                self.doOutput("%s sent SMTP %s, subject %s at %s\n" % (state.flow.src, state.flow.dst, ",".join(to), " ".join(subject), self.tf(state.ts))) 
-            self.doOutput("\tfile: %s\n" % fn)
+                self.__dict__[direction][hp].append([state.ts, \
+                    "%s -> %s, subject %s at %s\nfile: %s\n" % (state.flow.src, state.flow.dst, ",".join(to), " ".join(subject), self.tf(state.ts), fn)])

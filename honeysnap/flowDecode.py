@@ -19,9 +19,48 @@
 ################################################################################
 
 # $Id$
+                     
+from base import Base          
+from singletonmixin import HoneysnapSingleton 
 
-class flowDecode(object):
+class flowDecode(Base):
     """Base class to handle output for things like http/ftp/smtp decoding"""
     def __init__(self):
-        pass
-
+        super(flowDecode, self).__init__()  
+        hs = HoneysnapSingleton.getInstance() 
+        self.options = hs.getOptions()   
+        self.requested_files = {}
+        self.served_files = {}
+        for hp in self.options['honeypots']: 
+            self.served_files[hp] = [] 
+            self.requested_files[hp] = []
+                                              
+    def print_summary(self, message):                        
+        """Generic function to print time ordered set of messages"""
+        for hp in self.options['honeypots']:                 
+            self.doOutput(message % hp)
+            if self.requested_files[hp] or self.served_files[hp]:  
+                for item in ['requested_files', 'served_files']:  
+                    if item == 'served_files' and self.options['print_served'] != 'YES':
+                        self.doOutput('\n%s requests served by honeypot\n' % len(self.served_log[hp]))
+                        break                    
+                    a = self.__dict__[item][hp]
+                    if a:    
+                        self.doOutput("\n%s:\n\n" % item)
+                        a.sort()
+                        for (ts, outstring) in a:  
+                            self.doOutput(outstring)
+                    else:
+                        self.doOutput("\n%s: No files seen\n\n" % item) 
+            else:
+                self.doOutput('\tNo traffic seen\n\n')    
+ 
+    def find_sense(self, src, dst):
+        """work out if a file is served by or requested from a HP"""
+        if src in self.options['honeypots']:
+            hp = src
+            direction = 'served_files'
+        else:
+            hp = dst      
+            direction = 'requested_files'
+        return (hp, direction)    
