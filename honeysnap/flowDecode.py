@@ -42,7 +42,7 @@ class flowDecode(Base):
             if self.requested_files[hp] or self.served_files[hp]:  
                 for item in ['requested_files', 'served_files']:  
                     if item == 'served_files' and self.options['print_served'] != 'YES':
-                        self.doOutput('\n%s requests served by honeypot\n' % len(self.served_log[hp]))
+                        self.doOutput('\n%s requests served by honeypot\n' % len(self.served_files[hp]))
                         break                    
                     a = self.__dict__[item][hp]
                     if a:    
@@ -55,7 +55,7 @@ class flowDecode(Base):
             else:
                 self.doOutput('\tNo traffic seen\n\n')    
  
-    def find_sense(self, src, dst):
+    def add_flow(self, ts, src, dst, message):
         """work out if a file is served by or requested from a HP"""
         if src in self.options['honeypots']:
             hp = src
@@ -63,4 +63,4 @@ class flowDecode(Base):
         else:
             hp = dst      
             direction = 'requested_files'
-        return (hp, direction)    
+        self.__dict__[direction][hp].append( [ts, message])

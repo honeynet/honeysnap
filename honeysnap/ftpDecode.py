@@ -120,8 +120,7 @@ class ftpDecode(flowDecode):
                         id, m5 = self.id.identify(rstate)  
                         output = "%s requested %s from %s (%s, %s) at %s\n\tfile: %s, filetype: %s, md5 sum: %s\n" % (rstate.flow.dst, filename, 
                             rstate.flow.src, username, password, self.tf(rstate.ts), fn, id, m5)
-                        hp, direction = self.find_sense(rstate.flow.src, rstate.flow.dst) 
-                        self.__dict__[direction][hp].append([state.ts, output])
+                        self.add_flow(rstate.ts, rstate.flow.src, rstate.flow.dst, output)
 
     def extractPassive(self, state, d): 
         #print "Passive FTP"
@@ -205,8 +204,7 @@ class ftpDecode(flowDecode):
                 id, m5 = self.id.identify(rstate) 
                 output = "%s -> %s, %s (%s, %s) at %s\n\tfile: %s, filetype: %s, md5 sum: %s\n" % (rstate.flow.dst, state.flow.src, 
                     filename, username, password, self.tf(rstate.ts), fn, id, m5)
-                hp, direction = self.find_sense(rstate.flow.src, rstate.flow.dst) 
-                self.__dict__[direction][hp].append([state.ts, output])
+                self.add_flow(rstate.ts, rstate.flow.src, rstate.flow.dst, output)
 
 
 

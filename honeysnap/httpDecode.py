@@ -344,10 +344,9 @@ class httpDecode(flowDecode):
                     realname = 'index.html' 
                 fn = renameFile(state, realname)
                 id, m5 = self.id.identify(state) 
-                hp, direction = self.find_sense(state.flow.src, state.flow.dst) 
                 outstring = "%s -> %s, %s (%s) at %s\n" % (state.flow.src, state.flow.dst, url, user_agent, self.tf(state.ts))
                 outstring = outstring + "\tfile: %s, filetype: %s, md5 sum: %s\n" %(fn,id,m5)
-                self.__dict__[direction][hp].append([state.ts, outstring]) 
+                self.add_flow(state.ts, state.flow.src, state.flow.dst, outstring)
 
     def extractHeaders(self, state, d):
         """

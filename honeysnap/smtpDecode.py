@@ -52,10 +52,10 @@ class smtpDecode(flowDecode):
             self.count +=1 
             fn = renameFile(state, realname)
             # assume the first entry in each list is the correct one
-            hp, direction = self.find_sense(state.flow.src, state.flow.dst)
-            if len(subject) == 0:
-                self.__dict__[direction][hp].append([state.ts, \
-                    "%s -> %s, %s at %s\n\tfile: %s\n" % (state.flow.src, state.flow.dst, ",".join(to), self.tf(state.ts), fn)])
+            if len(subject) == 0:    
+                output = "%s -> %s, %s at %s\n\tfile: %s\n" % (state.flow.src, state.flow.dst, 
+                                                                ",".join(to), self.tf(state.ts), fn)
             else:
-                self.__dict__[direction][hp].append([state.ts, \
-                    "%s -> %s, subject %s at %s\nfile: %s\n" % (state.flow.src, state.flow.dst, ",".join(to), " ".join(subject), self.tf(state.ts), fn)])
+                output = "%s -> %s, subject %s at %s\nfile: %s\n" % (state.flow.src, state.flow.dst,
+                                                                    ",".join(to), " ".join(subject), self.tf(state.ts), fn)
+            self.add_flow(state.ts, state.flow.src, state.flow.dst, output)
