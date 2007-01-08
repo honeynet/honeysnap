@@ -30,10 +30,6 @@ VERSION=1.0
 class threshholdFlows(object):
 
     def __init__(self):
-        """
-        xBytesnSecs extracts flow statistics for tcp or udp flows that are greater than X bytes and less
-        than N seconds.
-        """
         # we use HoneysnapSingleton to store options
         hs = honeysnap.singletonmixin.HoneysnapSingleton.getInstance()
         options = hs.getOptions()
@@ -146,7 +142,7 @@ def main():
     options['time_convert_fn'] = lambda x: time.asctime(time.gmtime(x))
     # set up the singleton to hold our globals
     hsingleton = honeysnap.singletonmixin.HoneysnapSingleton.getInstance(options)
-    # create an instance of the xBytes class
+    # create an instance of the thresholdFlows class
     summ = threshholdFlows()
 
     # figure out if reading from a file or from stdin

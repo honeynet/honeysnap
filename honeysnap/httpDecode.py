@@ -129,8 +129,8 @@ class httpDecode(flowDecode):
         self.served_log = {}
         self.requested_log = {}
         for hp in self.options['honeypots']: 
-            self.served_log[hp] = [] 
-            self.requested_log[hp] = []
+            self.served_log[hp] = {} 
+            self.requested_log[hp] = {}
      
     # next two functions adapted from dsniff    
     def _get_http_user(self, r):
@@ -140,18 +140,25 @@ class httpDecode(flowDecode):
                 return base64.decodestring(auth).split(':')[0]
         return '-'    
     
-    def _get_log_entry(self, r, state):
+    def _get_log_entry(self, request, response, src, dst, ts):
         """return a dict of header info ready for printing
         r = dpkt.http.Response, state = honeysnap.flow.state
         """    
-        f = state.flow
-        d = { 'method':r.method, 'uri':r.uri, 'ip': f.src }
-        d['user'] = self._get_http_user(r)
-        d['host'] = r.headers.get('host', f.dst)
+        d = { 'method':request.method, 'uri':request.uri, 'ip': src }
+        d['user'] = self._get_http_user(request)
+        d['host'] = request.headers.get('host', dst)
         for k in ('referer', 'user-agent'):
-            d[k] = r.headers.get(k, '-')
-        d['ts'] = state.ts
+            d[k] = request.headers.get(k, '-')
+        d['ts'] = ts     
+        d['status'] = response.__dict__.get('status', '-')
         return d
+        
+    def _add_log_entry(self, request, response, src, dst, ts):    
+        log = self._get_log_entry(request, response, src, dst, ts)
+        if log['ip'] in self.options['honeypots']:
+             self.requested_log[log['ip']][log['ts']]=log
+        else:
+             self.served_log[dst][log['ts']]=log
     
     def print_summary(self):            
         """Print summary info"""  
@@ -163,14 +170,15 @@ class httpDecode(flowDecode):
                     for item in ['requested_log', 'served_log']: 
                         if item == 'served_log' and self.options['print_served'] != 'YES':
                             break
-                        a = self.__dict__[item][hp]
+                        a = self.__dict__[item][hp].keys()
                         if a:
                             a.sort()         
                             self.doOutput("\n%s:\n\n" % item)
-                            for (ts, log) in a:
+                            for ts in a: 
+                                log = self.__dict__[item][hp][ts]
                                 log['ts'] = self.tf(log['ts'])  
                                 outstring = repr('%(ip)s - %(user)s [%(ts)s] '
-                                    '"%(method)s http://%(host)s%(uri)s" - - '
+                                    '"%(method)s http://%(host)s%(uri)s" %(status)s - '
                                     '"%(referer)s" "%(user-agent)s"' % log).strip("'") 
                                 self.doOutput('%s\n' % outstring)   
                         else:
@@ -226,7 +234,7 @@ class httpDecode(flowDecode):
             try:
                 #print 'decode:response:'
                 #print 'decode:%s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)
-                r = dpkt.http.Response(d)
+                r = dpkt.http.Response(d)   
                 r.request = req
                 if not getattr(r, "data"):
                     r.data = None
@@ -246,7 +254,8 @@ class httpDecode(flowDecode):
                     r = myMessage()
                     r.headers = headers
                     r.body = state.fp.readlines()
-                    r.data = None
+                    r.data = None   
+                    r.status = "-"
                     r.request = req
                     state.decoded = r
                     state.close()
@@ -261,11 +270,6 @@ class httpDecode(flowDecode):
                 #print 'decode: %s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)
                 # The following line does essentially all the work:
                 r = dpkt.http.Request(d) 
-                log = self._get_log_entry(r, state)
-                if log['ip'] in self.options['honeypots']:
-                     self.requested_log[log['ip']].append([log['ts'], log])  
-                else:
-                     self.served_log[f.dst].append([log['ts'], log])
                 state.decoded = r
                 r.request = req
                 if not getattr(r, "data"):
@@ -299,10 +303,14 @@ class httpDecode(flowDecode):
         rs = self.statemgr.find_flow_state(freverse(state.flow)) 
         if not rs:
             return
-        if rs.decoded:      
+        if rs.decoded:  
             self._renameFlow(state, t)
         else:                                    
             self.decode(rs, self.statemgr)
+        if t == 'request':
+            self._add_log_entry(r, rs.decoded, f.src, f.dst, state.ts) 
+        elif t == 'response':
+            self._add_log_entry(rs.decoded, r, f.dst, f.src, rs.ts) 
 
 
     def _renameFlow(self, state, t):
