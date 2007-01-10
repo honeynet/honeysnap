@@ -210,19 +210,24 @@ class sebekDecode(base.Base):
     def print_summary(self):
         """Print our data"""
         excludes = self.excludes
+        count = [ 0 for exclude in excludes ] 
+        print_count = 0
         if len(self.output['keystrokes'])==0 and len(self.output['sbk_write'])==0 and len(self.output['sbk_sock'])==0:
             self.doOutput('No sebek data seen\n')
         else:                                                                                                
             if len(self.output['keystrokes'])>0:
-                count = 0
                 for data in self.output["keystrokes"]:
-                    (coms, line, d) = data
-                    if coms not in excludes and d != "":
-                        self.doOutput('%s %s\n' % (line, d))
-                        count += 1
+                    (com, line, d) = data
+                    try:
+                        index = excludes.index(com)
+                        count[index] += 1
+                    except ValueError:
+                        if d != "":    
+                            self.doOutput('%s %s\n' % (line, d))
+                            print_count += 1 
                     self.fp.write('%s %s\n' % (line, d))                          
-                self.doOutput('\nSaw %s sbk_read/keystroke lines and printed %s\n' % (len(self.output['keystrokes']), count) )     
-                self.doOutput('(screen output excludes commands %s)\n' % excludes)
+                self.doOutput('\nSaw %s sbk_read/keystroke lines and printed %s\n' % (len(self.output['keystrokes']), print_count) )     
+                self.doOutput('(screen output excludes commands %s)\n' % zip(excludes, count))
             for type in ['sbk_write', 'sbk_sock', 'sbk_open']:
                 if len(self.output[type])>0: 
                     self.fp.write('\nSebek %s data\n\n' % type)   
