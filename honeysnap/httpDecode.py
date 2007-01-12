@@ -307,10 +307,11 @@ class httpDecode(flowDecode):
             self._renameFlow(state, t)
         else:                                    
             self.decode(rs, self.statemgr)
-        if t == 'request':
-            self._add_log_entry(r, rs.decoded, f.src, f.dst, state.ts) 
-        elif t == 'response':
-            self._add_log_entry(rs.decoded, r, f.dst, f.src, rs.ts) 
+        if rs.decoded:
+            if t == 'request':
+                self._add_log_entry(r, rs.decoded, f.src, f.dst, state.ts) 
+            elif t == 'response':
+                self._add_log_entry(rs.decoded, r, f.dst, f.src, rs.ts)  
 
 
     def _renameFlow(self, state, t):
