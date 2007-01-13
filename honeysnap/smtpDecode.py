@@ -56,6 +56,6 @@ class smtpDecode(flowDecode):
                 output = "%s -> %s, %s at %s\n\tfile: %s\n" % (state.flow.src, state.flow.dst, 
                                                                 ",".join(to), self.tf(state.ts), fn)
             else:
-                output = "%s -> %s, subject %s at %s\nfile: %s\n" % (state.flow.src, state.flow.dst,
+                output = "%s -> %s, %s, subject %s, at %s\nfile: %s\n" % (state.flow.src, state.flow.dst,
                                                                     ",".join(to), " ".join(subject), self.tf(state.ts), fn)
             self.add_flow(state.ts, state.flow.src, state.flow.dst, output)
