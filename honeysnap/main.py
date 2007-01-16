@@ -77,37 +77,51 @@ class MyOption(Option):
 
 def setFilters(options):
     """Set filters for packet counts"""
-    irc_ports = options["irc_ports"]
-    if len(irc_ports)==1:
-        irc_filter = "dst port %s" % irc_ports[0]
-    else:
-        irc_filter = "("
-        port = [ 'dst port %s' % port for port in irc_ports ]
-        irc_filter = irc_filter + " or ".join(port) + ")"
-    return [
-        ('Total IPv4 packets:', 'host %s and ip'),
-        ('Total TCP packets:', 'host %s and tcp'),
-        ('Total UDP packets (excluding sebek port):', 'host %s and udp and not port %s' % ('%s', options['sebek_port'])),
-        ('Total ICMP packets:', 'host %s and icmp'),
-        ('Total OTHER packets', 'host %s and not udp and not tcp and not icmp'),
-        ('Outbound DNS packets:','src host %s and dst port 53'),
-        ('Inbound DNS packets:','dst host %s and dst port 53'),
-        ('Outbound FTP packets:','src host %s and dst port 21'),
-        ('Inbound FTP packets:','dst host %s and dst port 21'),
-        ('Outbound SSH packets:','src host %s and dst port 22'),
-        ('Inbound SSH packets:','dst host %s and dst port 22'),
-        ('Outbound Telnet packets:','src host %s and dst port 23'),
-        ('Inbound Telnet packets:','dst host %s and dst port 23'),
-        ('Outbound SMTP packets:','src host %s and dst port 25'),
-        ('Inbound SMTP packets:','dst host %s and dst port 25'),
-        ('Outbound HTTP packets:','src host %s and dst port 80'),
-        ('Inbound HTTP packets:','dst host %s and dst port 80'),
-        ('Outbound HTTPS packets:','src host %s and dst port 443'),
-        ('Inbound HTTPS packets:','dst host %s and dst port 443'),
-        ('Outbound IRC packets:','src host %s and tcp and %s' % ('%s', irc_filter)),
-        ('Inbound IRC packets:','dst host %s and tcp and %s' % ('%s', irc_filter)),
-        ('Sebek packets:','src host %s and udp port %s' % ('%s', options["sebek_port"])),
-        ]
+
+    default_filters = []
+
+    if options["disable_default_filters"] == "NO":
+
+        irc_ports = options["irc_ports"]
+        if len(irc_ports)==1:
+            irc_filter = "dst port %s" % irc_ports[0]
+        else:
+            irc_filter = "("
+            port = [ 'dst port %s' % port for port in irc_ports ]
+            irc_filter = irc_filter + " or ".join(port) + ")"
+
+        default_filters = [
+            ('Total IPv4 packets:', 'host %s and ip'),
+            ('Total TCP packets:', 'host %s and tcp'),
+            ('Total UDP packets (excluding sebek port):', 'host %s and udp and not port %s' % ('%s', options['sebek_port'])),
+            ('Total ICMP packets:', 'host %s and icmp'),
+            ('Total OTHER packets', 'host %s and not udp and not tcp and not icmp'),
+            ('Outbound DNS packets:','src host %s and dst port 53'),
+            ('Inbound DNS packets:','dst host %s and dst port 53'),
+            ('Outbound FTP packets:','src host %s and dst port 21'),
+            ('Inbound FTP packets:','dst host %s and dst port 21'),
+            ('Outbound SSH packets:','src host %s and dst port 22'),
+            ('Inbound SSH packets:','dst host %s and dst port 22'),
+            ('Outbound Telnet packets:','src host %s and dst port 23'),
+            ('Inbound Telnet packets:','dst host %s and dst port 23'),
+            ('Outbound SMTP packets:','src host %s and dst port 25'),
+            ('Inbound SMTP packets:','dst host %s and dst port 25'),
+            ('Outbound HTTP packets:','src host %s and dst port 80'),
+            ('Inbound HTTP packets:','dst host %s and dst port 80'),
+            ('Outbound HTTPS packets:','src host %s and dst port 443'),
+            ('Inbound HTTPS packets:','dst host %s and dst port 443'),
+            ('Outbound IRC packets:','src host %s and tcp and %s' % ('%s', irc_filter)),
+            ('Inbound IRC packets:','dst host %s and tcp and %s' % ('%s', irc_filter)),
+            ('Sebek packets:','src host %s and udp port %s' % ('%s', options["sebek_port"])),
+            ]
+
+    if options["user_filter_list"]:
+        if options["disable_default_filters"] == "YES":
+            default_filters = options["user_filter_list"]
+        else:
+            default_filters.extend(options["user_filter_list"])
+
+    return default_filters
 
 def processFile(file):
     """
@@ -379,6 +393,21 @@ def store_int_array(option, opt_str, value, parser):
         raise OptionValueError("Argument %s not an integer!" % opt_str)
     setattr(parser.values, option.dest, a)
 
+def store_filter_array(option, opt_str, value, parser):
+    """Store semi colon separated filters from options into an array."""
+    l_user_filter_list = []
+    l_listOfFilters = value.split(";")
+    for l_filter in l_listOfFilters:
+        l_toks = l_filter.split(",")
+        if len(l_toks) != 2:
+           raise OptionValueError("Filters need a Description string followed by the actual filter")
+        l_label = l_toks[0].strip('" ()').strip("'")
+        l_filter_string = l_toks[1].strip('" ()').strip("'")
+        l_filter_tuple = (l_label, l_filter_string)
+        l_user_filter_list.append(l_filter_tuple)
+
+    setattr(parser.values, "user_filter_list", l_user_filter_list)
+
 def parseOptions():
     """
     Read options from both config file and command line and merge
@@ -392,32 +421,34 @@ def parseOptions():
         'honeypots'         : None,
         'config'            : None,
         'filename'          : None,
-            'wordfile'          : None,
-            'files'             : None,
-            'use_utc'           : 'NO',
-            'raw_time'          : 'NO',
-            'do_pcap'           : 'YES',
-            'do_packets'        : 'NO',
-            'do_incoming'       : 'NO',
-            'do_outgoing'       : 'NO',
-            'print_verbose'     : 'NO',
-            'flow_count_limit'  :  0,
-            'do_dns'            : 'NO',
-            'do_http'           : 'NO',
-            'print_served'      : 'NO',
-            'print_http_logs'   : 'NO',
-            'do_ftp'            : 'NO',
-            'do_smtp'           : 'NO',
-            'do_irc'            : 'NO',
-            'irc_ports'         : [6667],
-            'irc_limit'         : 0,
-            'do_sebek'          : 'NO',
-            'do_telnet'         : 'NO',
-            'sebek_port'        : 1101,
-            'sebek_excludes'    : ["configure", "prelink", "sshd", "sa2", "makewhatis"],
-            'sebek_all_data'    : 'NO',
-            'all_flows'         : 'NO',
-            'output_data_directory'   : 'output',
+        'wordfile'          : None,
+        'files'             : None,
+        'use_utc'           : 'NO',
+        'raw_time'          : 'NO',
+        'do_pcap'           : 'YES',
+        'do_packets'        : 'NO',
+        'do_incoming'       : 'NO',
+        'do_outgoing'       : 'NO',
+        'print_verbose'     : 'NO',
+        'flow_count_limit'  :  0,
+        'do_dns'            : 'NO',
+        'do_http'           : 'NO',
+        'print_served'      : 'NO',
+        'print_http_logs'   : 'NO',
+        'do_ftp'            : 'NO',
+        'do_smtp'           : 'NO',
+        'do_irc'            : 'NO',
+        'irc_ports'         : [6667],
+        'irc_limit'         : 0,
+        'do_sebek'          : 'NO',
+        'do_telnet'         : 'NO',
+        'sebek_port'        : 1101,
+        'sebek_excludes'    : ["configure", "prelink", "sshd", "sa2", "makewhatis"],
+        'sebek_all_data'    : 'NO',
+        'all_flows'         : 'NO',
+        'output_data_directory'   : 'output',
+		'disable_default_filters'   : 'NO',
+		'user_filter_list'	: None,
     }
 
     parser = OptionParser(option_class=MyOption, version="%s" % VERSION)
@@ -478,6 +509,12 @@ def parseOptions():
         help = "Extract all sebek data? Warning - produces a very large amount of data (gigabytes)")
     parser.add_option("--all-flows", dest="all_flows", action="store_const", const="YES",
         help = "Extract data from all tcp flows")
+    parser.add_option("--disable-default-filters", 
+        dest="disable_default_filters", action="store_const", 
+        const="YES", help="Disables default bpf filters")
+    parser.add_option("--user-filter-list", dest="user_filter_list", 
+        help="Appends a user defined bpf filter list. ex: \"Total IPv4 packets:, host %s and ip; Total TCP packets:, host %s and tcp\"", action="callback",
+        callback=store_filter_array, type="string")
 
     # parse command line
     (cmdopts, args) = parser.parse_args()
@@ -497,6 +534,8 @@ def parseOptions():
                             fileopts[i[0]] = int(i[1])
                         elif i[0] == 'honeypots' or i[0]=='sebek_excludes':
                             fileopts[i[0]] = i[1].split()
+                        elif i[0] == 'user_filter_list':
+                            store_filter_array(None, None, i[1], parser)
                         else:
                             fileopts[i[0]] = i[1]
             except ConfigParser.Error:
