@@ -401,10 +401,12 @@ def store_filter_array(option, opt_str, value, parser):
         l_toks = l_filter.split(",")
         if len(l_toks) != 2:
            raise OptionValueError("Filters need a Description string followed by the actual filter")
-        l_label = l_toks[0].strip('" ()').strip("'")
-        l_filter_string = l_toks[1].strip('" ()').strip("'")
+        l_label = l_toks[0].strip("'\"[]")
+        l_filter_string = l_toks[1].strip("'\"[]")
         l_filter_tuple = (l_label, l_filter_string)
         l_user_filter_list.append(l_filter_tuple)
+
+    print l_user_filter_list
 
     setattr(parser.values, "user_filter_list", l_user_filter_list)
 
@@ -513,7 +515,7 @@ def parseOptions():
         dest="disable_default_filters", action="store_const", 
         const="YES", help="Disables default bpf filters")
     parser.add_option("--user-filter-list", dest="user_filter_list", 
-        help="Appends a user defined bpf filter list. ex: \"Total IPv4 packets:, host %s and ip; Total TCP packets:, host %s and tcp\"", action="callback",
+        help="Appends a user defined bpf filter list. ex: \"[Total IPv4 packets:, host %s and ip];[Total TCP packets:, host %s and tcp\"]", action="callback",
         callback=store_filter_array, type="string")
 
     # parse command line
