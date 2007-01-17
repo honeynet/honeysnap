@@ -171,7 +171,7 @@ def processFile(file):
             for hp in options['honeypots']:
                 p = pcap.pcap(tmpf)
                 c = Counter(p)
-                c.setOutput(out)
+                c.setOutput(out)   
                 f = filt % hp
                 c.setFilter(f)
                 c.count()
@@ -394,20 +394,15 @@ def store_int_array(option, opt_str, value, parser):
     setattr(parser.values, option.dest, a)
 
 def store_filter_array(option, opt_str, value, parser):
-    """Store semi colon separated filters from options into an array."""
+    """Store comma/space separated filters from options into an array."""
     l_user_filter_list = []
-    l_listOfFilters = value.split(";")
-    for l_filter in l_listOfFilters:
-        l_toks = l_filter.split(",")
-        if len(l_toks) != 2:
-           raise OptionValueError("Filters need a Description string followed by the actual filter")
-        l_label = l_toks[0].strip("'\"[]")
-        l_filter_string = l_toks[1].strip("'\"[]")
-        l_filter_tuple = (l_label, l_filter_string)
+    for option in re.findall('\[(.*?)\]', value):
+        try:
+            (l_label, l_filter_string) = option.split(",")
+        except ValueError:
+            raise OptionValueError("Cannot embed commas in text or filter string")
+        l_filter_tuple = (l_label, l_filter_string) 
         l_user_filter_list.append(l_filter_tuple)
-
-    print l_user_filter_list
-
     setattr(parser.values, "user_filter_list", l_user_filter_list)
 
 def parseOptions():
@@ -515,7 +510,7 @@ def parseOptions():
         dest="disable_default_filters", action="store_const", 
         const="YES", help="Disables default bpf filters")
     parser.add_option("--user-filter-list", dest="user_filter_list", 
-        help="Appends a user defined bpf filter list. ex: \"[Total IPv4 packets:, host %s and ip];[Total TCP packets:, host %s and tcp\"]", action="callback",
+        help="Appends a user defined bpf filter list. ex: \"[Total IPv4 packets:, host %s and ip],[Total TCP packets:, host %s and tcp\"]", action="callback",
         callback=store_filter_array, type="string")
 
     # parse command line
@@ -572,7 +567,9 @@ def parseOptions():
     if not options.has_key('honeypots'):
         print "No honeypots specified! Please use either -H or the config file to specify some"
         sys.exit(1)
-
+    
+    #print options['user_filter_list']
+    #sys.exit(0)
     return (parser.print_help, options, args)
 
 def main():

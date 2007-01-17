@@ -246,7 +246,7 @@ class httpDecode(flowDecode):
                 #print 'decode:reason: ', r.reason
                 #print 'decode:len(body): ', len(r.body)
                 #print "\n"
-            except dpkt.Error:
+            except (dpkt.Error, ValueError):
                 try:
                     state.open(flags="rb", statemgr=self.statemgr)
                     l = state.fp.readline()
