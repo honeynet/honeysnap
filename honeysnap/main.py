@@ -82,7 +82,7 @@ def setFilters(options):
 
     if options["disable_default_filters"] == "NO":
 
-        irc_ports = options["irc_ports"]
+        irc_ports = options["irc_ports"]["global"]
         if len(irc_ports)==1:
             irc_filter = "dst port %s" % irc_ports[0]
         else:
@@ -267,7 +267,7 @@ def processFile(file):
         out("\nAnalysing IRC\n")
         for hp in options["honeypots"]:
             outdir = options["output_data_directory"] + "/%s/irc" % hp
-            for port in options["irc_ports"] :
+            for port in options["irc_ports"][hp]:
                 out("\nHoneypot %s, port %s\n\n" % (hp, port))
                 hirc = HoneySnapIRC()
                 hirc.connect(tmpf, "host %s and tcp and port %s" % (hp, port))
@@ -568,8 +568,13 @@ def parseOptions():
         print "No honeypots specified! Please use either -H or the config file to specify some"
         sys.exit(1)
     
-    #print options['user_filter_list']
-    #sys.exit(0)
+    # make irc ports per-honeypot
+    irc_port_list = options['irc_ports']
+    options['irc_ports'] = {}  
+    options['irc_ports']['global'] = irc_port_list
+    for hp in options['honeypots']:
+        options['irc_ports'][hp] = irc_port_list
+        
     return (parser.print_help, options, args)
 
 def main():
