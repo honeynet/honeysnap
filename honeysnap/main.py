@@ -568,8 +568,11 @@ def parseOptions():
             print "Can't use --raw-time with --use-utc"
             sys.exit(1)
                                             
-    if not options['honeypots']:
-        print "No honeypots specified! Please use either -H or the config file to specify some"
+    if not options['honeypots']:                                                               
+        if not cmdopts.honeypots:
+            parser.print_help()
+        else:
+            print "No honeypots specified! Please use either -H or the config file to specify some"
         sys.exit(1)
     
     # make irc ports per-honeypot

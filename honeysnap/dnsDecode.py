@@ -62,14 +62,17 @@ class dnsDecode(base.Base):
         """ts timestamp, ip dpkt.ip.IP, payload = dns udp data"""    
         try:                    
             msg = dpkt.dns.DNS(payload)  
-            srcip = inet_ntoa(ip.src)
+            srcip = inet_ntoa(ip.src)   
+            dstip = inet_ntoa(ip.dst)
         except dpkt.Error:    
             return
         except (IndexError, TypeError):
             # dpkt shouldn't do this, but it does in some cases
-            return
+            return   
+
+        #print msg.__dict__
         if msg.qr == dpkt.dns.DNS_A and msg.rcode == dpkt.dns.DNS_RCODE_NOERR and len(msg.an)>0:
-            queried = "%s for " % srcip
+            queried = ""
             if msg.qd[0].type == dpkt.dns.DNS_A:
                 queried = queried + "%s (A)" % (msg.qd[0].name)
             if msg.qd[0].type == dpkt.dns.DNS_NS:
@@ -123,8 +126,11 @@ class dnsDecode(base.Base):
                 else:
                     # un-handled type
                     answers.append("[Honeysnap: Undecoded response]")
-                    continue
-            line = "%s, Queried %s, answer %s\n" % (self.tf(ts), queried, ", ".join(answers))
+                    continue 
+            if self.direction=='queried':
+                line = "%s, Queried %s for %s, answer %s\n" % (self.tf(ts), srcip, queried, ", ".join(answers))
+            else:
+                line = "%s, %s Queried %s for %s, answer %s\n" % (self.tf(ts), dstip, srcip, queried, ", ".join(answers))
             #self.doOutput("\t%s" % line)
             self.fp.write(line)
         else:   
