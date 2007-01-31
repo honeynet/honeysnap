@@ -22,7 +22,7 @@
 
 import sys
 import socket
-from optparse import OptionParser, Option, OptionValueError
+from optparse import OptionParser, Option, OptionValueError 
 import re
 import string
 import time
@@ -249,8 +249,7 @@ def processFile(file):
     if options["do_irc"] == "YES":
         """
         Here we will use PcapRE to find packets on irc_port with "PRIVMSG"
-        in the payload.  Matching packets will be handed to wordsearch
-        to hunt for any matching words.
+        in the payload. 
         """
         for hp in options["honeypots"]:
             out("\nLooking for packets containing PRIVMSG for %s\n\n" % hp)
@@ -259,11 +258,16 @@ def processFile(file):
             r.setFilter("host %s and tcp" % hp)
             r.setRE('PRIVMSG')
             r.setOutput(out)
-            r.start()
-            r.writeResults()
-            del p
+            r.start()                         
+            r.writeResults() 
+            for port in r.server_ports(options['irc_ports'][hp]):
+                if port not in options['irc_ports'][hp]:    
+                    if port==80:
+                        out("\nSaw PRIVMSG on port 80, but cowardly not adding it to IRC port list - check manually\n")
+                    else:
+                        out("\nAdding port %s to irc list for %s\n" % (port, hp)) 
+                        options['irc_ports'][hp].add(port) 
 
-    if options["do_irc"] == "YES":
         out("\nAnalysing IRC\n")
         for hp in options["honeypots"]:
             outdir = options["output_data_directory"] + "/%s/irc" % hp
@@ -436,7 +440,7 @@ def parseOptions():
         'do_smtp'           : 'NO',
         'do_irc'            : 'NO',
         'irc_ports'         : [6667],
-        'irc_limit'         : 0,
+        'irc_limit'         : 10,
         'do_sebek'          : 'NO',
         'do_telnet'         : 'NO',
         'sebek_port'        : 1101,
@@ -563,17 +567,17 @@ def parseOptions():
         else:
             print "Can't use --raw-time with --use-utc"
             sys.exit(1)
-
-    if not options.has_key('honeypots'):
+                                            
+    if not options['honeypots']:
         print "No honeypots specified! Please use either -H or the config file to specify some"
         sys.exit(1)
     
     # make irc ports per-honeypot
     irc_port_list = options['irc_ports']
     options['irc_ports'] = {}  
-    options['irc_ports']['global'] = irc_port_list
+    options['irc_ports']['global'] = set(irc_port_list)
     for hp in options['honeypots']:
-        options['irc_ports'][hp] = irc_port_list
+        options['irc_ports'][hp] = set(irc_port_list)
         
     return (parser.print_help, options, args)
 

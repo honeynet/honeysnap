@@ -24,6 +24,7 @@ import re
 import sys
 import socket
 import string
+from operator import itemgetter 
 import dpkt
 import pcap
 
@@ -32,6 +33,23 @@ from output import stringFormatMessage
   
 class pcapReError(Exception):
     pass
+              
+
+def gen_cmpx(server_port_list):
+    """
+    Generate a closure to sort an arroy of (count, port) values
+    If a port appears in server_port_list, it is assumed to be lower in value than a non-member
+    """ 
+    def cmpx(x, y):   
+        if cmp(x[0], y[0]):
+            return cmp(y[0], x[0])
+        else:
+            if x[1] in server_port_list and not y[1] in server_port_list:
+                return -1
+            if y[1] in server_port_list and not x[1] in server_port_list:
+                return 1
+            return cmp(x[1], y[1])
+    return cmpx
 
 class pcapRE(Base):
     """
@@ -131,7 +149,46 @@ class pcapReCounter(pcapRE):
         else:
             self.doOutput('No matching packets found\n')
         if self.doWordSearch:  
-            self.searcher.writeResults()   
+            self.searcher.writeResults()  
+            
+    def server_ports(self, server_port_list=[]): 
+        """
+        Takes as input the results from a pcapRECount object, and works out which ports are the server ports
+        If we have two ports with equal counts, assume the lower numbered is the server unless one of the ports
+        is in server_port_list
+        """   
+        ports = {}
+        for key, val in self.results.items():  
+            proto=key[0]
+            source=key[1]
+            sport=key[2]
+            dest=key[3]
+            dport=key[4]
+            count=val
+            if proto == socket.IPPROTO_TCP:
+                if ports.has_key(sport):
+                    ports[sport].add(dport)
+                else:
+                    ports[sport] = set([dport])
+                if ports.has_key(dport):
+                    ports[dport].add(sport)
+                else:
+                    ports[dport] = set([sport])
+        portcount = []
+        for i in ports.keys():
+            portcount.append( (len(ports[i]), i) )
+        res = {}                    
+        seen = {}      
+        for port in [ i[1] for i in sorted(portcount, cmp=gen_cmpx(server_port_list) )]:
+            if seen.has_key(port):
+                continue
+            if res.has_key(port):
+                res[port].add(port)
+            else:
+                res[port] = ports[port]
+            for subport in ports[port]:
+                seen[subport] = True  
+        return res.keys() 
      
 class wordSearch(Base):
     """
