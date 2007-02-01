@@ -84,12 +84,12 @@ def setFilters(options):
 
         irc_ports = options["irc_ports"]["global"]
         if len(irc_ports)==1:
-            irc_filter = "dst port %s" % irc_ports[0]
+            irc_filter = "dst port %s" % irc_ports.pop()
         else:
             irc_filter = "("
             port = [ 'dst port %s' % port for port in irc_ports ]
             irc_filter = irc_filter + " or ".join(port) + ")"
-
+        
         default_filters = [
             ('Total IPv4 packets:', 'host %s and ip'),
             ('Total TCP packets:', 'host %s and tcp'),
