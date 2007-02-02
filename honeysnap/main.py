@@ -54,6 +54,8 @@ from sebekDecode import sebekDecode
 from util import make_dir, check_pcap_file
 from dnsDecode import dnsDecode
 from telnetDecode import telnetDecode
+from socksDecode import SocksDecode
+
 
 
 VERSION=pkg_resources.get_distribution('honeysnap')
@@ -360,6 +362,16 @@ def processFile(file):
             sbd.print_summary()
             del sbd
 
+    if options["do_socks"] == "YES":
+        out("/nExtracting Socks proxy information:\n")
+        for hp in options["honeypots"]:
+            out("\nHoneypot %s\n\n" % hp)
+            p = pcap.pcap(tmpf)
+            socks = SocksDecode(p,hp)
+            socks.setOutdir(options["output_data_directory"] + "/%s/socks" % hp)
+            socks.setOutput(out)
+            socks.start()
+
     # delete the tmp file we used to hold unzipped data
     if deletetmp:
         os.unlink(tmpf)
@@ -450,6 +462,7 @@ def parseOptions():
         'output_data_directory'   : 'output',
 		'disable_default_filters'   : 'NO',
 		'user_filter_list'	: None,
+        'do_socks'          : 'NO',
     }
 
     parser = OptionParser(option_class=MyOption, version="%s" % VERSION)
@@ -516,6 +529,9 @@ def parseOptions():
     parser.add_option("--user-filter-list", dest="user_filter_list", 
         help="Appends a user defined bpf filter list. ex: \"[Total IPv4 packets:, host %s and ip],[Total TCP packets:, host %s and tcp\"]", action="callback",
         callback=store_filter_array, type="string")
+    parser.add_option("--do-socks", dest="do_socks", action="store_const", const="YES",
+        help = "Extract Socks proxy data")
+
 
     # parse command line
     (cmdopts, args) = parser.parse_args()
