@@ -29,7 +29,6 @@ import time
 import struct
 from util import make_dir  
 from singletonmixin import HoneysnapSingleton
-from honeysnap.model.model import *
 from datetime import datetime
 
 class SocksDecode(base.Base):
