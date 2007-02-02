@@ -269,6 +269,8 @@ def processFile(file):
                     else:
                         out("\nAdding port %s to irc list for %s\n" % (port, hp)) 
                         options['irc_ports'][hp].add(port) 
+            del p
+            del r
 
         out("\nAnalysing IRC\n")
         for hp in options["honeypots"]:
