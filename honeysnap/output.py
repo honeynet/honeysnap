@@ -20,8 +20,15 @@
 
 # $Id$
 
-from base import Output, Message
 import sys
+                 
+class Output(object):
+    """
+    This class will provide a generic output interface so we can output
+    in text, html, whatever.
+    """
+    def write():
+        pass
 
 class outputSTDOUT(Output):
     
@@ -38,14 +45,14 @@ class outputSTDOUT(Output):
             self._file.write(msg())
         else:
             self._file.write(str(msg))                    
- 
+
 class rawFileOutput(Output):
-    
+
     def __init__(self, fileHandle, mode='w'):
         self._file = filehandle
         self._filename = self._file.name
         self._mode = mode
-        
+
     def __call__(self, msg):
         if isinstance(msg, str):
             self._file.write(msg)
@@ -53,75 +60,83 @@ class rawFileOutput(Output):
             self._file.write(msg())
         else:
             self._file.write(str(msg))
-        
+
     def close(self):
         self._file.close()
-        
+
     def _getClosed(self):
         return self._file.closed
-    
+
     closed = property(_getClosed)
-    
+
     def _setmode(self, mode):
         self._mode = mode
-        
+
     def _getmode(self):
         return self._mode
     mode = property(_getmode, _setmode)
-        
+
     def open(self):
         if self.closed:
             self._file = open(self._filename, self.mode)
 
-        
+
 class rawPathOutput(rawFileOutput):
-    
+
     def __init__(self, path, mode='w'):
         self._filename = path
         self._file = open(self._filename, mode)
-        self.mode = mode
-        
-        
+        self.mode = mode   
+
+
+class Message(object):
+    """
+    Base class for messages that would be passed between modules.
+    """ 
+
 class stringMessage(Message):
-    
+
     def __init__(self, msg=None):
         self._msg = msg
-        
+
     def __call__(self):
         return self._msg
-    
+
     def __repr__(self):
         print self._msg
-        
+
     def __str__(self):
         return self._msg
-        
+
     def _getM(self):
         return self._msg
-    
+
     def _setM(self, m):
         self._msg = m
     msg = property(_getM, _setM)
-    
+
 
 class stringFormatMessage(stringMessage):
-    
+
     def __init__(self, msg=None, format=None):
         stringMessage.__init__(self)
         self._fmt = format
-    
+
     def __call__(self):
         return self._fmt % self._msg
-    
+
     def __repr__(self):
         print self._fmt % self._msg
-        
+
     def __str__(self):
         return self._fmt % self._msg
-                
+
     def _setF(self, fmt):
         self._fmt = fmt
-        
+
     def _getF(self):
         return self._fmt
-    format = property(_getF, _setF)
+    format = property(_getF, _setF)   
+    
+    
+        

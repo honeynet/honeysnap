@@ -22,14 +22,14 @@
 
 import pcap
 import dpkt
-import base
 import socket
 import sys
 import time
 from util import make_dir  
 from singletonmixin import HoneysnapSingleton
+from base import Base
 
-class Summarize(base.Base):
+class Summarize(Base):
     """
     Summarize takes a pcapObj
     This class reads the pcap data, hands it to a decoder, and then keys each packet
@@ -38,6 +38,7 @@ class Summarize(base.Base):
     This class works best if you use setFilter to filter by "src $HONEYPOT"
     """
     def __init__(self, pcapObj): 
+        Base.__init__(self)
         hs = HoneysnapSingleton.getInstance()
         options = hs.getOptions()
         self.tcpports = {}
@@ -47,12 +48,6 @@ class Summarize(base.Base):
         self.outdir = ""
         self.tf = options['time_convert_fn']  
         
-
-    def setFilter(self, filter, file):
-        self.filter = filter
-        self.file = file
-        self.p.setfilter(filter)
-
     def setOutdir(self, dir):
         make_dir(dir)
         self.outdir = dir

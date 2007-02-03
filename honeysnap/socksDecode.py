@@ -60,11 +60,6 @@ class SocksDecode(base.Base):
             8:'Address type not supported'
         }   
 
-    def setFilter(self, filter, file):
-        self.filter = filter
-        self.file = file
-        self.p.setfilter(filter)
-
     def setOutdir(self, dir):
         make_dir(dir)
         self.outdir = dir
@@ -201,7 +196,7 @@ class SocksDecode(base.Base):
     
     def createIp(self, ip1, ip2, ip3, ip4):
         if ip1 < 0 or ip1 > 255:
-            return NoneNone
+            return None
         elif ip2 < 0 or ip2 > 255:
             return None
         elif ip3 < 0 or ip3 > 255:

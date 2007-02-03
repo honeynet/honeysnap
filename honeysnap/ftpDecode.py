@@ -27,7 +27,6 @@ import tcpflow
 import pcap
 from flowIdentify import flowIdentify
 from flowDecode import flowDecode
-from output import stringMessage
 
 cmds = ['STOR', 'STOU', 'RETR', 'LIST', 'NLST', 'APPE']
 
@@ -49,7 +48,6 @@ class ftpDecode(flowDecode):
         # response code 229 is EPASV
         self._227re = re.compile("^227|^229", re.M)
         self.id = flowIdentify()
-        self.msg = stringMessage()
 
     def print_summary(self):            
         """Print summary info"""  

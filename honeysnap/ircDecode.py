@@ -30,8 +30,6 @@ import re
 #import dnet
 from util import orderByValue, make_dir
 from base import Base
-from output import stringMessage
-
 
 # global bot word list.
 botprefixes = [".", "-", "!", "\`",  "\\", "|"]
@@ -160,8 +158,7 @@ class ircDecode(Base):
                 self.analyzeMsg(c, e)
             
     def printSummary(self):
-##        import pdb
-##        pdb.set_trace()                                 
+        """Print a summary of interesting IRC lines"""
         if not (self.cmds or self.sources or self.targets):  
             self.doOutput("\tNo IRC seen\n")
             return

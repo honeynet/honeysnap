@@ -25,16 +25,18 @@ import socket
 import pcap
 import dpkt
 from flow import flow, flow_state, flow_state_manager, reverse, fileHandleError
-from singletonmixin import HoneysnapSingleton
+from singletonmixin import HoneysnapSingleton 
+from base import Base
 from util import make_dir   
 
 FLOW_FINISHED=(1 << 0)
 FLOW_FILE_EXISTS=(1 << 1)
 
-class tcpFlow(object):
+class tcpFlow(Base):
 
     def __init__(self, pcapObj):
-        """Initialise the flow. Assume ethernet for now"""
+        """Initialise the flow. Assume ethernet for now""" 
+        Base.__init__(self)
         self.p = pcapObj
         self.states = flow_state_manager()
         self.outdir = ""
@@ -152,9 +154,6 @@ class tcpFlow(object):
         """Iterate over a pcap object"""
         for ts, buf in self.p:
             self.packetHandler(ts, buf)
-
-    def setFilter(self, filter):
-        self.p.setfilter(filter)
 
     def setOutdir(self, dir):
         self.outdir = dir

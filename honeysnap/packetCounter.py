@@ -37,10 +37,6 @@ class Counter(Base):
         format = "%(filter)-40s %(total)10d\n"
         self.msg = stringFormatMessage(format=format)
 
-    def setFilter(self, filter):
-        self.filter = filter
-        self.p.setfilter(filter)
-
     def count(self):
         for ts, buf in self.p:
             self.total += 1

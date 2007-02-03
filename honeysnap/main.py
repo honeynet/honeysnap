@@ -35,8 +35,6 @@ import pcap
 import pkg_resources
 
 # all the honeysnap imports
-# eventually all these will become UDAF modules
-# and you will get them all by importing DA
 import httpDecode
 import ftpDecode
 import smtpDecode
@@ -188,7 +186,7 @@ def processFile(file):
             p = pcap.pcap(tmpf)
             s = Summarize(p)
             filt = 'dst host %s' % hp
-            s.setFilter(filt, file)
+            s.setFilter(filt)
             s.start()
             fileout = rawPathOutput(outdir+"/incoming.txt", mode="a")
             if options["print_verbose"] == "YES":
@@ -210,7 +208,7 @@ def processFile(file):
             p = pcap.pcap(tmpf)
             s = Summarize(p)
             filt = 'src host %s' % hp
-            s.setFilter(filt, file)
+            s.setFilter(filt)
             s.start()
             fileout = rawPathOutput(outdir+"/outgoing.txt", mode="a")
             if options["print_verbose"] == "YES":
@@ -365,7 +363,7 @@ def processFile(file):
             del sbd
 
     if options["do_socks"] == "YES":
-        out("/nExtracting Socks proxy information:\n")
+        out("\nExtracting Socks proxy information:\n")
         for hp in options["honeypots"]:
             out("\nHoneypot %s\n\n" % hp)
             p = pcap.pcap(tmpf)

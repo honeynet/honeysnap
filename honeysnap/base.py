@@ -45,14 +45,10 @@ class Base(object):
     def doOutput(self, m):
         self.out(m)
         
-    def setFilter(self, filter, file):
+    def setFilter(self, filter):
         self.filter = filter
-        self.file = file
+        print filter
         self.p.setfilter(filter)
-        
-    def addListener(self, func):
-        if func not in self.listeners:
-            self.listeners.append(func)
 
 class Output(object):
     """
@@ -62,7 +58,3 @@ class Output(object):
     def write():
         pass
         
-class Message(object):
-    """
-    Base class for messages that would be passed between modules.
-    """

@@ -71,9 +71,6 @@ class pcapRE(Base):
         self.exp = re.compile(pattern)
         self.pattern = pattern
 
-    def setFilter(self, filter):
-        self.p.setfilter(filter)
-   
     def setAction(self, action):
         self.action=action
 
