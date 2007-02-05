@@ -47,7 +47,6 @@ class Base(object):
         
     def setFilter(self, filter):
         self.filter = filter
-        print filter
         self.p.setfilter(filter)
 
 class Output(object):
