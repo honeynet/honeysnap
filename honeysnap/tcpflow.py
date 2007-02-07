@@ -116,11 +116,11 @@ class tcpFlow(Base):
 
         if tcp.flags & 1 or tcp.flags & 4: # FIN or RST
             # conection finished
-            # close the file
-            # print "got RST or FIN"
-            state.flags |= FLOW_FINISHED
-            state.close()
-            return
+            # but can't close here as packets may be out of order
+            #state.flags |= FLOW_FINISHED
+            #state.close()
+            #return
+            pass
 
         offset = seq - state.isn
         if offset < 0:
@@ -142,7 +142,8 @@ class tcpFlow(Base):
             state.close()
             length = bytes_per_flow - offset
             return
-
+        
+        state.pos = offset    
         self.open(state, flags="ab")
         state.writeData(data)
 

@@ -7,7 +7,7 @@ import ez_setup
 ez_setup.use_setuptools()
                        
 from setuptools import setup
-VERSION="1.0.4.4"
+VERSION="1.0.4.5"
 
 setup(name="honeysnap",
     version=VERSION,
@@ -32,9 +32,10 @@ setup(name="honeysnap",
     # This doesn't work
     # easy_install http://monkey.org/~dugsong/pypcap/pypcap-1.1.tar.gz
     # as it needs a 'setup.py config' stage that is non-standard
-    #dependency_links = [    
-    #    "http://monkey.org/~dugsong/pypcap/pypcap-1.1.tar.gz"
-    #],
+    dependency_links = [    
+    #    "http://monkey.org/~dugsong/pypcap/pypcap-1.1.tar.gz" 
+        "http://dpkt.googlecode.com/files/dpkt-1.6.tar.gz",
+    ],
     entry_points = {
         'console_scripts': [
             'honeysnap = honeysnap.main:start',
