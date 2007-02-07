@@ -39,6 +39,7 @@ class SocksDecode(base.Base):
         self.p = pcapObj
         self.outdir = ""
         self.hp = hp
+        self.dataFound = False
         
         self.cdList = [90,91,92,93]
         self.commandCode = {
@@ -69,6 +70,9 @@ class SocksDecode(base.Base):
         """Iterate over a pcap object"""
         for ts, buf in self.p:
             self.packetHandler(ts, buf)
+
+        if not self.dataFound:
+            self.writeNoDataFound()
             
     def packetHandler(self, ts, buf):
         """Process a pcap packet buffer"""
@@ -129,8 +133,12 @@ class SocksDecode(base.Base):
         except dpkt.Error:
             return
         
+    def writeNoDataFound(self):
+        out = 'No socks proxy data found'    
+        self.fp.write(out)
+
     def writeUDPConnection(self, ts, shost, sport, dhost, dport, payload):
-        
+        self.dataFound = True 
         version = 5
         
         rsv, frag, atyp, ip1, ip2, ip3, ip4, port = struct.unpack("!HBBBBBBH", payload[0:10])
@@ -148,7 +156,7 @@ class SocksDecode(base.Base):
         self.fp.write(out)
         
     def writeConnection(self, version, ts, shost, sport, dhost, dport, payload):
-    
+        self.dataFound = True
         if version == 4:
             vn, cd, port, ip1, ip2, ip3, ip4 = struct.unpack("!BBHBBBB", payload[0:8])
         else:
@@ -169,7 +177,8 @@ class SocksDecode(base.Base):
     
     def writeConnectionReply(self, version, ts, shost, sport, dhost, dport, payload):
         ''' Reply is from the socks server to the client. '''
-        
+       
+        self.dataFound = True 
         if version == 4:
             vn, cd, port, ip1, ip2, ip3, ip4 = struct.unpack("!BBHBBBB", payload[0:8])
             reply = self.commandCode[cd]
