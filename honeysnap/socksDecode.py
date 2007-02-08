@@ -72,8 +72,8 @@ class SocksDecode(base.Base):
             self.packetHandler(ts, buf)
 
         if not self.dataFound:
-            print 'No SOCKS traffic found'
-            self.writeNoDataFound()
+            self.doOutput('No SOCKS traffic found\n')
+            self.fp.close()
             
     def packetHandler(self, ts, buf):
         """Process a pcap packet buffer"""
@@ -134,11 +134,7 @@ class SocksDecode(base.Base):
         except dpkt.Error:
             return
        
-    def writeNoDataFound(self):
-        out = ''    
-        self.fp.write(out)
-        self.fp.close()
- 
+
     def writeUDPConnection(self, ts, shost, sport, dhost, dport, payload):
         self.dataFound = True 
         version = 5
