@@ -72,7 +72,7 @@ class SocksDecode(base.Base):
             self.packetHandler(ts, buf)
 
         if not self.dataFound:
-            self.writeNoDataFound()
+            print 'No socks proxy data found'
             
     def packetHandler(self, ts, buf):
         """Process a pcap packet buffer"""
@@ -133,10 +133,6 @@ class SocksDecode(base.Base):
         except dpkt.Error:
             return
         
-    def writeNoDataFound(self):
-        out = 'No socks proxy data found'    
-        self.fp.write(out)
-
     def writeUDPConnection(self, ts, shost, sport, dhost, dport, payload):
         self.dataFound = True 
         version = 5
