@@ -92,6 +92,7 @@ def check_pcap_file(file):
     Returns a (filename, tempfile) pair where tempfile is a boolean
     indicating if we are returning a temp file 
     """
+    BLOCK_SIZE = 2 ** 20
     try:
         # This sucks. pcapy wants a path to a file, not a file obj
         # so we have to uncompress the gzipped data into
@@ -99,14 +100,15 @@ def check_pcap_file(file):
         tmph, tmpf = tempfile.mkstemp()
         tmph = open(tmpf, 'wb')
         gfile = gzip.open(file)
-        tmph.writelines(gfile.readlines())
+        for i in iter(lambda: gfile.read(BLOCK_SIZE), ''):
+            tmph.write(i)        
         gfile.close()
-        del gfile
         tmph.close()
-        is_tempfile = True
-    except IOError:
+        is_tempfile = True   
+    except IOError, e:
         # got an error, must not be gzipped
         # should probably do a better check here
+        print 'Got an IO Error ', e
         tmpf = file
         is_tempfile = False 
     # quick and dirty check file is a valid pcap file
