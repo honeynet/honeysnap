@@ -23,7 +23,8 @@
 import dpkt
 from flow import reverse as freverse  
 import cStringIO
-import os
+import os                 
+import base64
 from util import findName, renameFile
 from flowIdentify import flowIdentify 
 from flowDecode import flowDecode

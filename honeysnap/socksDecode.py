@@ -190,6 +190,9 @@ class SocksDecode(base.Base):
             
             targetPort = str(data[len(data)-1])
             target = targetString + ':' + targetPort
+        else:
+            # unknown 
+            return
             
         source = shost + ':' + str(sport)
         socksServer = dhost + ':' + str(dport)
