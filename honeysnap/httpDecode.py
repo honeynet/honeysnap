@@ -325,6 +325,7 @@ class httpDecode(flowDecode):
             if rs.decoded is not None and state.decoded is not None:
                 #print "Both halves decoded"
                 user_agent = "UNKNOWN"
+                url = 'UNKNOWN'
                 r1 = rs.decoded
                 if t == 'request':
                     try:           
