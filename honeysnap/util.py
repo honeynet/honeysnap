@@ -108,7 +108,6 @@ def check_pcap_file(file):
     except IOError, e:
         # got an error, must not be gzipped
         # should probably do a better check here
-        print 'Got an IO Error ', e
         tmpf = file
         is_tempfile = False 
     # quick and dirty check file is a valid pcap file
