@@ -1,0 +1,252 @@
+INSTALLYING HONEYSNAP
+=====================
+
+This document explains step by step how to install
+Honeysnap, including all dependencies.  Suggestions
+for this document, or Honeysnap in general should be
+sent to <honeysnap@honeynet.org>.  This document is
+broken down into the following parts.
+
+1: Dependencies
+2: Installation on a Linux/Unix/OS X Workstation
+3: Installation on Windows
+4: Installation on a Honeywall
+5: Running Honeysnap
+
+
+1. DEPENDENCIES
+================
+
+General Dependencies
+ Python 2.4 or greater      http://www.python.org
+ libpcap                    http://sourceforge.net/projects/libpcap/
+ pypcap 1.1 or greater      http://www.monkey.org/~dugsong/pypcap/   
+ Either sqlite, MySQL or PostgresSQL
+
+Pure python modules:
+ irclib 0.4.6 or greater    http://python-irclib.sourceforge.net/
+ dpkt                       http://monkey.org/~dugsong/dpkt/
+ magic                      http://www.demonseed.net/~jp/code/magic.py  
+ sqlalchemy					http://www.sqlalchemy.org
+
+This latter set should be installed automatically and are listed
+here for completeness.  
+
+For database use you will need either sqlite (for small datasets),
+MySQL or Postgres plus the appropriate python module.
+
+sqlite - pysqlite
+postgresql - psycopg2
+MySQL - MySQLDB
+
+sqlite is also needed for testing.
+
+Honeysnap should work with any database SQLAlchemy supports (inculding
+Oracle), but this has not been tested.
+                    
+For geolocation (optional) we currently support ip2location with the 
+UK Honeynet Project's ip2location python module.
+
+      
+2: INSTALLATION ON UNIX
+========================
+
+First, you will need to install python 2.4 and its header file.  Most
+distributions most likely already have this installed.  Then you will
+need libpcap.  For most UNIX-like systems, it should be in your package 
+management system (apt-get, yum, DarwinPorts etc.).  You will need libcap 
+and also libpcap-devel if that is listed separately.  For example, on
+Debian/Ubuntu.
+
+  $ sudo apt-get install python24-dev
+  $ sudo apt-get install libpcap libpcap-dev
+
+Python 2.5 should work but as not been tested (and see below for notes
+about python 2.5 on OS X)
+
+Database:
+
+For sqlite:
+
+$ sudo apt-get install sqlite3 libsqlite3 libsqlite3-dev python-sqlite3
+
+sqlite is required to run the tests
+
+For MySQL:
+
+Install mysql5 and py-mysql5
+
+$ sudo apt-get install mysql-server-5.0 mysql-client-5.0 python-mysqldb
+
+For Postgres:
+
+$ sudo apt-get install postgresql81 postgresql-server-dev-8.1
+$ sudo easy_install py-psycopg2
+
+Note that the py-psycopg2 in Ubuntu not suitable as it is compiled 
+against postgres7.
+
+Next install pypcap. Download pypcap from 
+http://www.monkey.org/~dugsong/pypcap
+
+  $ tar -xzf pypcap-1.1.tar.gz
+  $ cd pypcap-1.1
+  $ python setup.py config
+  $ python setup.py build && sudo python setup.py install
+  $ cd ..
+
+You should then be able to install Honeysnap and all its remaining
+dependencies (provided you have a network connection).
+E.g. for version 1.0.4:
+
+  $ tar xvzf honeysnap-1.0.4
+  $ cd honeysnap-1.0.4
+  $ sudo python setup.py install
+
+If you already have easy_install installed, you can simplify the
+installation process further by simply executing the following.
+
+  $ sudo easy_install honeysnap-1.0.4.tar.gz 
+
+This is exactly the same as untar'ing the distribution and
+running 'sudo python setup.py install'
+
+Please note that this will install the honeysnap script into your
+PATH, usually in /usr/bin. If this isn't what you want, specify
+--script-dir. e.g
+
+$ sudo easy_install --script-dir /usr/local/bin honeysnap-1.0.3.tar.gz
+
+
+Some notes on python 2.5 and OS/X     
+---------------------------------
+
+If upgrading Python on a Mac, and you hit problems, try getting the Python 
+pkg from www.python.org, not from Darwin ports.  Get pycap from Dug Song's 
+site as Mac pkg, do not install from source. 
+
+  http://monkey.org/~dugsong/pypcap/pypcap-1.1-fat.dmg
+
+
+3: INSTALLATION ON WINDOWS
+==========================
+
+Download  and install the following, in order.
+
+  * Python 2.4 (from http://www.python.org/download). You can install
+  from the Windows MSI installer linked from that page.
+
+  * winpcap from
+  http://www.winpcap.org/install/default.htm  
+	
+  * pypcap from http://www.monkey.org/~dugsong/pypcap
+  You need to download and run the 'Windows Python 2.4 Installer'
+
+To make Python easily available on the command line, right click
+on "My Computer" and select Properties. Then go to Advanced and
+choose Environment Variables. Add to the end of the PATH variable 
+
+ ;C:\Python24;C:\Python24\Scripts
+
+(assuming you installed Python to the default location). If you 
+don't already have setuptools installed, you'll need to download 
+ez_setup.py from
+
+  http://peak.telecommunity.com/dist/ez_setup.py
+
+and run it. This will install easy_setup. Finally run
+
+  easy_install honeysnap-1.0.4.zip
+                                                    
+This should download and install honeysnap and all its
+dependencies.
+                 
+4: INSTALLATION ON A HONEYWALL
+==============================
+                 
+You cannot install in the same way as for a workstation on
+a production honeywall, as it has no gcc compiler and
+python 2.3 not 2.4. Follow these steps instead.
+
+i) Install gcc
+
+Edit legacy-base and legacy-updates repo files to enable the repos and
+disable GPG key checking
+
+Edit /etc/yum.repos.d/legacy-base.repo to read:
+
+[legacy-base]
+name=Fedora Legacy 3 - $basearch - Base
+baseurl=http://download.fedoralegacy.org/fedora/3/os/$basearch
+exclude=perl-GD snort wireshark
+enabled=1
+gpgcheck=0
+gpgkey=http://www.fedoralegacy.org/FEDORA-LEGACY-GPG-KEY
+
+Edit /etc/yum.repos.d/legacy-updates.repo to read:
+
+[legacy-updates]
+name=Fedora Legacy 3 - $basearch - Updates
+baseurl=http://download.fedoralegacy.org/fedora/3/updates/$basearch
+exclude=perl-GD snort wireshark
+enabled=1
+gpgcheck=0
+gpgkey=http://www.fedoralegacy.org/FEDORA-LEGACY-GPG-KEY
+
+ii) Install gcc
+
+$ yum install gcc
+
+iii) Install python 2.4
+
+Create "/etc/yum.repos.d/python24.repo":
+
+[python24]
+name=Fedora Core $releasever - $basearch - Python 2.4
+baseurl=http://www.python.org/ftp/python/2.4/rpms/fedora-3/
+enabled=1
+gpgcheck=1
+gpgkey=http://www.python.org/ftp/python/2.4/rpms/KRUD-GPG-KEY
+
+$ yum install python2.4 python2.4-devel
+
+iv) Install pypcap
+
+$ wget http://www.monkey.org/~dugsong/pypcap/pypcap-1.1.tar.gz
+$ tar xzvf pypcap-1.1.tar.gz
+$ cd pypcap-1.1
+$ python2.4 setup.py config
+$ python2.4 setup.py build
+$ python2.4 setup.py install
+
+v) Install Honeysnap
+
+$ wget http://www.honeynet.org/tools/honeysnap/honeysnap-1.0.3.tar.gz
+$ tar xzvf honeysnap-1.0.3.tar.gz
+$ cd honeysnap-1.0.3
+$ python2.4 setup.py install
+
+vi) Test!
+
+$ honeysnap --version
+
+
+5: Running honeysnap
+====================
+Try to execute 'honeysnap':
+
+  $ honeysnap
+
+You should see:
+                               
+usage: honeysnap [options]
+
+options:
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  [.... more options snipped....]
+
+  Please see the accompanying documentation for instructions on
+  configuration.
+
+       

@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+################################################################################
+# (c) 2007, The Honeynet Project
+#   Author: Arthur Clune, arthur@honeynet.org.uk
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
+################################################################################
+     
+# $Id$
+
+import sys
+import optparse
+
+from sqlalchemy import *
+from honeysnap.model.model import  *  
+from honeysnap.util import parse_dburi
+from ip2location import ip2location
+
+op = optparse.OptionParser()
+op.add_option('--dburi', dest='dburi', help='dburi to connect to')
+op.add_option('--ip-dburi', dest='ip_dburi', help='dburi from ip2location db')
+op.add_option('--debug', dest='debug', action="store_const", const=True, help='Show generated SQL?')
+opts, args = op.parse_args()
+if not (opts.dburi and opts.ip_dburi):
+    op.error('Must give a dburi and a ip_dburi')
+    sys.exit(1)  
+              
+if opts.debug:
+	debug=True
+else:
+	debug=False
+                                                   
+try:                          
+    host, port, user, passwd, db, db_type = parse_dburi(opts.ip_dburi)
+except ValueError:
+    print 'Bad ip-dburi'
+    sys.exit(1)
+
+engine = connect_to_db(opts.dburi, debug)                
+session=create_session() 
+
+ipdb = ip2location(host = host, user = user, password = passwd, database = db, database_type = db_type)
+
+for ip in session.query(Ip).select(Ip.c.city == None):
+    details = ipdb.all(ip.ip_addr)
+    ip.country = details['country']
+    ip.city=details['city']
+    ip.latitude = details['latitude']
+    ip.longitude = details['longitude']
+    ip.isp = details['isp']
+    ip.domain = details['domain']
+
+session.flush()
