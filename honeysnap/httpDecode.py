@@ -305,7 +305,8 @@ class httpDecode(flowDecode):
         if not rs:            
             # haven't seen other half - just fake something so that at least the request gets logged.
             if t == 'request':
-                dummy_response = dpkt.http.Response()
+                dummy_response = dpkt.http.Response() 
+                dummy_response.__dict__['status'] = '-'
                 self._add_log_entry(r, dummy_response, f.src, f.dst, state.ts)                
             return
         if rs.decoded:  
