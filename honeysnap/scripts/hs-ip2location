@@ -29,7 +29,9 @@ import optparse
 from sqlalchemy import *
 from honeysnap.model.model import  *  
 from honeysnap.util import parse_dburi
-from ip2location import ip2location
+from ip2location import ip2location 
+
+STEP_SIZE = 1000
 
 op = optparse.OptionParser()
 op.add_option('--dburi', dest='dburi', help='dburi to connect to')
@@ -55,14 +57,20 @@ engine = connect_to_db(opts.dburi, debug)
 session=create_session() 
 
 ipdb = ip2location(host = host, user = user, password = passwd, database = db, database_type = db_type)
+  
+ipsr = SelectResults(session.query(Ip))
+ipsr = ipsr.filter(Ip.c.city == None)
+count = ipsr.count()                                      
 
-for ip in session.query(Ip).select(Ip.c.city == None):
-    details = ipdb.all(ip.ip_addr)
-    ip.country = details['country']
-    ip.city=details['city']
-    ip.latitude = details['latitude']
-    ip.longitude = details['longitude']
-    ip.isp = details['isp']
-    ip.domain = details['domain']
-
-session.flush()
+print '%s total entries to do' % count
+for i in xrange(0, count, STEP_SIZE):
+    for ip in ipsr[i:i+STEP_SIZE-1]:
+        details = ipdb.all(ip.ip_addr)
+        ip.country = details['country']
+        ip.city=details['city']
+        ip.latitude = details['latitude']
+        ip.longitude = details['longitude']
+        ip.isp = details['isp']
+        ip.domain = details['domain']
+    print '%s entries, flushing...' % i
+    session.flush()  
