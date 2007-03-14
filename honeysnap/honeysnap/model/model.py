@@ -64,9 +64,9 @@ class Enum(types.Unicode):
 honeypot_table = Table("honeypot", metadata,
     Column("id", Integer, primary_key=True), 
     Column("ip_id", Integer, ForeignKey("ip.id"), nullable=False, unique=True), 
-    Column("name", Unicode, nullable=False),
+    Column("name", Unicode(64), nullable=False),
     Column("state", Enum(['Up', 'Down', 'Unknown']), default="Up"),
-    Column("description", Unicode, default=""),
+    Column("description", Unicode(512), default="", nullable="False"),
     mysql_engine='INNODB',
 )
   
@@ -74,12 +74,12 @@ honeypot_table = Table("honeypot", metadata,
 ip_table = Table("ip", metadata,
     Column('id', Integer, primary_key=True),
     Column('ip_addr', String(16), nullable=False, index=True, unique=True),
-    Column('latitude', Float, default=0.0),
-    Column('longitude', Float, default=0.0),
-    Column('isp', Unicode, default=None),    
-    Column('domain', Unicode, default=None),
-    Column('country', Unicode, default=None),
-    Column('city', Unicode, default=None), 
+    Column('latitude', Float, default=0.0, nullable=False),
+    Column('longitude', Float, default=0.0, nullable=False),
+    Column('isp', Unicode(256), default=None),    
+    Column('domain', Unicode(256), default=None),
+    Column('country', Unicode(256), default=None),
+    Column('city', Unicode(256), default=None), 
     mysql_engine='INNODB',
 )
 
@@ -92,11 +92,11 @@ flow_table = Table("flow", metadata,
     Column("dst_id", Integer, ForeignKey("ip.id"), nullable=False),                        
     Column("sport", Integer, nullable=False),
     Column("dport", Integer, nullable=False),
-    Column("packets", Integer, default=0),
-    Column("bytes", Integer, default=0), 
-    Column("starttime", DateTime, default=datetime.now()),
-    Column("lastseen", DateTime, default=datetime.now()),   
-    Column("filename", String, default='Not specified'),
+    Column("packets", Integer, default=0, nullable=False),
+    Column("bytes", Integer, default=0, nullable=False), 
+    Column("starttime", DateTime, nullable=False),
+    Column("lastseen", DateTime, nullable=False),   
+    Column("filename", String(1024), default='Not specified', nullable=False),
     mysql_engine='INNODB', 
 )      
 
@@ -106,18 +106,41 @@ sebek_table = Table("sebek", metadata,
         nullable=False),
     Column("version", Integer, nullable=False),
     Column("type", Integer, nullable=False),
-    Column("time", DateTime, default=datetime.now()),
-    Column("pid", Integer),
-    Column("fd", Integer),
-    Column("uid", Integer),
-    Column("command", String),            
+    Column("timestamp", DateTime, nullable=False),
+    Column("pid", Integer, nullable=False),
+    Column("fd", Integer, nullable=False),
+    Column("uid", Integer, nullable=False),
+    Column("command", String, nullable=False),            
     # next two fields don't exist in sebek v2 data
-    Column("parent_pid", Integer, default=0),
-    Column("inode", Integer, default=0),
-    Column("data", String),
+    Column("parent_pid", Integer, default=0, nullable=False),
+    Column("inode", Integer, default=0, nullable=False),
+    Column("data", String(2048)),
     mysql_engine='INNODB',
 )              
+  
+# IRC related tables
 
+irc_talker_table = Table('irc_talker', metadata,
+    Column('id', Integer, primary_key=True),
+    Column('name', Unicode(512), nullable=False, unique=True),
+)
+                                   
+irc_message_table = Table('irc_message', metadata,
+    Column('id', Integer, primary_key=True),    
+    Column('honeypot_id', Integer, ForeignKey('honeypot.id'),
+        nullable=False),
+    Column('from_id', Integer, ForeignKey('irc_talker.id'), nullable=False),
+    Column('to_id', Integer, ForeignKey('irc_talker.id'), default=None),
+    Column('command', Unicode(128), nullable=False),
+    Column('src_id', Integer, ForeignKey('ip.id'), nullable=False),   
+    Column('dst_id', Integer, ForeignKey('ip.id'), nullable=False),    
+    Column('sport', Integer, nullable=False),
+    Column('dport', Integer, nullable=False),
+    Column('timestamp', DateTime, nullable=False),
+    Column('text', Unicode(2048))
+)
+
+# Indexes
 
 Index('flowindex', flow_table.c.starttime, 
                    flow_table.c.src_id, 
@@ -128,13 +151,24 @@ Index('flowindex', flow_table.c.starttime,
                    
 Index('sebekindex', sebek_table.c.honeypot_id,
                     sebek_table.c.type,
-                    sebek_table.c.time,
+                    sebek_table.c.timestamp,
                     sebek_table.c.pid,
                     sebek_table.c.fd,
                     sebek_table.c.uid,
                     sebek_table.c.command,
                     sebek_table.c.data,
                     unique = True)
+                    
+Index('ircindex', irc_message_table.c.honeypot_id,
+                  irc_message_table.c.from_id,
+                  irc_message_table.c.to_id,
+                  irc_message_table.c.command,
+                  irc_message_table.c.src_id,
+                  irc_message_table.c.dst_id,
+                  irc_message_table.c.timestamp,
+                  irc_message_table.c.text,
+                  unique=True
+)                    
 
 # Objects
                         
@@ -143,11 +177,11 @@ class Honeypot(object):
     def __init__(self, **kwargs):        
         for key in kwargs:       
             if key not in honeypot_table.c.keys():
-                raise ValueError("Bad row name")            
+                raise ValueError("Bad row name %s" % key)            
             self.__dict__[key] = kwargs[key]
         
     def __repr__(self):
-        return "[name: %s, ip_id: %s, state: %s, description: %s]\n" % \
+        return "[name: %s, ip_id: %s, state: %s, description: %s]" % \
                 (self.name, self.ip_id, self.state, self.description)    
 
     @staticmethod
@@ -158,19 +192,19 @@ class Honeypot(object):
         if not name:
             name = "HS_Fake"  
         try:
-            h = Honeypot.byIp(session, hp)            
+            h = Honeypot.by_ip(session, hp)            
         except HoneysnapModelError:
-            ipid = Ip.id_byIp(hp)
+            ipid = Ip.id_by_ip(hp)
             h = Honeypot(name=name, ip_id=ipid, state="Up")
             session.save(h)  
             session.flush()
         return h    
                 
     @staticmethod
-    def byIp(session, ip): 
+    def by_ip(session, ip): 
         """Return a Honeypot object found by IP""" 
         try:    
-            return session.query(Honeypot).selectone(Honeypot.c.ip_id == Ip.id_byIp(ip))
+            return session.query(Honeypot).selectone(Honeypot.c.ip_id == Ip.id_by_ip(ip))
         except exceptions.InvalidRequestError:
             raise HoneysnapModelError("Honeypot not defined in DB!") 
 
@@ -211,7 +245,7 @@ class Honeypot(object):
                         seen[sbk.unique_fields()] = 1
                     if sbk_q.count(and_(Sebek.c.honeypot_id==sbk.c.honeypot_id,
                                         Sebek.c.type==sbk.c.type,
-                                        Sebek.c.time==sbk.c.time,
+                                        Sebek.c.timestamp==sbk.c.timestamp,
                                         Sebek.c.pid==sbk.c.pid,
                                         Sebek.c.fd==sbk.c.fd,
                                         Sebek.c.uid==sbk.c.uid,
@@ -220,6 +254,34 @@ class Honeypot(object):
                         print "Duplicate sebek record - skipping: ", sbk
                         session.delete(sbk)
                 session.flush()                            
+     
+    def save_irc_changes(self, session):
+        """Save irc changes to db, dealing with duplicate entries"""
+        try:
+            session.flush()
+        except exceptions.SQLError, e:
+            if "IntegrityError" in e.args[0]:
+                seen = {}
+                irc_q = session.query(IRC_Message)
+                for msg in session.new:
+                    if type(msg) != type(IRC_Message()):
+                        continue 
+                    if seen.get(msg.unique_fields(), None):
+                        print 'IRC message seen twice in import, ignoring'
+                    else:
+                        seen[msg.unique_fields()] = 1
+                    if irc_q.count(and_(
+                            irc_message_table.c.honeypot_id==msg.c.honeypot_id,
+                            irc_message_table.c.from_id==msg.c.from_id,
+                            irc_message_table.c.to_id==msg.c.to_id,
+                            irc_message_table.c.command==msg.c.command,
+                            irc_message_table.c.src_id==msg.c.src_id,
+                            irc_message_table.c.dst_id==msg.c.dst_id,
+                            irc_message_table.c.timestamp==msg.c.timestamp,
+                            irc_message_table.c.text==msg.c.text)) > 0:
+                        print "Duplicate IRC message - skipping: ", msg
+                        session.delete(msg)
+                session.flush()
 
 class Ip(object):
     """IP address and location details""" 
@@ -228,7 +290,7 @@ class Ip(object):
     def __init__(self, **kwargs):                 
         for key in kwargs:           
             if key not in ip_table.c.keys():
-                raise ValueError("Bad row name")            
+                raise ValueError("Bad row name %s" % key)            
             self.__dict__[key] = kwargs[key]
     
     def __repr__(self):
@@ -237,7 +299,7 @@ class Ip(object):
                self.domain, self.country, self.city)
                
     @staticmethod
-    def id_byIp(ip_addr):  
+    def id_by_ip(ip_addr):  
         """return id field for a IP object"""                        
         #if Ip.ipid_cache.has_key(ip_addr): 
         #    return Ip.ipid_cache[ip_addr] 
@@ -315,40 +377,87 @@ class Sebek(object):
     def __init__(self, **kwargs):
         for key in kwargs:   
             if key not in sebek_table.c.keys():
-                raise ValueError("Bad row name")  
-            if key == 'time' and type(kwargs[key]) != type(datetime.now()):
+                raise ValueError("Bad row name %s" % key)  
+            if key == 'timestamp' and type(kwargs[key]) != type(datetime.now()):
                 kwargs[key] = datetime.utcfromtimestamp(kwargs[key])   
             self.__dict__[key] = kwargs[key]
 
     def __repr__(self):
-        return "[honeypot: %s, version: %s, type: %s, time: %s, pid: %s, fd: %s, uid: %s, parent_pid: %s, inode: %s, command: %s, data: %s]" % \
-                (self.honeypot.id, self.version, self.type, self.time, self.pid, self.fd, self.uid, 
+        return "[honeypot: %s, version: %s, type: %s, timestamp: %s, pid: %s, fd: %s, uid: %s, parent_pid: %s, inode: %s, command: %s, data: %s]" % \
+                (self.honeypot.id, self.version, self.type, self.timestamp, self.pid, self.fd, self.uid, 
                 self.parent_pid, self.inode, self.command, self.data)   
                 
 
     def __str__(self):
         if self.version == 3:
-             return "[%s ip:%s parent:%s pid:%s uid:%s fd:%s inode:%s com:%s] %s" % (self.time, 
+             return "[%s ip:%s parent:%s pid:%s uid:%s fd:%s inode:%s com:%s] %s" % (self.timestamp, 
                     self.honeypot.ip_id, self.parent_pid, self.pid, self.uid, self.fd, self.inode, self.command, self.data)
         else:
-             return "[%s ip:%s pid:%s uid:%s fd:%s com:%s] %s" % (self.time, 
+             return "[%s ip:%s pid:%s uid:%s fd:%s com:%s] %s" % (self.timestamp, 
                     self.honeypot.ip_id, self.pid, self.uid, self.fd, self.command, self.data)  
 
     def unique_fields(self):
-        return (self.honeypot_id, self.type, self.time, self.pid, self.fd, self.uid, self.command, self.data)
+        return (self.honeypot_id, self.type, self.timestamp, self.pid, self.fd, self.uid, self.command, self.data)
 
     @staticmethod
-    def num_of_type(session, type, hp, starttime=datetime.utcfromtimestamp(0), endtime=datetime.now()):
+    def num_of_type(session, hp, type, starttime=datetime.utcfromtimestamp(0), endtime=datetime.now()):
         """Return count() of sebek records within date range with type type"""
-        return session.query(Sebek).count(and_(Sebek.c.honeypot_id==hp.id, Sebek.c.type==type, Sebek.c.time>starttime, Sebek.c.time<endtime)) 
+        return session.query(Sebek).count(and_(Sebek.c.honeypot_id==hp.c.id, Sebek.c.type==type, \
+            Sebek.c.timestamp>starttime, Sebek.c.timestamp<endtime)) 
         
     @staticmethod
     def get_lines(session, hp, type, starttime, endtime, excludes=None):
         if excludes:
-            return session.query(Sebek).select(and_(Sebek.c.time>starttime, Sebek.c.time<endtime, Sebek.c.honeypot_id==hp.id, Sebek.c.type==type, not_(Sebek.c.command.in_(*excludes))))
+            return session.query(Sebek).select(and_(Sebek.c.timestamp>starttime, Sebek.c.timestamp<endtime, \
+                Sebek.c.honeypot_id==hp.c.id, Sebek.c.type==type, not_(Sebek.c.command.in_(*excludes))))
         else:
-            return session.query(Sebek).select(and_(Sebek.c.time>starttime, Sebek.c.time<endtime, Sebek.c.honeypot_id==hp.id, Sebek.c.type==type))
+            return session.query(Sebek).select(and_(Sebek.c.timestamp>starttime, Sebek.c.timestamp<endtime, \
+                Sebek.c.honeypot_id==hp.c.id, Sebek.c.type==type))
             
+class IRC_Talker(object):
+    """Store details of a sender or receiver of an IRC messsage (could be channel, nick or server)"""
+    def __init__(self, **kwargs):        
+        for key in kwargs:       
+            if key not in irc_talker_table.c.keys():
+                raise ValueError("Bad row name %s" % key)            
+            self.__dict__[key] = kwargs[key]
+
+    def __repr__(self):
+        return "[id: %s, name: %s]" % (self.id, self.name)
+
+    def __str__(self):
+        return "[name: %s]" % (self.name)
+          
+class IRC_Message(object):
+    """store irc message details"""
+    def __init__(self, **kwargs):
+        for key in kwargs:   
+            if (key not in irc_message_table.c.keys()):
+                if key not in ['irc_src', 'irc_dst']:
+                    raise ValueError("Bad row name %s" % key)  
+            if key == 'timestamp' and type(kwargs[key]) != type(datetime.now()):
+                kwargs[key] = datetime.utcfromtimestamp(kwargs[key])   
+            self.__dict__[key] = kwargs[key]    
+
+    def __repr__(self):
+        return "[timestamp: %s, id: %s, src_id: %s, dst_id: %s,  src_port: %s, dst_port: %s, command: %s, from_id: %s, to_id: %s, text: %s]" % \
+            (self.timestamp, self.id, self.src_id, self.dst_id, self.sport, self.dport, self.command, self.from_id, self.to_id, self.text) 
+            
+    def __str__(self):
+        return "[%s honeypot: %s, command: %s, text: %s]" % (self.timestamp, self.honeypot.id, self.command, self.text)
+        
+    def _get_channel(self):
+        """return channel if dst is a channel"""
+        if self.to.name[0] == '#':
+            return self.dst.name
+        else:
+            return None
+            
+    channel = property(_get_channel, None)        
+            
+    def unique_fields(self):
+        """return unique fields"""
+        return (self.honeypot_id, self.from_id, self.to_id, self.command, self.src_id, self.dst_id, self.timestamp, self.text)
 
 # Table -> Object mappers
 
@@ -356,12 +465,22 @@ mapper(Honeypot, honeypot_table, properties={
     "flows": relation(Flow, lazy=None, passive_deletes=True, backref="honeypot", 
         cascade="all, delete-orphan"),
     "sebek_lines": relation(Sebek, lazy=None, passive_deletes=True, backref="honeypot", 
+        cascade="all, delete-orphan"), 
+    "irc_messages": relation(IRC_Message, lazy=None, passive_deletes=True, backref="honeypot",
         cascade="all, delete-orphan"),
 })                                                    
       
 mapper(Ip, ip_table)
 mapper(Flow, flow_table)
-mapper(Sebek, sebek_table) 
+mapper(Sebek, sebek_table)                 
+mapper(IRC_Talker, irc_talker_table, properties={
+    "sent": relation(IRC_Message, lazy=None, passive_deletes=True, cascade="all, delete-orphan", 
+        primaryjoin=irc_message_table.c.from_id==irc_talker_table.c.id, backref="irc_src"),
+    "received": relation(IRC_Message, lazy=None, passive_deletes=True, cascade="all, delete-orphan", 
+        primaryjoin=irc_message_table.c.to_id==irc_talker_table.c.id, backref="irc_dst"),
+})
+
+mapper(IRC_Message, irc_message_table)
 
 # init and create tables if needed  
 def connect_to_db(dburi, debug=False):

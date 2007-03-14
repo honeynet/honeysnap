@@ -154,7 +154,8 @@ class SebekDecode(object):
             raise SebekDecodeError("SBK_WRITE in ver 1 data!")
         if fd<3:      
             com = nonascii.sub("", com)
-            s = Sebek(version=version, type=SBK_WRITE, time=t, pid=pid, fd=fd, uid=uid, command=com, parent_pid=parent_pid, inode=inode, data=data)
+            s = Sebek(version=version, type=SBK_WRITE, timestamp=t, pid=pid, fd=fd, \
+                uid=uid, command=com, parent_pid=parent_pid, inode=inode, data=data)
             self.hp.sebek_lines.append(s)
         else:
             # should hex-encode data here or something
@@ -166,7 +167,8 @@ class SebekDecode(object):
             raise SebekDecodeError("SBK_SOCK in ver 1 data!")
         com = nonascii.sub("", com)  
         data = nonascii.sub("", data)
-        s = Sebek(version=version, type=SBK_SOCK, time=t, pid=pid, fd=fd, uid=uid, command=com, parent_pid=parent_pid, inode=inode, data=data)
+        s = Sebek(version=version, type=SBK_SOCK, timestamp=t, pid=pid, fd=fd, uid=uid, \
+            command=com, parent_pid=parent_pid, inode=inode, data=data)
         self.hp.sebek_lines.append(s)
         
     def sbk_open(self, version, t, pid, fd, uid, com, data, parent_pid, inode):
@@ -175,7 +177,8 @@ class SebekDecode(object):
             raise SebekDecodeError("SBK_OPEN in ver 1 data")
         com = nonascii.sub("", com)
         data = nonascii.sub("", data)  
-        s = Sebek(version=version, type=SBK_OPEN, time=t, pid=pid, fd=fd, uid=uid, command=com, parent_pid=parent_pid, inode=inode, data=data)
+        s = Sebek(version=version, type=SBK_OPEN, timestamp=t, pid=pid, fd=fd, uid=uid, \
+            command=com, parent_pid=parent_pid, inode=inode, data=data)
         self.hp.sebek_lines.append(s)    
 
     def sbk_keystrokes(self, version, t, pid, fd, uid, com, data, parent_pid=0, inode=0):
@@ -207,7 +210,8 @@ class SebekDecode(object):
                 d = d.replace(i, controlmap[i])
                 # strip out nonascii junk
                 d = nonascii.sub("", d)                
-            s = Sebek(version=version, type=SBK_READ, time=t, pid=pid, fd=fd, uid=uid, command=com, parent_pid=parent_pid, inode=inode, data=d) 
+            s = Sebek(version=version, type=SBK_READ, timestamp=t, pid=pid, fd=fd, uid=uid, \
+                command=com, parent_pid=parent_pid, inode=inode, data=d) 
             self.hp.sebek_lines.append(s)                                                                                                       
             del self.log[k]
 

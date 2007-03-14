@@ -91,8 +91,8 @@ class FlowIdentify(object):
                     flow.bytes += length;
                     flow.packets += 1;
                     return
-        srcid = Ip.id_byIp(src)
-        dstid = Ip.id_byIp(dst)        
+        srcid = Ip.id_by_ip(src)
+        dstid = Ip.id_by_ip(dst)        
         flows = self.fq.select(and_(Flow.c.src_id == srcid, Flow.c.dst_id == dstid, Flow.c.sport == sport, 
             Flow.c.dport == dport, Flow.c.lastseen > datetime.utcfromtimestamp(ts-FLOW_DELTA)), order_by = desc(Flow.c.starttime))
         if flows:              

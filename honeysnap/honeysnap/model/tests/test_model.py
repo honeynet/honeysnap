@@ -34,7 +34,7 @@ class test_model(unittest.TestCase):
     def setUp(self):                 
         self.engine = connect_to_db('sqlite:///')  
         self.session = create_session()
-        ipid = Ip.id_byIp("192.168.0.1")
+        ipid = Ip.id_by_ip("192.168.0.1")
         h = Honeypot(name="ukad01", ip_id=ipid, state="Up", description="A honeypot")
         self.session.save(h) 
         self.session.flush()
@@ -47,7 +47,7 @@ class test_model(unittest.TestCase):
             dport=45678, starttime=datetime(2007, 01, 01), lastseen=datetime(2007, 01, 02))    
         self.session.save(f)
         h.flows.append(f)   
-        sebek = Sebek(version=3, type=SBK_READ, time=datetime(2007, 01, 01), pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data='uname -a')
+        sebek = Sebek(version=3, type=SBK_READ, timestamp=datetime(2007, 01, 01), pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data='uname -a')
         h.sebek_lines.append(sebek)
         self.session.flush()
         
@@ -55,9 +55,9 @@ class test_model(unittest.TestCase):
         self.session.clear() 
         metadata.drop_all()
          
-    def test_byIp(self):                       
+    def test_by_ip(self):                       
         """get Honeypot by Ip"""
-        h = Honeypot.byIp(self.session, "192.168.0.1")
+        h = Honeypot.by_ip(self.session, "192.168.0.1")
         assert h.name == "ukad01"        
 
     def test_get_or_create(self):                        
@@ -112,89 +112,119 @@ class test_model(unittest.TestCase):
     @raises(SQLError)
     def test_sebek_dup(self):
         """should raise exception on duplicate sebek records"""  
-        h = Honeypot.byIp(self.session, "192.168.0.1") 
-        sebek = Sebek(version=3, type=SBK_READ, time=datetime(2007, 01, 01), pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data='uname -a')
+        h = Honeypot.by_ip(self.session, "192.168.0.1") 
+        sebek = Sebek(version=3, type=SBK_READ, timestamp=datetime(2007, 01, 01), pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data='uname -a')
         h.sebek_lines.append(sebek)
         self.session.flush()        
         
     def test_save_sebek_changes(self):
         """save_sebek_changes should not raise an error with duplicate sebek records"""
-        h = Honeypot.byIp(self.session, "192.168.0.1")  
-        sebek = Sebek(version=3, type=SBK_READ, time=datetime(2007, 01, 01), pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data='uname -a')
+        h = Honeypot.by_ip(self.session, "192.168.0.1")  
+        sebek = Sebek(version=3, type=SBK_READ, timestamp=datetime(2007, 01, 01), pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data='uname -a')
         h.sebek_lines.append(sebek) 
-        sebek = Sebek(version=3, type=SBK_READ, time=datetime(2007, 01, 01), pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data='uname -a')
+        sebek = Sebek(version=3, type=SBK_READ, timestamp=datetime(2007, 01, 01), pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data='uname -a')
         h.sebek_lines.append(sebek)             
         h.save_sebek_changes(self.session)        
             
     @raises(SQLError)
     def test_hp_unique(self):               
         """Should raise exception with duplicate ip addrs"""
-        ipid = Ip.id_byIp("192.168.0.1")
+        ipid = Ip.id_by_ip("192.168.0.1")
         h = Honeypot(name="test", ip_id=ipid, state="Up")   
         self.session.save(h)
         self.session.flush()  
         
     def test_save_flow_changes(self):   
         """save_flow_changes should not raise an error with duplicate flows"""
-        src_id = Ip.id_byIp("10.0.0.1")                                               
-        dst_id = Ip.id_byIp("254.168.0.2")
+        src_id = Ip.id_by_ip("10.0.0.1")                                               
+        dst_id = Ip.id_by_ip("254.168.0.2")
         f = Flow(src_id=src_id, sport=80, packets=3, bytes=56, dst_id=dst_id, 
             dport=45678, starttime=datetime(2007,01,01), lastseen=datetime(2007,01,02))
-        h = Honeypot.byIp(self.session, "192.168.0.1")
+        h = Honeypot.by_ip(self.session, "192.168.0.1")
         h.flows.append(f)     
         h.save_flow_changes(self.session)      
         
-    def test_id_byIp(self): 
-        """id_byIp should return valid id and create if needed"""
-        ipid = Ip.id_byIp("192.168.0.1")
+    def test_id_by_ip(self): 
+        """id_by_ip should return valid id and create if needed"""
+        ipid = Ip.id_by_ip("192.168.0.1")
         assert ipid == 1                                      
-        ipid = Ip.id_byIp("1.2.3.4")
+        ipid = Ip.id_by_ip("1.2.3.4")
         assert type(ipid) == type(1)
         assert ipid != 1
-        ipid2 = Ip.id_byIp("1.2.3.4")
+        ipid2 = Ip.id_by_ip("1.2.3.4")
         assert ipid == ipid2
          
-    def test_id_byIp_delete(self):
-        """id_byIp should do the right thing if an object has been deleted"""
-        ipid1 = Ip.id_byIp("192.168.0.1")
-        ipid2 = Ip.id_byIp("192.168.0.2")
-        ipid3 = Ip.id_byIp("192.168.0.3")
+    def test_id_by_ip_delete(self):
+        """id_by_ip should do the right thing if an object has been deleted"""
+        ipid1 = Ip.id_by_ip("192.168.0.1")
+        ipid2 = Ip.id_by_ip("192.168.0.2")
+        ipid3 = Ip.id_by_ip("192.168.0.3")
         ip = self.session.query(Ip).get_by(id=ipid1)
         self.session.delete(ip)
         self.session.flush()
-        ipid4 = Ip.id_byIp("192.168.0.4")
-        ipid5 = Ip.id_byIp("192.168.0.1")
+        ipid4 = Ip.id_by_ip("192.168.0.4")
+        ipid5 = Ip.id_by_ip("192.168.0.1")
         assert ipid5 != ipid1
         
     def test_num_of_type(self):    
         """num of type should correctly query sebek table""" 
         print self.session.query(Honeypot).select()[0]
-        h = Honeypot.byIp(self.session, "192.168.0.1")         
-        n = Sebek.num_of_type(self.session, SBK_READ, h)     
+        h = Honeypot.by_ip(self.session, "192.168.0.1")         
+        n = Sebek.num_of_type(self.session, h, SBK_READ)     
         assert n == 1 
-        n = Sebek.num_of_type(self.session, SBK_WRITE, h)                                         
+        n = Sebek.num_of_type(self.session, h, SBK_WRITE)                                         
         assert n == 0 
-        n = Sebek.num_of_type(self.session, SBK_READ, h, starttime=datetime(2006, 01, 01), endtime=datetime(2007, 02, 01))           
+        n = Sebek.num_of_type(self.session, h, SBK_READ, starttime=datetime(2006, 01, 01), endtime=datetime(2007, 02, 01))           
         assert n == 1       
-        n = Sebek.num_of_type(self.session, SBK_READ, h, starttime=datetime(2006, 01, 01), endtime=datetime(2006, 02, 01))           
+        n = Sebek.num_of_type(self.session, h, SBK_READ, starttime=datetime(2006, 01, 01), endtime=datetime(2006, 02, 01))           
         assert n == 0
 
-    def get_lines(self): 
+    def test_get_lines(self): 
         """get_lines should correctly query sebek table"""
-        h = Honeypot.byIp(self.session, "192.168.0.1")         
-        lines = Sebek.get_lines(self.session, SBK_READ, h)     
+        h = Honeypot.by_ip(self.session, "192.168.0.1")   
+        lines = Sebek.get_lines(self.session, h, SBK_READ, starttime=datetime(2006, 01, 01), endtime=datetime(2007, 02, 01))     
         assert type(lines[0]) == type(Sebek())
         assert lines[0].command == 'ssh'
         assert len(lines) == 1 
-        lines = Sebek.get_lines(self.session, SBK_WRITE, h)                                         
+        lines = Sebek.get_lines(self.session, h, SBK_WRITE, starttime=datetime(2006, 01, 01), endtime=datetime(2007, 02, 01))                                         
         assert len(lines) == 0
-        lines = Sebek.num_of_type(self.session, SBK_READ, h, starttime=datetime(2006, 01, 01), endtime=datetime(2007, 02, 01))           
+        lines = Sebek.get_lines(self.session, h, SBK_READ, starttime=datetime(2006, 01, 01), endtime=datetime(2007, 02, 01))           
         assert type(lines[0]) == type(Sebek())
         assert lines[0].command == 'ssh'
         assert len(lines) == 1
-        lines = Sebek.num_of_type(self.session, SBK_READ, h, starttime=datetime(2006, 01, 01), endtime=datetime(2006, 02, 01))           
+        lines = Sebek.get_lines(self.session, h, SBK_READ, starttime=datetime(2006, 01, 01), 
+            endtime=datetime(2006, 02, 01), excludes=['ssh'])           
         assert len(lines) == 0
+    
+    @raises(ValueError)
+    def test_create_bad_ip_talker(self):
+        """IRC_Talker.__init__ should raise an exception with bad argument"""
+        t = IRC_Talker(names='fred') 
         
+    def test_create_irc_talker(self):
+        """IRC_Talker __init__ should work"""
+        t = IRC_Talker(name='fred')   
+        assert t.c.name=='fred'
+        assert str(t) == '[name: fred]' 
+       
+    @raises(ValueError)   
+    def test_create_bad_irc_messsage(self):
+        """IRC_Talker.__init__ should raise an exception with bad argument"""
+        m = IRC_Message(fred='fred')
+        
+    def test_create_irc_message(self):
+        """should be able to create an IRC message"""
+        h = Honeypot.by_ip(self.session, "192.168.0.1") 
+        ircsrc = IRC_Talker(name='fred')
+        ircdst = IRC_Talker(name='george') 
+        self.session.save(ircsrc)
+        self.session.save(ircdst)
+        src_id = Ip.id_by_ip("192.168.0.2")
+        dst_id = Ip.id_by_ip("192.168.0.3") 
+        m = IRC_Message(src_id=src_id, dst_id=dst_id, sport=4432, dport=6667, irc_src=ircsrc, irc_dst=ircdst, 
+            command='PRIVMSG', timestamp=datetime.now(), text='hi there')    
+        h.irc_messages.append(m)
+        self.session.flush()
         
         
         
