@@ -77,7 +77,7 @@ SBK_READ  = 0
 SBK_WRITE = 1
 SBK_SOCK  = 2
 SBK_OPEN  = 3
-             
+
 class SebekDecodeError(Exception):
     pass
 

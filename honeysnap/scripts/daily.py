@@ -6,7 +6,7 @@ from honeysnap.model.model import *
 from sqlalchemy import *
 import socket   
 import optparse
-import datetime
+import time
 
 from sqlalchemy.ext.selectresults import SelectResults
 
@@ -62,14 +62,13 @@ flowSR = SelectResults(flowQuery).order_by(Flow.c.starttime)
 for x in flowSR[:1]:
     earliestDate = x.starttime
 
-startDate = datetime.datetime(earliestDate.year, earliestDate.month, 
-                              earliestDate.day)
+startDate = earliestDate
 
 workingDate = startDate
-currentDate = datetime.datetime.utcnow()
+currentDate = time.time()
 
 while(workingDate < currentDate):
-    nextDate = workingDate + datetime.timedelta(days=1)
+    nextDate = workingDate + 86400   # num seconds/day
     print "Daily stats for", workingDate
 
     for hp in hpQuery.select():
@@ -185,7 +184,6 @@ while(workingDate < currentDate):
         print "\tOutbound Other pkts:", outboundOtherCount
 
         for port in [21, 22, 23, 25, 53, 80, 443, 6667, 1101]: 
-            printPortStats(hp, workingDate, nextDate, port)
+            printPortStats(hp, time.asctime(workingDate), nextDate, port)
 
     workingDate = nextDate
-    nextDate += datetime.timedelta(days=1)

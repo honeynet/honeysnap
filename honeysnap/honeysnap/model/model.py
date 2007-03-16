@@ -19,11 +19,15 @@
  
 # $Id: model.py 5038 2007-01-27 17:22:46Z arthur $
 import socket
-from datetime import datetime
+from time import asctime, gmtime, time
 from sqlalchemy import * 
 from sqlalchemy.ext.selectresults import SelectResults  
 from sqlalchemy.ext.activemapper import metadata
- 
+
+# max length of sebek data
+# must be < ~700 for mysql but can be larger for postgres
+MAX_SBK_DATA_SIZE = 512
+                         
 class HoneysnapModelError(Exception):
     pass
 
@@ -60,6 +64,9 @@ class Enum(types.Unicode):
         return super(Enum, self).convert_result_value(value, engine) 
 
 # Tables
+  
+# we store timestamps directly here because MySQL doesn't store sub-second precision
+# http://bugs.mysql.com/bug.php?id=8523
 
 honeypot_table = Table("honeypot", metadata,
     Column("id", Integer, primary_key=True), 
@@ -94,28 +101,28 @@ flow_table = Table("flow", metadata,
     Column("dport", Integer, nullable=False),
     Column("packets", Integer, default=0, nullable=False),
     Column("bytes", Integer, default=0, nullable=False), 
-    Column("starttime", DateTime, nullable=False),
-    Column("lastseen", DateTime, nullable=False),   
+    Column("starttime", Float(50), nullable=False),
+    Column("lastseen", Float(50), nullable=False),   
     Column("filename", String(1024), default='Not specified', nullable=False),
     mysql_engine='INNODB', 
 )      
-
+          
 sebek_table = Table("sebek", metadata,
     Column("id", Integer, primary_key=True),
     Column("honeypot_id", Integer, ForeignKey("honeypot.id"), 
         nullable=False),
     Column("version", Integer, nullable=False),
     Column("type", Integer, nullable=False),
-    Column("timestamp", DateTime, nullable=False),
+    Column("timestamp", Float(50), nullable=False),
     Column("pid", Integer, nullable=False),
     Column("fd", Integer, nullable=False),
     Column("uid", Integer, nullable=False),
-    Column("command", String, nullable=False),            
+    Column("command", String(64), nullable=False),            
     # next two fields don't exist in sebek v2 data
     Column("parent_pid", Integer, default=0, nullable=False),
     Column("inode", Integer, default=0, nullable=False),
-    Column("data", String(2048)),
-    mysql_engine='INNODB',
+    Column("data", String(MAX_SBK_DATA_SIZE)),
+    mysql_engine='INNODB',  
 )              
   
 # IRC related tables
@@ -131,13 +138,13 @@ irc_message_table = Table('irc_message', metadata,
         nullable=False),
     Column('from_id', Integer, ForeignKey('irc_talker.id'), nullable=False),
     Column('to_id', Integer, ForeignKey('irc_talker.id'), default=None),
-    Column('command', Unicode(128), nullable=False),
+    Column('command', String(64), nullable=False),
     Column('src_id', Integer, ForeignKey('ip.id'), nullable=False),   
     Column('dst_id', Integer, ForeignKey('ip.id'), nullable=False),    
     Column('sport', Integer, nullable=False),
     Column('dport', Integer, nullable=False),
-    Column('timestamp', DateTime, nullable=False),
-    Column('text', Unicode(2048))
+    Column('timestamp', Float(50), nullable=False),
+    Column('text', String(512))
 )
 
 # Indexes
@@ -149,7 +156,7 @@ Index('flowindex', flow_table.c.starttime,
                    flow_table.c.dport,
                    unique = True) 
                    
-Index('sebekindex', sebek_table.c.honeypot_id,
+Index('sebekindex', sebek_table.c.honeypot_id, 
                     sebek_table.c.type,
                     sebek_table.c.timestamp,
                     sebek_table.c.pid,
@@ -157,7 +164,7 @@ Index('sebekindex', sebek_table.c.honeypot_id,
                     sebek_table.c.uid,
                     sebek_table.c.command,
                     sebek_table.c.data,
-                    unique = True)
+                    unique = True)   
                     
 Index('ircindex', irc_message_table.c.honeypot_id,
                   irc_message_table.c.from_id,
@@ -167,8 +174,7 @@ Index('ircindex', irc_message_table.c.honeypot_id,
                   irc_message_table.c.dst_id,
                   irc_message_table.c.timestamp,
                   irc_message_table.c.text,
-                  unique=True
-)                    
+                  unique=True)                    
 
 # Objects
                         
@@ -239,9 +245,10 @@ class Honeypot(object):
                     if type(sbk) != type(Sebek()):
                         continue        
                     if seen.get(sbk.unique_fields(), None): 
-                        print 'Sebek record seen twice in import, ignoring'
-                        session.delete(sbk)
-                    else:          
+                        print 'Sebek record seen twice in import, ignoring', repr(sbk)
+                        session.delete(sbk) 
+                        continue
+                    else:   
                         seen[sbk.unique_fields()] = 1
                     if sbk_q.count(and_(Sebek.c.honeypot_id==sbk.c.honeypot_id,
                                         Sebek.c.type==sbk.c.type,
@@ -251,8 +258,8 @@ class Honeypot(object):
                                         Sebek.c.uid==sbk.c.uid,
                                         Sebek.c.command==sbk.c.command,
                                         Sebek.c.data==sbk.c.data))>0:
-                        print "Duplicate sebek record - skipping: ", sbk
-                        session.delete(sbk)
+                        print "Duplicate sebek record - skipping"
+                        session.delete(sbk) 
                 session.flush()                            
      
     def save_irc_changes(self, session):
@@ -324,20 +331,22 @@ class Flow(object):
                 continue            
             if key not in flow_table.c.keys(): 
                 raise ValueError("Bad row name %s" % key)
-            if (key == 'starttime' or key == 'lastseen') and (type(kwargs[key]) != type(datetime.now())):
-                self.__dict__[key] = datetime.utcfromtimestamp(kwargs[key])
-                continue
             self.__dict__[key] = kwargs[key]
         
     def __repr__(self):  
+        return "[honeypot: %s, ip_proto: %s, src: %s, dst: %s, type: %s, code: %s, packets: %s, bytes: %s, starttime: %s, lastseen: %s, filename: %s]" % \
+            (self.honeypot_id, self.ip_proto, self.src_id, self.dst_id, self.icmp_type, self.icmp_code, 
+            self.packets, self.bytes, self.starttime, self.lastseen, self.filename)             
+
+    def __str__(self):
         if self.ip_proto == socket.IPPROTO_ICMP: 
             return "[honeypot: %s, ip_proto: %s, src: %s, dst: %s, type: %s, code: %s, packets: %s, bytes: %s, starttime: %s, lastseen: %s, filename: %s]" % \
                 (self.honeypot_id, self.ip_proto, self.src_id, self.dst_id, self.icmp_type, self.icmp_code, 
-                self.packets, self.bytes, self.starttime, self.lastseen, self.filename)             
+                self.packets, self.bytes, asctime(gmtime(self.starttime)), asctime(gmtime(self.lastseen)), self.filename)             
         else:
             return "[honeypot: %s, ip_proto: %s, src: %s, sport: %s, dst: %s, dport: %s, packets: %s, bytes: %s, starttime: %s, lastseen: %s, filename: %s]" % \
                 (self.honeypot_id, self.ip_proto, self.src_id, self.sport, self.dst_id, self.dport, 
-                self.packets, self.bytes, self.starttime, self.lastseen, self.filename)
+                self.packets, self.bytes, asctime(gmtime(self.starttime)), asctime(gmtime(self.lastseen)), self.filename)        
 
     def _get_icmp_type(self):
         return self.sport
@@ -378,29 +387,27 @@ class Sebek(object):
         for key in kwargs:   
             if key not in sebek_table.c.keys():
                 raise ValueError("Bad row name %s" % key)  
-            if key == 'timestamp' and type(kwargs[key]) != type(datetime.now()):
-                kwargs[key] = datetime.utcfromtimestamp(kwargs[key])   
-            self.__dict__[key] = kwargs[key]
+            self.__dict__[key] = kwargs[key] 
+        if self.data and len(self.data) > MAX_SBK_DATA_SIZE:
+            self.data = self.data[0:MAX_SBK_DATA_SIZE]            
 
     def __repr__(self):
         return "[honeypot: %s, version: %s, type: %s, timestamp: %s, pid: %s, fd: %s, uid: %s, parent_pid: %s, inode: %s, command: %s, data: %s]" % \
                 (self.honeypot.id, self.version, self.type, self.timestamp, self.pid, self.fd, self.uid, 
                 self.parent_pid, self.inode, self.command, self.data)   
-                
-
     def __str__(self):
         if self.version == 3:
-             return "[%s ip:%s parent:%s pid:%s uid:%s fd:%s inode:%s com:%s] %s" % (self.timestamp, 
+             return "[%s ip:%s parent:%s pid:%s uid:%s fd:%s inode:%s com:%s] %s" % (asctime(gmtime(self.timestamp)), 
                     self.honeypot.ip_id, self.parent_pid, self.pid, self.uid, self.fd, self.inode, self.command, self.data)
         else:
-             return "[%s ip:%s pid:%s uid:%s fd:%s com:%s] %s" % (self.timestamp, 
+             return "[%s ip:%s pid:%s uid:%s fd:%s com:%s] %s" % (asctime(gmtime(self.timestamp)), 
                     self.honeypot.ip_id, self.pid, self.uid, self.fd, self.command, self.data)  
 
     def unique_fields(self):
         return (self.honeypot_id, self.type, self.timestamp, self.pid, self.fd, self.uid, self.command, self.data)
 
     @staticmethod
-    def num_of_type(session, hp, type, starttime=datetime.utcfromtimestamp(0), endtime=datetime.now()):
+    def num_of_type(session, hp, type, starttime=0, endtime=time()):
         """Return count() of sebek records within date range with type type"""
         return session.query(Sebek).count(and_(Sebek.c.honeypot_id==hp.c.id, Sebek.c.type==type, \
             Sebek.c.timestamp>starttime, Sebek.c.timestamp<endtime)) 
@@ -435,17 +442,13 @@ class IRC_Message(object):
             if (key not in irc_message_table.c.keys()):
                 if key not in ['irc_src', 'irc_dst']:
                     raise ValueError("Bad row name %s" % key)  
-            if key == 'timestamp' and type(kwargs[key]) != type(datetime.now()):
-                kwargs[key] = datetime.utcfromtimestamp(kwargs[key])   
             self.__dict__[key] = kwargs[key]    
 
     def __repr__(self):
         return "[timestamp: %s, id: %s, src_id: %s, dst_id: %s,  src_port: %s, dst_port: %s, command: %s, from_id: %s, to_id: %s, text: %s]" % \
-            (self.timestamp, self.id, self.src_id, self.dst_id, self.sport, self.dport, self.command, self.from_id, self.to_id, self.text) 
-            
-    def __str__(self):
-        return "[%s honeypot: %s, command: %s, text: %s]" % (self.timestamp, self.honeypot.id, self.command, self.text)
-        
+            (asctime(gmtime(self.timestamp)), self.id, self.src_id, self.dst_id, 
+            self.sport, self.dport, self.command, self.from_id, self.to_id, self.text) 
+
     def _get_channel(self):
         """return channel if dst is a channel"""
         if self.to.name[0] == '#':

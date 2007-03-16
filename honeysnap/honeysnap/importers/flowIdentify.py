@@ -24,7 +24,7 @@ import pcap
 import socket
 import sys
 import time                        
-from datetime import datetime  
+from time import time
 
 import dpkt                                                        
 
@@ -82,33 +82,32 @@ class FlowIdentify(object):
 
     def match_flow(self, ts, src, dst, sport, dport, proto, length ):
         # have we seen matching flow in this pcap file/already? 
-        time = datetime.utcfromtimestamp(ts)
         cached_flows = self.flows.get( (src, dst, sport, dport, proto), None)
         if cached_flows:
             for flow in cached_flows:      
-                if flow.lastseen > datetime.utcfromtimestamp(ts-FLOW_DELTA):  
-                    flow.lastseen = datetime.utcfromtimestamp(ts)
+                if flow.lastseen > ts-FLOW_DELTA:  
+                    flow.lastseen = ts
                     flow.bytes += length;
                     flow.packets += 1;
                     return
         srcid = Ip.id_by_ip(src)
         dstid = Ip.id_by_ip(dst)        
         flows = self.fq.select(and_(Flow.c.src_id == srcid, Flow.c.dst_id == dstid, Flow.c.sport == sport, 
-            Flow.c.dport == dport, Flow.c.lastseen > datetime.utcfromtimestamp(ts-FLOW_DELTA)), order_by = desc(Flow.c.starttime))
+            Flow.c.dport == dport, Flow.c.lastseen > ts-FLOW_DELTA), order_by = desc(Flow.c.starttime))
         if flows:              
             flow = flows[0]    # if more than one, append data to the last seen flow
-            if flow.starttime == time:
+            if flow.starttime == ts:
                 raise DuplicateFlow
             else:     
                 flow.bytes += length; 
                 flow.packets += 1     
-                flow.lastseen = datetime.utcfromtimestamp(ts)
+                flow.lastseen = ts
                 if not cached_flows:
                     self.flows[(src, dst, sport, dport, proto)] = []
                 self.flows[(src, dst, sport, dport, proto)].append(flow)
         else:                   
             flow = Flow(ip_proto=proto, src_id=srcid, dst_id=dstid, sport=sport, dport=dport, 
-                        starttime=time, lastseen=time, packets=1, bytes=length, filename=self.filename)
+                        starttime=ts, lastseen=ts, packets=1, bytes=length, filename=self.filename)
             self.hp.flows.append(flow)                   
             if not cached_flows:
                 self.flows[(src, dst, sport, dport, proto)] = []
