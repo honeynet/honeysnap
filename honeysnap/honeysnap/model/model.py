@@ -49,14 +49,12 @@ class Enum(types.Unicode):
         size = max([len(v) for v in values if v is not None])
         super(Enum, self).__init__(size)        
 
-
     def convert_bind_param(self, value, engine):
         if self.empty_to_none and value is '':
             value = None
         if value not in self.values:
             raise exceptions.AssertionError('"%s" not in Enum.values' % value)
         return super(Enum, self).convert_bind_param(value, engine)
-
 
     def convert_result_value(self, value, engine):
         if value not in self.values:
@@ -380,6 +378,20 @@ class Flow(object):
             return 0
         else:
             return r
+
+
+class SebekMapperExtension(MapperExtension):
+    """Enforce size limits on fields"""
+    def before_insert(self, mapper, connection, instance):
+        """called before an object instance is INSERTed into its table."""
+        if len(instance.data) > MAX_SBK_DATA_SIZE:
+            instance.data = instance.data[0:MAX_SBK_DATA_SIZE]
+        return EXT_PASS
+    def before_update(self, mapper, connection, instance):
+        """called before an object instance is UPDATED"""
+        if len(instance.data) > MAX_SBK_DATA_SIZE:
+            instance.data = instance.data[0:MAX_SBK_DATA_SIZE]
+        return EXT_PASS
        
 class Sebek(object):
     """Sebek data""" 
@@ -395,7 +407,7 @@ class Sebek(object):
         return "[honeypot: %s, version: %s, type: %s, timestamp: %s, pid: %s, fd: %s, uid: %s, parent_pid: %s, inode: %s, command: %s, data: %s]" % \
                 (self.honeypot.id, self.version, self.type, self.timestamp, self.pid, self.fd, self.uid, 
                 self.parent_pid, self.inode, self.command, self.data)   
-    def __str__(self):
+    def __str__(self):   
         if self.version == 3:
              return "[%s ip:%s parent:%s pid:%s uid:%s fd:%s inode:%s com:%s] %s" % (asctime(gmtime(self.timestamp)), 
                     self.honeypot.ip_id, self.parent_pid, self.pid, self.uid, self.fd, self.inode, self.command, self.data)
@@ -475,7 +487,7 @@ mapper(Honeypot, honeypot_table, properties={
       
 mapper(Ip, ip_table)
 mapper(Flow, flow_table)
-mapper(Sebek, sebek_table)                 
+mapper(Sebek, sebek_table, extension=SebekMapperExtension())                 
 mapper(IRC_Talker, irc_talker_table, properties={
     "sent": relation(IRC_Message, lazy=None, passive_deletes=True, cascade="all, delete-orphan", 
         primaryjoin=irc_message_table.c.from_id==irc_talker_table.c.id, backref="irc_src"),

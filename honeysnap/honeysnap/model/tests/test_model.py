@@ -101,6 +101,27 @@ class test_model(unittest.TestCase):
     def test_sebek_init(self):
         """__init__ should raises ValueError with bad key"""
         sebek = Sebek(version=3, type=0, starttime=time(), pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data='uname -a')
+
+    def test_sebek_init_long(self):
+        """__init__ should truncate data length"""
+        data = ''.join( 'a' for x in xrange(0,MAX_SBK_DATA_SIZE+5))
+        s = Sebek(version=3, type=0, timestamp=time(), pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data = data)
+        assert len(s.data) == MAX_SBK_DATA_SIZE
+        
+    def test_sebek_insert(self):
+        """before_insert and before_update should truncate data lenth"""  
+        sbq = self.session.query(Sebek) 
+        h = Honeypot.by_ip(self.session, "192.168.0.1")         
+        s = Sebek(version=3, type=0, timestamp=time(), pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324)
+        s.data = ''.join( 'a' for x in xrange(0,MAX_SBK_DATA_SIZE+5))
+        h.sebek_lines.append(s)
+        self.session.save(s)
+        self.session.flush()  
+        assert len(s.data) == MAX_SBK_DATA_SIZE
+        s.data = ''.join( 'a' for x in xrange(0,MAX_SBK_DATA_SIZE+5))
+        self.session.save(s)
+        self.session.flush() 
+        assert len(s.data) == MAX_SBK_DATA_SIZE                                            
         
     @raises(SQLError)
     def test_sebek_dup(self):
