@@ -179,10 +179,10 @@ Index('ircindex', irc_message_table.c.honeypot_id,
 class Honeypot(object):  
     """Honeypot stores details of individual honeypots"""
     def __init__(self, **kwargs):        
-        for key in kwargs:       
-            if key not in honeypot_table.c.keys():
-                raise ValueError("Bad row name %s" % key)            
-            self.__dict__[key] = kwargs[key]
+        for k, v in kwargs.iteritems():       
+            if k not in honeypot_table.c.keys():
+                raise ValueError("Bad row name %s" % k)            
+            setattr(self, k, v)
         
     def __repr__(self):
         return "[name: %s, ip_id: %s, state: %s, description: %s]" % \
@@ -256,7 +256,7 @@ class Honeypot(object):
                                         Sebek.c.uid==sbk.c.uid,
                                         Sebek.c.command==sbk.c.command,
                                         Sebek.c.data==sbk.c.data))>0:
-                        print "Duplicate sebek record - skipping"
+                        print "Duplicate sebek record - skipping", sbk
                         session.delete(sbk) 
                 session.flush()                            
      
@@ -293,10 +293,10 @@ class Ip(object):
     ipid_cache = {}    
       
     def __init__(self, **kwargs):                 
-        for key in kwargs:           
-            if key not in ip_table.c.keys():
-                raise ValueError("Bad row name %s" % key)            
-            self.__dict__[key] = kwargs[key]
+        for k, v in kwargs.iteritems():           
+            if k not in ip_table.c.keys():
+                raise ValueError("Bad row name %s" % k)  
+            setattr(self, k, v)              
     
     def __repr__(self):
         return "[ip_addr: %s, latitude: %s, longitude: %s, isp: %s, domain: %s, country: %s, city: %s]" % \
@@ -320,16 +320,16 @@ class Ip(object):
 class Flow(object):
     """Flow stats"""
     def __init__(self, **kwargs):
-        for key in kwargs:                      
-            if key == 'icmp_type':
-                self.icmp_type = kwargs[key]
+        for k, v in kwargs.iteritems():                      
+            if k == 'icmp_type':
+                self.icmp_type = v
                 continue
-            if key == 'icmp_code':
-                self.icmp_code = kwargs[key]
+            if k == 'icmp_code':
+                self.icmp_code = v
                 continue            
-            if key not in flow_table.c.keys(): 
-                raise ValueError("Bad row name %s" % key)
-            self.__dict__[key] = kwargs[key]
+            if k not in flow_table.c.keys(): 
+                raise ValueError("Bad row name %s" % k)
+            setattr(self, k, v)    
         
     def __repr__(self):  
         return "[honeypot: %s, ip_proto: %s, src: %s, dst: %s, type: %s, code: %s, packets: %s, bytes: %s, starttime: %s, lastseen: %s, filename: %s]" % \
@@ -396,10 +396,10 @@ class SebekMapperExtension(MapperExtension):
 class Sebek(object):
     """Sebek data""" 
     def __init__(self, **kwargs):
-        for key in kwargs:   
-            if key not in sebek_table.c.keys():
-                raise ValueError("Bad row name %s" % key)  
-            self.__dict__[key] = kwargs[key] 
+        for k, v in kwargs.iteritems():   
+            if k not in sebek_table.c.keys():
+                raise ValueError("Bad row name %s" % k)  
+            setattr(self, k, v)    
         if self.data and len(self.data) > MAX_SBK_DATA_SIZE:
             self.data = self.data[0:MAX_SBK_DATA_SIZE]            
 
@@ -436,10 +436,10 @@ class Sebek(object):
 class IRC_Talker(object):
     """Store details of a sender or receiver of an IRC messsage (could be channel, nick or server)"""
     def __init__(self, **kwargs):        
-        for key in kwargs:       
-            if key not in irc_talker_table.c.keys():
-                raise ValueError("Bad row name %s" % key)            
-            self.__dict__[key] = kwargs[key]
+        for k, v in kwargs.iteritems():       
+            if k not in irc_talker_table.c.keys():
+                raise ValueError("Bad row name %s" % k)
+            setattr(self, k, v)                
 
     def __repr__(self):
         return "[id: %s, name: %s]" % (self.id, self.name)
@@ -450,11 +450,11 @@ class IRC_Talker(object):
 class IRC_Message(object):
     """store irc message details"""
     def __init__(self, **kwargs):
-        for key in kwargs:   
-            if (key not in irc_message_table.c.keys()):
-                if key not in ['irc_src', 'irc_dst']:
-                    raise ValueError("Bad row name %s" % key)  
-            self.__dict__[key] = kwargs[key]    
+        for k, v in kwargs.iteritems():   
+            if (k not in irc_message_table.c.keys()):
+                if k not in ['irc_src', 'irc_dst']:
+                    raise ValueError("Bad row name %s" % k)  
+            setattr(self, k, v)    
 
     def __repr__(self):
         return "[timestamp: %s, id: %s, src_id: %s, dst_id: %s,  src_port: %s, dst_port: %s, command: %s, from_id: %s, to_id: %s, text: %s]" % \
