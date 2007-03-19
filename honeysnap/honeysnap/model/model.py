@@ -256,7 +256,7 @@ class Honeypot(object):
                                         Sebek.c.uid==sbk.c.uid,
                                         Sebek.c.command==sbk.c.command,
                                         Sebek.c.data==sbk.c.data))>0:
-                        print "Duplicate sebek record - skipping", sbk
+                        print "Duplicate sebek record - skipping", repr(sbk)
                         session.delete(sbk) 
                 session.flush()                            
      

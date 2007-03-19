@@ -20,14 +20,10 @@
 
 # $Id$
 
-#from irclib import is_channel, ip_numstr_to_quad, ip_quad_to_numstr, nm_to_n
-#from irclib import nm_to_uh, nm_to_h, nm_to_u, parse_nick_modes
-#from irclib import parse_channel_modes, _linesep_regexp, _parse_modes
 from irclib import *
 from irclib import _linesep_regexp, _parse_modes, _rfc_1459_command_regexp
 from irclib import _ctcp_dequote
 import dpkt
-#import dnet     
 import irclib
 import math
 import optparse
@@ -207,10 +203,10 @@ class HnyIRC(irclib.IRC):
         self.connection = c
         return c
         
-    def process_data(self, ts, data):
+    def process_data(self, ts, data):   
         self.connection.process_data(ts, data)
 
-    def process_once(self, timeout=0):
+    def process_once(self, timeout=0):   
         for ts, pkt in self.connection.pc:
             ip = dpkt.ip.IP(pkt[self.connection.pc.dloff:])
             try:
@@ -220,7 +216,7 @@ class HnyIRC(irclib.IRC):
                 #import pdb, traceback
                 #traceback.print_exc(file=sys.stdout)
                 #pdb.post_mortem(sys.exc_traceback)
-                #print "ERROR on:\n%s" % dpkt.hexdump(str(ip.tcp.data))
+                #print "ERROR on:\n%s" % dpkt.hexdump(str(ip.tcp.data))   
                 continue
 
     def process_forever(self, timeout=0):

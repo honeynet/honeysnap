@@ -59,7 +59,6 @@ struct sbk_h{
 
 import sys
 import struct
-import time
 import re
 from socket import inet_ntoa
 import dpkt
