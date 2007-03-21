@@ -26,47 +26,47 @@ import sys
 import tempfile
 from nose.tools import raises                                       
 
-from honeysnap.importers.main import parseOptions
+from honeysnap.importers.main import parse_options
 
 class test_pcapinfo(unittest.TestCase):   
     """Test pcapinfo"""
     
     @raises(SystemExit)
     def test_empty_config_file(self):
-        """parseOptions should exit on empty config file"""
+        """parse_options should exit on empty config file"""
         file = tempfile.NamedTemporaryFile()                        
         sys.argv = ['honeysnap', '-c', file.name]
-        print_help, options, arg = parseOptions()      
+        print_help, options, arg = parse_options()      
 
     @raises(SystemExit)
     def test_bad_config_file(self):
-        """parseOptions should take exit on bad config file"""
+        """parse_options should take exit on bad config file"""
         file = tempfile.NamedTemporaryFile()
         file.write("fred\n")
         file.flush()
         sys.argv = ['honeysnap', '-c', file.name]
-        print_help, options, arg = parseOptions()        
+        print_help, options, arg = parse_options()        
        
     @raises(SystemExit)
     def test_no_honeypots(self):
-        """parseOptions should exit if no honeypots specified"""
+        """parse_options should exit if no honeypots specified"""
         sys.argv = ['honeysnap']
-        print_help, options, arg = parseOptions()        
+        print_help, options, arg = parse_options()        
                                                  
     @raises(SystemExit)
     def test_sebek_int(self):
-        """parseOptions should exit if sebek_port is not an int"""
+        """parse_options should exit if sebek_port is not an int"""
         sys.argv = ['honeysnap', '-H', '192.168.0.1', '--sebek-port', 'a']
-        print_help, options, arg = parseOptions()        
+        print_help, options, arg = parse_options()        
 
     def test_command_over_default(self):
-        """parseOptions should take command line options over defaults"""
+        """parse_options should take command line options over defaults"""
         sys.argv = ['honeysnap', '-H', '192.168.0.1', '--sebek-port', 11]
-        print_help, options, arg = parseOptions()        
+        print_help, options, arg = parse_options()        
         assert options['sebek_port'] == 11
                                                                       
     def test_config_over_default(self):
-        """parseOptions should take config file over defaults"""
+        """parse_options should take config file over defaults"""
         file = tempfile.NamedTemporaryFile(mode="w")
         file.write("[IO]\n")
         file.write("honeypots=192.168.0.1\n")
@@ -74,12 +74,12 @@ class test_pcapinfo(unittest.TestCase):
         file.write("sebek_port=22\n")
         file.flush()
         sys.argv = ['honeysnap', '-c', file.name]
-        print_help, options, arg = parseOptions()        
+        print_help, options, arg = parse_options()        
         assert options['honeypots'] == ['192.168.0.1']
         assert options['sebek_port'] == 22
         
     def test_command_over_config(self):
-        """parseOptions should take command line opts over config file opts"""
+        """parse_options should take command line opts over config file opts"""
         file = tempfile.NamedTemporaryFile(mode="w")
         file.write("[IO]\n")
         file.write("honeypots=192.168.0.1\n")
@@ -87,14 +87,14 @@ class test_pcapinfo(unittest.TestCase):
         file.write("sebek_port=22\n")
         file.flush()
         sys.argv = ['honeysnap', '-c', file.name, '-H', '192.168.0.2', '--sebek-port', '2222']
-        print_help, options, arg = parseOptions()        
+        print_help, options, arg = parse_options()        
         assert options['honeypots'] == ['192.168.0.2']
         assert options['sebek_port'] == 2222        
         
     def test_honeypot_list(self):
-        """parseOptions should split honeypots on comma"""
+        """parse_options should split honeypots on comma"""
         sys.argv = ['honeysnap', '-H', '192.168.0.1,192.168.0.2']
-        print_help, options, arg = parseOptions()
+        print_help, options, arg = parse_options()
         assert options['honeypots'] == ['192.168.0.1', '192.168.0.2']  
 
 

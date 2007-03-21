@@ -222,7 +222,7 @@ class HnyIRC(irclib.IRC):
     def process_forever(self, timeout=0):
         return self.process_once()
     
-class HoneySnapIRC(irclib.SimpleIRCClient):
+class HoneysnapIRC(irclib.SimpleIRCClient):
     def __init__(self):
         self.ircobj = HnyIRC()
         self.connection = self.ircobj.server()

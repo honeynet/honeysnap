@@ -39,7 +39,8 @@ import pcap
 # all the honeysnap imports
 from pcapinfo import PCapInfo
 from flowIdentify import FlowIdentify
-from sebekDecode import SebekDecode         
+from sebekDecode import SebekDecode  
+from ircDecode import IrcDecode       
 from honeysnap.singletonmixin import HoneysnapSingleton
 from honeysnap.util import make_dir, check_pcap_file
                                     
@@ -49,7 +50,7 @@ def main():
     """
     Set everything off and handle files/stdin etc
     """
-    print_help, options, args = parseOptions()
+    print_help, options, args = parse_options()
     if len(sys.argv)>1:
         if options['honeypots'] is None:
             print "No honeypots specified. Please use either -H or config file to specify honeypots.\n"
@@ -60,7 +61,7 @@ def main():
         if len(args):
             for f in args:
                 if os.path.exists(f) and os.path.isfile(f):
-                    processFile(f)
+                    process_file(f)
                 else:
                     print "File not found: %s" % f
                     sys.exit(2)
@@ -81,7 +82,7 @@ def main():
     else:
         print_help()
 
-def processFile(file):
+def process_file(file):
     """
     Process a pcap file 'file'.
     """
@@ -89,7 +90,6 @@ def processFile(file):
     options = hs.getOptions()
     file = os.path.abspath(file)
     tmpf, deletetmp = check_pcap_file(file)
-    
     print "Analysing file: %s" % file
     # always get pcap info to find starttime and endtime 
     print "Getting pcap info for %s" % file
@@ -97,24 +97,21 @@ def processFile(file):
     starttime, endtime = pi.get_stats()
     hs.setOption('starttime', datetime.utcfromtimestamp(starttime))
     hs.setOption('endtime', datetime.utcfromtimestamp(endtime))    
-
     for hp in options["honeypots"]:
         print "Importing connections for %s" % hp
         s = FlowIdentify(tmpf, file, hp)
-        filt = 'host %s' % hp
-        s.setFilter(filt)
-        s.start()
-
-    for hp in options["honeypots"]:
+        s.run()
         print "Importing sebek data for honeypot %s" % hp
         sbd = SebekDecode(tmpf, file, hp)
-        sbd.run()
-                  
+        sbd.run() 
+        print "Importing IRC for honeypot %s" % hp
+        ircd = IrcDecode(tmpf, file, hp)
+        ircd.run()
     # delete the tmp file we used to hold unzipped data
     if deletetmp:
         os.unlink(tmpf)
 
-def parseOptions():
+def parse_options():
     """
     Read options from both config file and command line and merge
     Precedence order: Command line > config file > defaults

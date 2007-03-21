@@ -198,7 +198,7 @@ class Honeypot(object):
         try:
             h = Honeypot.by_ip(session, hp)            
         except HoneysnapModelError:
-            ipid = Ip.id_by_ip(hp)
+            ipid = Ip.id_get_or_create(hp)
             h = Honeypot(name=name, ip_id=ipid, state="Up")
             session.save(h)  
             session.flush()
@@ -208,7 +208,7 @@ class Honeypot(object):
     def by_ip(session, ip): 
         """Return a Honeypot object found by IP""" 
         try:    
-            return session.query(Honeypot).selectone(Honeypot.c.ip_id == Ip.id_by_ip(ip))
+            return session.query(Honeypot).selectone(Honeypot.c.ip_id == Ip.id_get_or_create(ip))
         except exceptions.InvalidRequestError:
             raise HoneysnapModelError("Honeypot not defined in DB!") 
 
@@ -304,17 +304,13 @@ class Ip(object):
                self.domain, self.country, self.city)
                
     @staticmethod
-    def id_by_ip(ip_addr):  
-        """return id field for a IP object"""                        
-        #if Ip.ipid_cache.has_key(ip_addr): 
-        #    return Ip.ipid_cache[ip_addr] 
+    def id_get_or_create(ip_addr):  
+        """return id field for a IP object, creating if it necessary"""                        
         ip = ip_table.select(ip_table.c.ip_addr==ip_addr).execute().fetchone() 
         if ip:                   
-            #Ip.ipid_cache[ip_addr] = ip.id
             return ip.id  
         r = ip_table.insert().execute(ip_addr=ip_addr)        
         id = r.last_inserted_ids()[0] 
-        #Ip.ipid_cache[ip_addr] = id  
         return id
                            
 class Flow(object):
@@ -433,7 +429,7 @@ class Sebek(object):
             return session.query(Sebek).select(and_(Sebek.c.timestamp>starttime, Sebek.c.timestamp<endtime, \
                 Sebek.c.honeypot_id==hp.c.id, Sebek.c.type==type))
             
-class IRC_Talker(object):
+class IRCTalker(object):
     """Store details of a sender or receiver of an IRC messsage (could be channel, nick or server)"""
     def __init__(self, **kwargs):        
         for k, v in kwargs.iteritems():       
@@ -447,7 +443,7 @@ class IRC_Talker(object):
     def __str__(self):
         return "[name: %s]" % (self.name)
           
-class IRC_Message(object):
+class IRCMessage(object):
     """store irc message details"""
     def __init__(self, **kwargs):
         for k, v in kwargs.iteritems():   
@@ -463,8 +459,8 @@ class IRC_Message(object):
 
     def _get_channel(self):
         """return channel if dst is a channel"""
-        if self.to.name[0] == '#':
-            return self.dst.name
+        if self.irc_dst.name[0] == '#':
+            return self.irc_dst.name
         else:
             return None
             
@@ -481,21 +477,21 @@ mapper(Honeypot, honeypot_table, properties={
         cascade="all, delete-orphan"),
     "sebek_lines": relation(Sebek, lazy=None, passive_deletes=True, backref="honeypot", 
         cascade="all, delete-orphan"), 
-    "irc_messages": relation(IRC_Message, lazy=None, passive_deletes=True, backref="honeypot",
+    "irc_messages": relation(IRCMessage, lazy=None, passive_deletes=True, backref="honeypot",
         cascade="all, delete-orphan"),
 })                                                    
       
 mapper(Ip, ip_table)
 mapper(Flow, flow_table)
 mapper(Sebek, sebek_table, extension=SebekMapperExtension())                 
-mapper(IRC_Talker, irc_talker_table, properties={
-    "sent": relation(IRC_Message, lazy=None, passive_deletes=True, cascade="all, delete-orphan", 
+mapper(IRCTalker, irc_talker_table, properties={
+    "sent": relation(IRCMessage, lazy=None, passive_deletes=True, cascade="all, delete-orphan", 
         primaryjoin=irc_message_table.c.from_id==irc_talker_table.c.id, backref="irc_src"),
-    "received": relation(IRC_Message, lazy=None, passive_deletes=True, cascade="all, delete-orphan", 
+    "received": relation(IRCMessage, lazy=None, passive_deletes=True, cascade="all, delete-orphan", 
         primaryjoin=irc_message_table.c.to_id==irc_talker_table.c.id, backref="irc_dst"),
 })
 
-mapper(IRC_Message, irc_message_table)
+mapper(IRCMessage, irc_message_table)
 
 # init and create tables if needed  
 def connect_to_db(dburi, debug=False):

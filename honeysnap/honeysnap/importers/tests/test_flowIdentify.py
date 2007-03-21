@@ -154,8 +154,8 @@ class test_flowIdentify(unittest.TestCase):
 
     def test_match_flow_in_db(self):
         """match_flow should spot flow in db and set cache correctly"""             
-        src_id = Ip.id_by_ip('192.168.0.1')
-        dst_id = Ip.id_by_ip('192.168.0.2')  
+        src_id = Ip.id_get_or_create('192.168.0.1')
+        dst_id = Ip.id_get_or_create('192.168.0.2')  
         ts = 111111
         self.fid.hp.flows.append( Flow( ip_proto=6, src_id=src_id, dst_id=dst_id, sport=80, 
                                                     dport=664, starttime=ts, lastseen=ts, packets=1, 
@@ -167,8 +167,8 @@ class test_flowIdentify(unittest.TestCase):
                                                                                                                                
     def test_match_flow_over_boundary_in_db(self):
         """match_flow should spot flow in db and set cache correctly"""             
-        src_id = Ip.id_by_ip('192.168.0.1')
-        dst_id = Ip.id_by_ip('192.168.0.2')  
+        src_id = Ip.id_get_or_create('192.168.0.1')
+        dst_id = Ip.id_get_or_create('192.168.0.2')  
         ts1 = 111111  
         ts2 = ts1 + FLOW_DELTA -3
         ts3 = ts1 + FLOW_DELTA + 10
@@ -184,8 +184,8 @@ class test_flowIdentify(unittest.TestCase):
 
     def test_match_flow_in_db_pre_hour(self):
         """match_flow should spot flow in db, but create new if it was more than FLOW_DELTA ago"""             
-        src_id = Ip.id_by_ip('192.168.0.1')
-        dst_id = Ip.id_by_ip('192.168.0.2') 
+        src_id = Ip.id_get_or_create('192.168.0.1')
+        dst_id = Ip.id_get_or_create('192.168.0.2') 
         ts1 = 111111
         ts2 = ts1+FLOW_DELTA+564
         self.fid.hp.flows.append( Flow( ip_proto=6, src_id=src_id, dst_id=dst_id, sport=80, 
@@ -199,8 +199,8 @@ class test_flowIdentify(unittest.TestCase):
         """match_flow should create new flow if no flow matches"""    
         ts1 = 111111
         ts2 = ts1+3
-        src_id = Ip.id_by_ip('192.168.0.1')
-        dst_id = Ip.id_by_ip('192.168.0.2')      
+        src_id = Ip.id_get_or_create('192.168.0.1')
+        dst_id = Ip.id_get_or_create('192.168.0.2')      
         flow = Flow( ip_proto=6, src_id=src_id, dst_id=dst_id, sport=80, 
                     dport=664, starttime=ts1, lastseen=ts1, packets=1, 
                     bytes=20, filename='testing')

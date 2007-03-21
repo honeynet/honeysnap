@@ -1,6 +1,6 @@
 ################################################################################
 # (c) 2006, The Honeynet Project
-#   Author: Jed Haile  jed.haile@thelogangroup.biz
+#   Author: Arthur Clune arthur@honeynet.org.uk
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -28,7 +28,6 @@ from time import time
 
 import dpkt                                                        
 
-from honeysnap.util import make_dir  
 from honeysnap.singletonmixin import HoneysnapSingleton      
 from honeysnap.model.model import *
                  
@@ -45,25 +44,23 @@ class FlowIdentify(object):
     """
     FlowIdentify takes a pcapObj
     This class reads the pcap data, hands it to a decoder, and then keys each packet
-    by (srcip, dstip, dport), before storing in a db
+    by (srcip, dstip, sport, dport, proto), before storing in a db
     """
-    def __init__(self, file, filename, hp): 
+    def __init__(self, file, filename, hp):  
+        """Create object, open pcap file, set filter and create queries"""
         hs = HoneysnapSingleton.getInstance()
         options = hs.getOptions()
         self.engine = connect_to_db(options['dburi'], options['debug'])
         self.filename = filename
         self.p = pcap.pcap(file)
+        self.p.setfilter("host %s" % hp)
         self.session = create_session()
         self.fq = self.session.query(Flow)  
         self.ipq = self.session.query(Ip)
         self.hp = Honeypot.get_or_create(self.session, hp) 
         self.flows = {}
 
-    def setFilter(self, filter): 
-        """Set pcap filter on file"""
-        self.p.setfilter(filter)
-        
-    def start(self):
+    def run(self):
         """Iterate over a pcap object"""
         for ts, buf in self.p:
             self.packet_handler(ts, buf)
@@ -81,7 +78,7 @@ class FlowIdentify(object):
             return
 
     def match_flow(self, ts, src, dst, sport, dport, proto, length ):
-        # have we seen matching flow in this pcap file/already? 
+        """have we seen matching flow in this pcap file/already? """
         cached_flows = self.flows.get( (src, dst, sport, dport, proto), None)
         if cached_flows:
             for flow in cached_flows:      
@@ -90,8 +87,8 @@ class FlowIdentify(object):
                     flow.bytes += length;
                     flow.packets += 1;
                     return
-        srcid = Ip.id_by_ip(src)
-        dstid = Ip.id_by_ip(dst)        
+        srcid = Ip.id_get_or_create(src)
+        dstid = Ip.id_get_or_create(dst)        
         flows = self.fq.select(and_(Flow.c.src_id == srcid, Flow.c.dst_id == dstid, Flow.c.sport == sport, 
             Flow.c.dport == dport, Flow.c.lastseen > ts-FLOW_DELTA), order_by = desc(Flow.c.starttime))
         if flows:              
