@@ -39,7 +39,7 @@ op.add_option('--ip-dburi', dest='ip_dburi', help='dburi from ip2location db')
 op.add_option('--debug', dest='debug', action="store_const", const=True, help='Show generated SQL?')
 opts, args = op.parse_args()
 if not (opts.dburi and opts.ip_dburi):
-    op.error('Must give a dburi and a ip_dburi')
+    op.error('Must give --dburi and --ip-dburi')
     sys.exit(1)  
               
 if opts.debug:
