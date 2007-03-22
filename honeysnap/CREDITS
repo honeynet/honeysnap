@@ -1,0 +1,22 @@
+$Id$
+                                                                     
+Code:
+
+Jed Haile and Arthur Clune
+
+IRC Decoding code: Jeff Nathan
+DNS Code: David Barroso
+
+Original shell Honeysnap concept:
+
+UK Honeynet Project (Dave Watson, Steve Mumford and Arthur Clune)
+
+With thanks to the following for bug fixes, suggestions and comments:
+
+Dave Dittrich
+William Salusky
+David Watson  
+Ralph Logan
+Mike Davies
+Adli Abdul Wahid  
+Steve Mumford
