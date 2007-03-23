@@ -54,7 +54,8 @@ class test_model(unittest.TestCase):
         h.sebek_lines.append(sebek)
         self.session.flush()
         
-    def tearDown(self):
+    def tearDown(self): 
+        Ip.ipid_cache = {}
         self.session.clear() 
         metadata.drop_all()
          

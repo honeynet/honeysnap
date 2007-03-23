@@ -23,11 +23,11 @@ from time import asctime, gmtime, time
 from sqlalchemy import * 
 from sqlalchemy.ext.selectresults import SelectResults  
 from sqlalchemy.ext.activemapper import metadata
-
+                               
 # max length of sebek data
 # must be < ~700 for mysql but can be larger for postgres
 MAX_SBK_DATA_SIZE = 512
-                         
+
 class HoneysnapModelError(Exception):
     pass
 
@@ -306,11 +306,15 @@ class Ip(object):
     @staticmethod
     def id_get_or_create(ip_addr):  
         """return id field for a IP object, creating if it necessary"""                        
+        if Ip.ipid_cache.has_key(ip_addr):   
+            return Ip.ipid_cache[ip_addr]
         ip = ip_table.select(ip_table.c.ip_addr==ip_addr).execute().fetchone() 
-        if ip:                   
+        if ip:                                           
+            Ip.ipid_cache[ip_addr] = ip.id            
             return ip.id  
         r = ip_table.insert().execute(ip_addr=ip_addr)        
         id = r.last_inserted_ids()[0] 
+        Ip.ipid_cache[ip_addr] = id                
         return id
                            
 class Flow(object):
@@ -374,21 +378,7 @@ class Flow(object):
             return 0
         else:
             return r
-
-
-class SebekMapperExtension(MapperExtension):
-    """Enforce size limits on fields"""
-    def before_insert(self, mapper, connection, instance):
-        """called before an object instance is INSERTed into its table."""
-        if len(instance.data) > MAX_SBK_DATA_SIZE:
-            instance.data = instance.data[0:MAX_SBK_DATA_SIZE]
-        return EXT_PASS
-    def before_update(self, mapper, connection, instance):
-        """called before an object instance is UPDATED"""
-        if len(instance.data) > MAX_SBK_DATA_SIZE:
-            instance.data = instance.data[0:MAX_SBK_DATA_SIZE]
-        return EXT_PASS
-       
+     
 class Sebek(object):
     """Sebek data""" 
     def __init__(self, **kwargs):
@@ -470,6 +460,29 @@ class IRCMessage(object):
         """return unique fields"""
         return (self.honeypot_id, self.from_id, self.to_id, self.command, self.src_id, self.dst_id, self.timestamp, self.text)
 
+# Mapper extensions
+
+class SebekMapperExtension(MapperExtension):
+    """Enforce size limits on fields"""
+    def before_insert(self, mapper, connection, instance):
+        """called before an object instance is INSERTed into its table."""
+        if len(instance.data) > MAX_SBK_DATA_SIZE:
+            instance.data = instance.data[0:MAX_SBK_DATA_SIZE]
+        return EXT_PASS
+    def before_update(self, mapper, connection, instance):
+        """called before an object instance is UPDATED"""
+        if len(instance.data) > MAX_SBK_DATA_SIZE:
+            instance.data = instance.data[0:MAX_SBK_DATA_SIZE]
+        return EXT_PASS
+
+class IpMapperExtension(MapperExtension):
+    """Manage ip id cache"""         
+    def before_delete(self, mapper, connection, instance):
+        """called before an object is deleted"""
+        if Ip.ipid_cache.has_key(instance.ip_addr):
+            del Ip.ipid_cache[instance.ip_addr]
+        return EXT_PASS 
+
 # Table -> Object mappers
 
 mapper(Honeypot, honeypot_table, properties={ 
@@ -481,7 +494,7 @@ mapper(Honeypot, honeypot_table, properties={
         cascade="all, delete-orphan"),
 })                                                    
       
-mapper(Ip, ip_table)
+mapper(Ip, ip_table, extension=IpMapperExtension())
 mapper(Flow, flow_table)
 mapper(Sebek, sebek_table, extension=SebekMapperExtension())                 
 mapper(IRCTalker, irc_talker_table, properties={
