@@ -147,14 +147,14 @@ irc_message_table = Table('irc_message', metadata,
 
 # Indexes
 
-Index('flowindex', flow_table.c.starttime, 
+flowindex = Index('flowindex', flow_table.c.starttime, 
                    flow_table.c.src_id, 
                    flow_table.c.sport, 
                    flow_table.c.dst_id,
                    flow_table.c.dport,
                    unique = True) 
                    
-Index('sebekindex', sebek_table.c.honeypot_id, 
+sebekindex = Index('sebekindex', sebek_table.c.honeypot_id, 
                     sebek_table.c.type,
                     sebek_table.c.timestamp,
                     sebek_table.c.pid,
@@ -164,7 +164,7 @@ Index('sebekindex', sebek_table.c.honeypot_id,
                     sebek_table.c.data,
                     unique = True)   
                     
-Index('ircindex', irc_message_table.c.honeypot_id,
+ircindex = Index('ircindex', 
                   irc_message_table.c.from_id,
                   irc_message_table.c.to_id,
                   irc_message_table.c.command,
@@ -218,7 +218,8 @@ class Honeypot(object):
             session.flush()
         except exceptions.SQLError, e:     
             if "IntegrityError" in e.args[0]:
-                fq = session.query(Flow)          
+                dups = []
+                fq = session.query(Flow) 
                 for flow in session.new:   
                     if type(flow) != type(Flow()):
                         continue
@@ -228,26 +229,33 @@ class Honeypot(object):
                                      Flow.c.dport==flow.dport, 
                                      Flow.c.starttime==flow.starttime))>0:
                         print "Duplicate flow - skipping: ", flow
-                        session.delete(flow)
+                        dups.append(flow)
+                for flow in dups:
+                    session.expunge(flow)
                 session.flush()
                                 
     def save_sebek_changes(self, session):
-        """Save sebek records to db, dealing with dulicate entries"""
+        """Save sebek records to db, dealing with dulicate entries""" 
+        seen = {}
+        dups = []
+        for sbk in session.new:   
+             if type(sbk) != type(Sebek()):
+                 continue        
+             if seen.get(sbk.unique_fields(), None): 
+                 print 'Sebek record seen twice in import, ignoring: ', repr(sbk)
+                 dups.append(sbk)
+                 continue
+             else:   
+                 seen[sbk.unique_fields()] = 1
+        for sbk in dups:
+            session.expunge(sbk)  
         try:    
             session.flush()
         except exceptions.SQLError, e:     
             if "IntegrityError" in e.args[0]:
-                seen = {}
-                sbk_q = session.query(Sebek)          
-                for sbk in session.new:   
-                    if type(sbk) != type(Sebek()):
-                        continue        
-                    if seen.get(sbk.unique_fields(), None): 
-                        print 'Sebek record seen twice in import, ignoring', repr(sbk)
-                        session.delete(sbk) 
-                        continue
-                    else:   
-                        seen[sbk.unique_fields()] = 1
+                dups = []
+                sbk_q = session.query(Sebek) 
+                for sbk in session.new:         
                     if sbk_q.count(and_(Sebek.c.honeypot_id==sbk.c.honeypot_id,
                                         Sebek.c.type==sbk.c.type,
                                         Sebek.c.timestamp==sbk.c.timestamp,
@@ -256,25 +264,39 @@ class Honeypot(object):
                                         Sebek.c.uid==sbk.c.uid,
                                         Sebek.c.command==sbk.c.command,
                                         Sebek.c.data==sbk.c.data))>0:
-                        print "Duplicate sebek record - skipping", repr(sbk)
-                        session.delete(sbk) 
+                        print "Duplicate sebek record - skipping: ", repr(sbk)
+                        dups.append(sbk) 
+                for sbk in dups:
+                    session.expunge(sbk)                    
                 session.flush()                            
      
     def save_irc_changes(self, session):
-        """Save irc changes to db, dealing with duplicate entries"""
-        try:
+        """Save irc changes to db, dealing with duplicate entries""" 
+        seen = {}
+        dups = []     
+        count = 0     
+        for msg in session.new:
+            if type(msg) != type(IRCMessage()):
+                continue 
+            if seen.get(msg.unique_fields(), None):
+                print 'IRC message seen twice in import, ignoring: ', repr(msg)
+                dups.append(msg) 
+                count += 1
+                continue 
+            else:
+                seen[msg.unique_fields()] = 1  
+        for msg in dups:                         
+            session.expunge(msg) 
+        try:        
             session.flush()
-        except exceptions.SQLError, e:
+        except exceptions.SQLError, e:             
             if "IntegrityError" in e.args[0]:
-                seen = {}
-                irc_q = session.query(IRC_Message)
+                seen = {} 
+                dups = []          
+                irc_q = session.query(IRCMessage)
                 for msg in session.new:
-                    if type(msg) != type(IRC_Message()):
+                    if type(msg) != type(IRCMessage()):
                         continue 
-                    if seen.get(msg.unique_fields(), None):
-                        print 'IRC message seen twice in import, ignoring'
-                    else:
-                        seen[msg.unique_fields()] = 1
                     if irc_q.count(and_(
                             irc_message_table.c.honeypot_id==msg.c.honeypot_id,
                             irc_message_table.c.from_id==msg.c.from_id,
@@ -284,13 +306,15 @@ class Honeypot(object):
                             irc_message_table.c.dst_id==msg.c.dst_id,
                             irc_message_table.c.timestamp==msg.c.timestamp,
                             irc_message_table.c.text==msg.c.text)) > 0:
-                        print "Duplicate IRC message - skipping: ", msg
-                        session.delete(msg)
+                        print 'Duplicate message record seen - skipping ', repr(msg)
+                        dups.append(msg) 
+                for msg in dups: 
+                    session.expunge(msg) 
                 session.flush()
 
 class Ip(object):
     """IP address and location details""" 
-    ipid_cache = {}    
+    id_cache = {}    
       
     def __init__(self, **kwargs):                 
         for k, v in kwargs.iteritems():           
@@ -306,15 +330,15 @@ class Ip(object):
     @staticmethod
     def id_get_or_create(ip_addr):  
         """return id field for a IP object, creating if it necessary"""                        
-        if Ip.ipid_cache.has_key(ip_addr):   
-            return Ip.ipid_cache[ip_addr]
+        if Ip.id_cache.get(ip_addr, None):   
+            return Ip.id_cache[ip_addr]
         ip = ip_table.select(ip_table.c.ip_addr==ip_addr).execute().fetchone() 
         if ip:                                           
-            Ip.ipid_cache[ip_addr] = ip.id            
+            Ip.id_cache[ip_addr] = ip.id            
             return ip.id  
         r = ip_table.insert().execute(ip_addr=ip_addr)        
         id = r.last_inserted_ids()[0] 
-        Ip.ipid_cache[ip_addr] = id                
+        Ip.id_cache[ip_addr] = id                
         return id
                            
 class Flow(object):
@@ -421,6 +445,8 @@ class Sebek(object):
             
 class IRCTalker(object):
     """Store details of a sender or receiver of an IRC messsage (could be channel, nick or server)"""
+    id_cache = {}
+    
     def __init__(self, **kwargs):        
         for k, v in kwargs.iteritems():       
             if k not in irc_talker_table.c.keys():
@@ -431,26 +457,44 @@ class IRCTalker(object):
         return "[id: %s, name: %s]" % (self.id, self.name)
 
     def __str__(self):
-        return "[name: %s]" % (self.name)
+        return "[name: %s]" % (self.name) 
+
+    @staticmethod    
+    def id_get_or_create(name):
+        """get or create an id IRCTalker object for 'name' """
+        if IRCTalker.id_cache.get(name, None):   
+            return IRCTalker.id_cache[name]
+        t = irc_talker_table.select(irc_talker_table.c.name==name).execute().fetchone() 
+        if t:                                           
+            IRCTalker.id_cache[name] = t.id            
+            return t.id  
+        r = irc_talker_table.insert().execute(name=name)        
+        id = r.last_inserted_ids()[0] 
+        IRCTalker.id_cache[name] = id                
+        return id
           
 class IRCMessage(object):
     """store irc message details"""
     def __init__(self, **kwargs):
         for k, v in kwargs.iteritems():   
             if (k not in irc_message_table.c.keys()):
-                if k not in ['irc_src', 'irc_dst']:
-                    raise ValueError("Bad row name %s" % k)  
+                raise ValueError("Bad row name %s" % k)  
             setattr(self, k, v)    
+                                                                                              
+    def __str__(self):
+        return "[timestamp: %s, src_id: %s, dst_id: %s,  src_port: %s, dst_port: %s, command: %s, from_id: %s, to_id: %s, text: %s]" % \
+            (asctime(gmtime(self.timestamp)), self.src_id, self.dst_id, 
+            self.sport, self.dport, self.command, self.from_id, self.to_id, self.text)
 
     def __repr__(self):
-        return "[timestamp: %s, id: %s, src_id: %s, dst_id: %s,  src_port: %s, dst_port: %s, command: %s, from_id: %s, to_id: %s, text: %s]" % \
-            (asctime(gmtime(self.timestamp)), self.id, self.src_id, self.dst_id, 
+        return "[timestamp: %s, id: %s, honeypot_id: %s, src_id: %s, dst_id: %s,  src_port: %s, dst_port: %s, command: %s, from_id: %s, to_id: %s, text: %s]" % \
+            (self.timestamp, self.id, self.honeypot_id, self.src_id, self.dst_id, 
             self.sport, self.dport, self.command, self.from_id, self.to_id, self.text) 
 
     def _get_channel(self):
         """return channel if dst is a channel"""
-        if self.irc_dst.name[0] == '#':
-            return self.irc_dst.name
+        if self.irc_to.name[0] == '#':
+            return self.irc_to.name
         else:
             return None
             
@@ -458,7 +502,7 @@ class IRCMessage(object):
             
     def unique_fields(self):
         """return unique fields"""
-        return (self.honeypot_id, self.from_id, self.to_id, self.command, self.src_id, self.dst_id, self.timestamp, self.text)
+        return (self.from_id, self.to_id, self.command, self.src_id, self.dst_id, self.timestamp, self.text)
 
 # Mapper extensions
 
@@ -479,13 +523,21 @@ class IpMapperExtension(MapperExtension):
     """Manage ip id cache"""         
     def before_delete(self, mapper, connection, instance):
         """called before an object is deleted"""
-        if Ip.ipid_cache.has_key(instance.ip_addr):
-            del Ip.ipid_cache[instance.ip_addr]
+        if Ip.id_cache.get(instance.ip_addr, None):
+            del Ip.id_cache[instance.ip_addr]
         return EXT_PASS 
+                
+class IRCTalkerMapperExtension(MapperExtension):
+    """Manage id cache"""
+    def before_delete(self, ampper, connection, instance):
+        """called before an object is deleted"""
+        if IRCTalker.id_cache.get(instance.name, None):
+            del IRCTalker.id_cache[instance.name]
+        return EXT_PASS
 
 # Table -> Object mappers
 
-mapper(Honeypot, honeypot_table, properties={ 
+mapper(Honeypot, honeypot_table, properties={  
     "flows": relation(Flow, lazy=None, passive_deletes=True, backref="honeypot", 
         cascade="all, delete-orphan"),
     "sebek_lines": relation(Sebek, lazy=None, passive_deletes=True, backref="honeypot", 
@@ -499,10 +551,12 @@ mapper(Flow, flow_table)
 mapper(Sebek, sebek_table, extension=SebekMapperExtension())                 
 mapper(IRCTalker, irc_talker_table, properties={
     "sent": relation(IRCMessage, lazy=None, passive_deletes=True, cascade="all, delete-orphan", 
-        primaryjoin=irc_message_table.c.from_id==irc_talker_table.c.id, backref="irc_src"),
+        primaryjoin=irc_message_table.c.from_id==irc_talker_table.c.id, backref="irc_from"),
     "received": relation(IRCMessage, lazy=None, passive_deletes=True, cascade="all, delete-orphan", 
-        primaryjoin=irc_message_table.c.to_id==irc_talker_table.c.id, backref="irc_dst"),
-})
+        primaryjoin=irc_message_table.c.to_id==irc_talker_table.c.id, backref="irc_to"),
+     },
+     extension=IRCTalkerMapperExtension(),
+)
 
 mapper(IRCMessage, irc_message_table)
 

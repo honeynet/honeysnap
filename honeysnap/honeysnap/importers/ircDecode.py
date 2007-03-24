@@ -35,40 +35,50 @@ class IrcDecode(object):
         options = hs.getOptions()  
         self.tmpf = tmpf
         self.file = file
-        self.hp = hp
+        self.hpip = hp
         self.ircports = []
         self.engine = connect_to_db(options['dburi'], options['debug']) 
         self.session = create_session()
-        self.hp = Honeypot.get_or_create(self.session, hp)        
+        self.hp = Honeypot.get_or_create(self.session, hp) 
+        self.count = 0
 
     def run(self):
         """run over file for one honeypot and a set of ports"""
         # work out ports
         for port in [6667]:
             hirc = HoneysnapIRC()
-            hirc.connect(self.tmpf, "host %s and tcp and port %s" % (self.hp, port) )
+            hirc.connect(self.tmpf, "host %s and tcp and port %s" % (self.hpip, port) )
             hirc.addHandler("all_events", self.decode, -1)
-            hirc.ircobj.process_once()
+            hirc.ircobj.process_once()    
+            self.hp.save_irc_changes(self.session)
          
     def decode(self, c, e):
         """
         Callback to register with HoneySnapIRC
         c: instance of hsIRC.HnyServerConnection
         e: instance of irclib.Event
-        """     
-        cmd = e.eventtype()
-        source = e.source()
-        target = e.target() 
+        """ 
+        self.count += 1      
+        if e.eventtype() == 'all_raw_messages':
+            return
         src_id = Ip.id_get_or_create(e.src)
         dst_id = Ip.id_get_or_create(e.dst)
-        sport = e.sport
-        dport = e.dport   
-        data = ' '.join(e.arguments())
-        ts = e.time                        
-        # get irc_src and irc_dst objects....
-        m = IRCMessage(src_id=src_id, dst_id=dst_id, sport=sport, dport=dport, irc_src=source, irc_dst=target, command=cmd, 
-                  timestamp=time, text=data)          
-        self.hp.irc_messages.append(m)
+        data = ' '.join(e.arguments())      
+        source = e.source()
+        target = e.target()
+        if source == None:
+            source = e.src
+        if target == None:
+            target = e.dst
+        src_id = IRCTalker.id_get_or_create(source)
+        dst_id = IRCTalker.id_get_or_create(target)    
+        #print "%s e.src: %s e.dst: %s, source: %s, target:%s, command: %s, text: %s" % (e.time, e.src, e.dst, e.source(), e.target(), e.eventtype(), data)
+        m = IRCMessage(src_id=src_id, dst_id=dst_id, sport=e.sport, dport=e.dport, 
+                       from_id=src_id, to_id=dst_id, command=e.eventtype(), 
+                       timestamp=e.time, text=data)          
+        self.hp.irc_messages.append(m)  
+        if not self.count % 1000:
+            self.hp.save_irc_changes(self.session)
         
 if __name__ == '__main__': 
     import sys 

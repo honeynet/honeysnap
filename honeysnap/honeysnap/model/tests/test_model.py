@@ -55,7 +55,7 @@ class test_model(unittest.TestCase):
         self.session.flush()
         
     def tearDown(self): 
-        Ip.ipid_cache = {}
+        Ip.id_cache = {}
         self.session.clear() 
         metadata.drop_all()
          
@@ -241,10 +241,11 @@ class test_model(unittest.TestCase):
         ircsrc = IRCTalker(name='fred')
         ircdst = IRCTalker(name='george') 
         self.session.save(ircsrc)
-        self.session.save(ircdst)
+        self.session.save(ircdst) 
+        self.session.flush()
         src_id = Ip.id_get_or_create("192.168.0.2")
         dst_id = Ip.id_get_or_create("192.168.0.3") 
-        m = IRCMessage(src_id=src_id, dst_id=dst_id, sport=4432, dport=6667, irc_src=ircsrc, irc_dst=ircdst, 
+        m = IRCMessage(src_id=src_id, dst_id=dst_id, sport=4432, dport=6667, from_id=ircsrc.id, to_id=ircdst.id, 
             command='PRIVMSG', timestamp=time(), text='hi there')    
         h.irc_messages.append(m)
         self.session.flush()  
@@ -255,11 +256,17 @@ class test_model(unittest.TestCase):
         ircsrc = IRCTalker(name='fred')
         ircdst = IRCTalker(name='#secret') 
         self.session.save(ircsrc)
-        self.session.save(ircdst)
+        self.session.save(ircdst) 
+        self.session.flush()               
+        print ircdst
         src_id = Ip.id_get_or_create("192.168.0.2")
         dst_id = Ip.id_get_or_create("192.168.0.3") 
-        m = IRCMessage(src_id=src_id, dst_id=dst_id, sport=4432, dport=6667, irc_src=ircsrc, irc_dst=ircdst, 
-            command='PRIVMSG', timestamp=time(), text='hi there')
+        m = IRCMessage(src_id=src_id, dst_id=dst_id, sport=4432, dport=6667,  
+            command='PRIVMSG', timestamp=time(), text='hi there') 
+        h.irc_messages.append(m)               
+        ircsrc.sent.append(m)    
+        ircdst.received.append(m)
+        self.session.flush()
         assert m.channel == '#secret'    
         
         

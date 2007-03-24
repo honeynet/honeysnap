@@ -43,7 +43,7 @@ class test_flowIdentify(unittest.TestCase):
         self.session.flush()  
 
     def tearDown(self):
-        Ip.ipid_cache = {}
+        Ip.id_cache = {}
         self.session.clear()   
         metadata.drop_all()
                                   
