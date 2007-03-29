@@ -60,23 +60,23 @@ class IrcDecode(object):
         """ 
         self.count += 1      
         if e.eventtype() == 'all_raw_messages':
-            return
+            return 
         src_id = Ip.id_get_or_create(e.src)
         dst_id = Ip.id_get_or_create(e.dst)
         data = ' '.join(e.arguments())      
         source = e.source()
-        target = e.target()
+        target = e.target()   
         if source == None:
             source = e.src
         if target == None:
             target = e.dst
-        src_id = IRCTalker.id_get_or_create(source)
-        dst_id = IRCTalker.id_get_or_create(target)    
-        #print "%s e.src: %s e.dst: %s, source: %s, target:%s, command: %s, text: %s" % (e.time, e.src, e.dst, e.source(), e.target(), e.eventtype(), data)
+        irc_src_id = IRCTalker.id_get_or_create(source)
+        irc_dst_id = IRCTalker.id_get_or_create(target)    
         m = IRCMessage(src_id=src_id, dst_id=dst_id, sport=e.sport, dport=e.dport, 
-                       from_id=src_id, to_id=dst_id, command=e.eventtype(), 
+                       from_id=irc_src_id, to_id=irc_dst_id, command=e.eventtype(), 
                        timestamp=e.time, text=data)          
         self.hp.irc_messages.append(m)  
+        #print 'importing ', repr(m)
         if not self.count % 1000:
             self.hp.save_irc_changes(self.session)
         

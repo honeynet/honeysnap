@@ -22,7 +22,7 @@
 
 from irclib import *
 from irclib import _linesep_regexp, _parse_modes, _rfc_1459_command_regexp
-from irclib import _ctcp_dequote
+from irclib import _ctcp_dequote 
 import dpkt
 import irclib
 import math
@@ -174,7 +174,9 @@ class HnyServerConnection(irclib.ServerConnection):
                     if command == "quit":
                         arguments = [arguments[0]]
                     elif command == "ping":
-                        target = arguments[0]
+                        target = arguments[0] 
+                    elif command in ["error", "cnotice"]:
+                        pass
                     elif arguments is not None:
                         target = arguments[0]
                         arguments = arguments[1:]
@@ -262,7 +264,7 @@ if __name__ == '__main__':
         filter = ' '.join(args)
     else:
         filter = ''
-    h = HoneySnapIRC()    
+    h = HoneysnapIRC()    
     h.ircobj.add_global_handler("all_events", h.on_global, -1)
     h.connect(opts.file, filter)
     h.ircobj.process_once()

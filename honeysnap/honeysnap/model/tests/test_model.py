@@ -234,13 +234,12 @@ class test_model(unittest.TestCase):
         h = Honeypot.by_ip(self.session, "192.168.0.1") 
         ircsrc = IRCTalker(name='fred')
         ircdst = IRCTalker(name='george') 
-        self.session.save(ircsrc)
-        self.session.save(ircdst) 
-        self.session.flush()
         src_id = Ip.id_get_or_create("192.168.0.2")
         dst_id = Ip.id_get_or_create("192.168.0.3") 
-        m = IRCMessage(src_id=src_id, dst_id=dst_id, sport=4432, dport=6667, from_id=ircsrc.id, to_id=ircdst.id, 
-            command='PRIVMSG', timestamp=time(), text='hi there')    
+        m = IRCMessage(src_id=src_id, dst_id=dst_id, sport=4432, dport=6667, 
+            command='PRIVMSG', timestamp=time(), text='hi there')          
+        m.irc_from=ircsrc
+        m.irc_to=ircdst    
         h.irc_messages.append(m)
         self.session.flush()  
         
@@ -249,17 +248,13 @@ class test_model(unittest.TestCase):
         h = Honeypot.by_ip(self.session, "192.168.0.1") 
         ircsrc = IRCTalker(name='fred')
         ircdst = IRCTalker(name='#secret') 
-        self.session.save(ircsrc)
-        self.session.save(ircdst) 
-        self.session.flush()               
-        print ircdst
         src_id = Ip.id_get_or_create("192.168.0.2")
         dst_id = Ip.id_get_or_create("192.168.0.3") 
-        m = IRCMessage(src_id=src_id, dst_id=dst_id, sport=4432, dport=6667,  
-            command='PRIVMSG', timestamp=time(), text='hi there') 
+        m = IRCMessage(src_id=src_id, dst_id=dst_id, sport=4432, dport=6667, 
+            command='PRIVMSG', timestamp=time(), text='hi there')          
+        m.irc_from=ircsrc
+        m.irc_to=ircdst 
         h.irc_messages.append(m)               
-        ircsrc.sent.append(m)    
-        ircdst.received.append(m)
         self.session.flush()
         assert m.channel == '#secret'    
         

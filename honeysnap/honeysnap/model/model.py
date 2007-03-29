@@ -265,13 +265,13 @@ class Honeypot(object):
             if type(msg) != type(IRCMessage()):
                 continue 
             if seen.get(msg.unique_fields(), None):
-                print 'IRC message seen twice in import, ignoring: ', repr(msg)
+                #print 'IRC message seen twice in import, ignoring: ', repr(msg)
                 dups.append(msg) 
                 continue 
             else:
                 seen[msg.unique_fields()] = 1  
         for msg in dups:                         
-            session.expunge(msg) 
+            session.expunge(msg)  
         try:        
             session.flush()
         except exceptions.SQLError, e:             
@@ -282,7 +282,7 @@ class Honeypot(object):
                     if type(msg) != type(IRCMessage()):
                         continue 
                     if msg.in_db():
-                        print 'Duplicate message record seen - skipping ', repr(msg)
+                        print 'Duplicate message record seen in db - skipping ', repr(msg)
                         dups.append(msg) 
                 for msg in dups: 
                     session.expunge(msg) 
@@ -459,21 +459,6 @@ class IRCTalker(object):
 
     def __str__(self):
         return "[name: %s]" % (self.name) 
-   
-    def in_db(self):
-        """return True if object is in db"""
-        if irc_table.count(and_(
-                irc_message_table.c.honeypot_id==self.c.honeypot_id,
-                irc_message_table.c.from_id==self.c.from_id,
-                irc_message_table.c.to_id==self.c.to_id,
-                irc_message_table.c.command==self.c.command,
-                irc_message_table.c.src_id==self.c.src_id,
-                irc_message_table.c.dst_id==self.c.dst_id,
-                irc_message_table.c.timestamp==self.c.timestamp,
-                irc_message_table.c.text==self.c.text)) > 0: 
-            return True
-        else:
-            return False
 
     @staticmethod    
     def id_get_or_create(name):
@@ -498,12 +483,12 @@ class IRCMessage(object):
             setattr(self, k, v)    
                                                                                               
     def __str__(self):
-        return "[timestamp: %s, src_id: %s, dst_id: %s,  src_port: %s, dst_port: %s, command: %s, from_id: %s, to_id: %s, text: %s]" % \
+        return "[timestamp: %s, src_id: %s, dst_id: %s,  sport: %s, dport: %s, command: %s, from_id: %s, to_id: %s, text: %s]" % \
             (asctime(gmtime(self.timestamp)), self.src_id, self.dst_id, 
             self.sport, self.dport, self.command, self.from_id, self.to_id, self.text)
 
     def __repr__(self):
-        return "[timestamp: %s, id: %s, honeypot_id: %s, src_id: %s, dst_id: %s,  src_port: %s, dst_port: %s, command: %s, from_id: %s, to_id: %s, text: %s]" % \
+        return "[timestamp: %s, id: %s, honeypot_id: %s, src_id: %s, dst_id: %s,  sport: %s, dport: %s, command: %s, from_id: %s, to_id: %s, text: %s]" % \
             (self.timestamp, self.id, self.honeypot_id, self.src_id, self.dst_id, 
             self.sport, self.dport, self.command, self.from_id, self.to_id, self.text) 
 
@@ -519,6 +504,21 @@ class IRCMessage(object):
     def unique_fields(self):
         """return unique fields"""
         return (self.from_id, self.to_id, self.command, self.src_id, self.dst_id, self.timestamp, self.text)
+                           
+    def in_db(self):
+        """return True if object is in db"""
+        if irc_message_table.count(and_(
+                irc_message_table.c.honeypot_id==self.c.honeypot_id,
+                irc_message_table.c.from_id==self.c.from_id,
+                irc_message_table.c.to_id==self.c.to_id,
+                irc_message_table.c.command==self.c.command,
+                irc_message_table.c.src_id==self.c.src_id,
+                irc_message_table.c.dst_id==self.c.dst_id,
+                irc_message_table.c.timestamp==self.c.timestamp,
+                irc_message_table.c.text==self.c.text)) > 0: 
+            return True
+        else:
+            return False
 
 # Mapper extensions
 
@@ -560,16 +560,15 @@ mapper(Sebek, sebek_table,
     }
 )                 
 
-mapper(IRCTalker, irc_talker_table, properties={
-    "sent": relation(IRCMessage, lazy=None, passive_deletes=True, cascade="all, delete-orphan", 
-        primaryjoin=irc_message_table.c.from_id==irc_talker_table.c.id, backref="irc_from"),
-    "received": relation(IRCMessage, lazy=None, passive_deletes=True, cascade="all, delete-orphan", 
-        primaryjoin=irc_message_table.c.to_id==irc_talker_table.c.id, backref="irc_to"),
-     },
-     extension=IRCTalkerMapperExtension(),
-)
+mapper(IRCTalker, irc_talker_table, extension=IRCTalkerMapperExtension())
 
-mapper(IRCMessage, irc_message_table)
+mapper(IRCMessage, irc_message_table, properties={
+    "irc_from": relation(IRCTalker, primaryjoin=irc_message_table.c.from_id==irc_talker_table.c.id,
+                cascade="all, delete-orphan"),
+    "irc_to": relation(IRCTalker, primaryjoin=irc_message_table.c.to_id==irc_talker_table.c.id,
+                cascade="all, delete-orphan"),
+    }
+)
 
 # init and create tables if needed  
 def connect_to_db(dburi, debug=False):
