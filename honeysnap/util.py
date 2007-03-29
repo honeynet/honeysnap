@@ -114,8 +114,11 @@ def check_pcap_file(file):
     try:
         if os.path.exists(tmpf) and os.path.getsize(tmpf)>0 and os.path.isfile(tmpf):
             p = pcap.pcap(tmpf)
+        else:
+            print "File %s is emtpy or does not exist" % file
+            sys.exit(1)            
     except OSError:
-        print "File %s is not a pcap file or does not exist" % file
+        print "File %s is not a pcap file" % file
         sys.exit(1) 
     return (tmpf, is_tempfile)
     
