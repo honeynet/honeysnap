@@ -20,11 +20,11 @@ broken down into the following parts.
 General Dependencies
  Python 2.4 or greater      http://www.python.org
  libpcap                    http://sourceforge.net/projects/libpcap/
- pypcap 1.1 or greater      http://www.monkey.org/~dugsong/pypcap/
+ pypcap 1.1 or greater      http://code.google.com/p/pypcap/
 
 Pure python modules:
  irclib 0.4.6 or greater    http://python-irclib.sourceforge.net/
- dpkt                       http://monkey.org/~dugsong/dpkt/
+ dpkt                       http://code.google.com/p/dpkt/
  magic                      http://www.demonseed.net/~jp/code/magic.py
 
 This latter set should be installed automatically and are listed
@@ -33,21 +33,18 @@ here for completeness.
 2: INSTALLATION ON UNIX
 ========================
 
-First, you will need to install python 2.4 and its header file.  Most
+First, you will need to install python 2.4 or 2.5 and its header file.  Most
 distributions most likely already have this installed.  Then you will
 need libpcap.  For most UNIX-like systems, it should be in your package 
 management system (apt-get, yum, DarwinPorts etc.).  You will need libcap 
 and also libpcap-devel if that is listed separately.  For example, on
-Debian/Ubuntu.
+Debian/Ubuntu with python2.4:
 
   $ sudo apt-get install python24-dev
   $ sudo apt-get install libpcap libpcap-dev
 
-Python 2.5 should work but as not been tested (and see below for notes
-about python 2.5 on OS X)
-
 Next install pypcap. Download pypcap from 
-http://www.monkey.org/~dugsong/pypcap
+http://code.google.com/p/pypcap
 
   $ tar -xzf pypcap-1.1.tar.gz
   $ cd pypcap-1.1
@@ -76,17 +73,6 @@ PATH, usually in /usr/bin. If this isn't what you want, specify
 --script-dir. e.g
 
 $ sudo easy_install --script-dir /usr/local/bin honeysnap-1.0.3.tar.gz
-
-
-Some notes on python 2.5 and OS/X     
----------------------------------
-
-If upgrading Python on a Mac, and you hit problems, try getting the Python 
-pkg from www.python.org, not from Darwin ports.  Get pycap from Dug Song's 
-site as Mac pkg, do not install from source. 
-
-  http://monkey.org/~dugsong/pypcap/pypcap-1.1-fat.dmg
-
 
 3: INSTALLATION ON WINDOWS
 ==========================
