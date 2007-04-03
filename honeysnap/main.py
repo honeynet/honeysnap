@@ -451,7 +451,7 @@ def parseOptions():
         'do_ftp'            : 'NO',
         'do_smtp'           : 'NO',
         'do_irc'            : 'NO',
-        'irc_ports'         : [6667],
+        'irc_ports'         : [],
         'irc_limit'         : 10,
         'do_sebek'          : 'NO',
         'do_telnet'         : 'NO',
