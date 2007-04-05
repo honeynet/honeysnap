@@ -125,7 +125,7 @@ If upgrading Python on a Mac, and you hit problems, try getting the Python
 pkg from www.python.org, not from Darwin ports.  Get pycap from Dug Song's 
 site as Mac pkg, do not install from source. 
 
-  http://monkey.org/~dugsong/pypcap/pypcap-1.1-fat.dmg
+http://code.google.com/p/pypcap/downloads/list
 
 
 3: INSTALLATION ON WINDOWS

@@ -44,7 +44,7 @@ class IrcDecode(object):
 
     def run(self):
         """run over file for one honeypot and a set of ports"""
-        # work out ports
+        # merge from non-db code to work out ports
         for port in [6667]:
             hirc = HoneysnapIRC()
             hirc.connect(self.tmpf, "host %s and tcp and port %s" % (self.hpip, port) )

@@ -230,7 +230,7 @@ class Honeypot(object):
                 session.flush()
                                 
     def save_sebek_changes(self, session):
-        """Save sebek records to db, dealing with dulicate entries""" 
+        """Save sebek records to db, dealing with duplicate entries""" 
         seen = {}
         dups = []
         for sbk in session.new:   

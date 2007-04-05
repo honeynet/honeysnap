@@ -61,7 +61,7 @@ class test_pcapinfo(unittest.TestCase):
 
     def test_command_over_default(self):
         """parse_options should take command line options over defaults"""
-        sys.argv = ['honeysnap', '-H', '192.168.0.1', '--sebek-port', 11]
+        sys.argv = ['honeysnap', '-H', '192.168.0.1', '--sebek-port', '11']
         print_help, options, arg = parse_options()        
         assert options['sebek_port'] == 11
                                                                       

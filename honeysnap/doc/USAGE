@@ -1,0 +1,49 @@
+   
+# $Id$
+
+USAGE
+=====
+
+Set up a database in anything supported by SQLAlchemy. Honeysnap has been tested with MySQL and Postgresql.
+
+For each pcap file you want to import, run
+
+$ honeysnap_db -H <honeypot ips> --dburi=<dburi> <pcap_file>
+
+Optionally, specify --debug to see the raw sql generated.
+
+The dburi is in the form 'type://user:password@host/dbname' e.g.
+
+postgres:///hs
+postgres://user:password@localhost/hs
+mysql://foo:bar@localhost/hs
+
+
+Viewing Data
+============
+
+$ hs-shell --dburi=<dburi>
+
+will give you an ipython shell (if ipython is installed), setup with the model imported into the local scope
+
+$ hs-shell --dburi='sqlite:///fred.db'
+
+Welcome to the Honeysnap Shell
+
+In [1]: fq = session.query(Flow).count()
+
+In the shell you have access to all the model classes (Honeypot, Ip, Flow, IRCTalker, IRCMessage, Sebek)
+plus the sqlalchemy objects 'session', 'engine' and 'metadata'
+   
+Any changes you make to the database will be (optionally) committed when you leave ipython
+
+
+In [3]: Do you wish to commit your database changes? [yes] 
+
+Do you really want to exit ([y]/n)?
+
+Using Raw SQL
+=============
+
+Sample SQL queries to go here....
+
