@@ -45,5 +45,167 @@ Do you really want to exit ([y]/n)?
 Using Raw SQL
 =============
 
-Sample SQL queries to go here....
+Some sample SQL queries from David Watson:
+
+Count all packets:
+
+select count(packets) from flow;
+
+Count all bytes:
+
+select count(bytes) from flow;
+
+Count packets per honeynet:
+
+select distinct honeypot_id as node, sum(packets) from flow group by node;
+
+Count bytes per honeynet:
+
+select distinct honeypot_id as node, sum(bytes) from flow group by node;
+
+Count flows per honeynet:
+
+select distinct honeypot_id as node, count(*) from flow group by node;
+
+Largest flows by bytes, excluding sebek:
+
+select * from flow where sport != 1101 order by bytes desc limit 100;
+
+Largest flows by packets, excluding sebek:
+
+select * from flow where sport != 1101 order by packets desc limit 100;
+
+Unique SRC IP addresses:
+
+SELECT count(distinct src_id) from flow;
+
+Unique SRC IP addresses per honeynet:
+
+select distinct honeypot_id as node, count(distinct src_id) from flow group by node;
+
+Unique DST IP addresses:
+
+SELECT count(distinct dst_id) from flow;
+
+Unique DST IP addresses per honeynet:
+
+select distinct honeypot_id as node, count(distinct dst_id) from flow group by node;
+
+Unqiue SRC and DST IP addresses per honeynet:
+
+select distinct honeypot_id as node, count(distinct src_id), count(distinct dst_id) 
+from flow group by node;
+
+Unique IP protocols:
+
+SELECT distinct ip_proto from flow;
+
+Volume of IP protocols (per flow, could be bytes/packets):
+
+select distinct ip_proto as protocols, count(*) as flows, sum(packets), sum(bytes) 
+from flow group by protocols order by flows desc;
+
+Count of Unique IP protocols per honeynet:
+
+select distinct honeypot_id as node, count(distinct ip_proto) from flow group by node;
+
+
+Top IPs for packets/bytes/flows:
+
+select distinct src_id as attacker, count(*) as flows, sum(packets), sum(bytes) 
+from flow group by attacker order by flows desc;
+
+select distinct flow.src_id as attacker, count(flow.packets) as flows, 
+sum(flow.packets) as packets, sum(flow.bytes) as bytes,
+ip.ip_addr, ip.country, ip.domain, ip.isp, ip.city from flow, ip 
+where flow.src_id = ip.id group by attacker order by packets desc;
+
+select distinct flow.src_id as attacker, count(flow.packets) as flows, 
+sum(flow.packets) as packets, sum(flow.bytes) as bytes,
+ip.ip_addr, ip.country, ip.domain, ip.isp, ip.city from flow, ip 
+where flow.src_id = ip.id group by attacker order by bytes desc;
+
+select distinct flow.src_id as attacker, count(flow.packets) as 
+flows, sum(flow.packets) as packets, sum(flow.bytes) as bytes,
+ip.ip_addr, ip.country, ip.domain, ip.isp, ip.city from flow, ip 
+where flow.src_id = ip.id group by attacker order by flows desc;
+
+Top countries by packet/bytes/flows:
+
+select distinct ip.country as country, count(flow.packets) as 
+flows, sum(flow.packets) as packets, sum(flow.bytes) as bytes
+from flow, ip where flow.src_id = ip.id group by country order by packets desc;
+
+select distinct ip.country as country, count(flow.packets) as 
+flows, sum(flow.packets) as packets, sum(flow.bytes) as bytes
+from flow, ip where flow.src_id = ip.id group by country order by bytes desc;
+
+select distinct ip.country as country, count(flow.packets) as 
+flows, sum(flow.packets) as packets, sum(flow.bytes) as bytes
+from flow, ip where flow.src_id = ip.id group by country order by flows desc;
+
+Unique IP addresses seen by many honeynets (N=5 in this example):
+
+select count(distinct flow.honeypot_id) as nodes, ip.ip_addr, 
+ip.country, ip.domain, ip.isp, ip.city from flow, ip where flow.src_id = ip.id group by
+ flow.src_id having nodes > 5 order by nodes desc;
+
+PER PORT (using 22/SSH as example)
+----------------------------------
+
+SSH flows:
+
+SELECT count(*) FROM flow where dport = '22';
+SSH flows per honeypot:
+
+select distinct honeypot_id as node, count(dport) from flow where 
+dport = '22' group by node;
+
+SSH packets per honeypot:
+
+select distinct honeypot_id as node, sum(packets) from flow where dport = '22' 
+group by node;
+
+SSH bytes per honeypot:
+
+select distinct honeypot_id as node, sum(bytes) from flow where 
+dport = '22' group by node;
+
+SSH combined:
+
+select distinct honeypot_id as node, count(dport), sum(packets), sum(bytes) from 
+flow where dport = '22' group by node;
+
+SSH unique source IP addresses:
+
+select count(distinct src_id) from flow where dport = '22';
+
+Top SSH attackers by packet/bytes/flows
+
+select distinct src_id as attacker, count(*) as flows, sum(packets), sum(bytes) from 
+flow where dport = '22' group by attacker order by flows desc;
+
+select distinct flow.src_id as attacker, count(flow.packets) as flows, sum(flow.packets) 
+as packets, sum(flow.bytes) as bytes, ip.ip_addr, ip.country, ip.domain, 
+ip.isp, ip.city from flow, ip where flow.src_id = ip.id and dport = '22' 
+group by attacker order by packets desc;
+
+select distinct flow.src_id as attacker, count(flow.packets) as flows, sum(flow.packets) as 
+packets, sum(flow.bytes) as bytes, ip.ip_addr, ip.country, ip.domain, ip.isp, ip.city from 
+flow, ip where flow.src_id = ip.id and dport = '22' group by attacker order by bytes desc;
+
+select distinct flow.src_id as attacker, count(flow.packets) as flows, sum(flow.packets) as 
+packets, sum(flow.bytes) as bytes, ip.ip_addr, ip.country, ip.domain, ip.isp, ip.city from 
+flow, ip where flow.src_id = ip.id and dport = '22' group by attacker order by flows desc;
+
+PER DAY
+=======
+
+[XXX FIX ME] Needs fixing for new timestamp format
+
+
+Packets/bytes/flows per day:
+SSH traffic per day:
+Unique Source IP addresses per day:
+
 
