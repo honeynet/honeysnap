@@ -20,7 +20,9 @@
 
 # $Id$
 
+from datetime import datetime
 from irclib import irc_lower
+import sqlalchemy 
 
 from honeysnap.importers.hsIRC import HoneysnapIRC   
 from honeysnap.singletonmixin import HoneysnapSingleton  
@@ -52,7 +54,6 @@ class IrcDecode(object):
             hirc.connect(self.tmpf, "host %s and tcp and port %s" % (self.hpip, port) )
             hirc.addHandler("all_events", self.decode, -1)
             hirc.ircobj.process_once()    
-            self.hp.save_irc_changes(self.session)
          
     def decode(self, c, e):
         """
@@ -74,14 +75,18 @@ class IrcDecode(object):
             target = e.dst
         irc_src_id = IRCTalker.id_get_or_create(irc_lower(source))
         irc_dst_id = IRCTalker.id_get_or_create(irc_lower(target))
-        m = IRCMessage(src_id=src_id, dst_id=dst_id, sport=e.sport, dport=e.dport, 
+        m = dict(honeypot_id=self.hp.id, src_id=src_id, dst_id=dst_id, sport=e.sport, dport=e.dport, 
                        from_id=irc_src_id, to_id=irc_dst_id, command=e.eventtype(), 
-                       timestamp=e.time, text=data)          
-        self.hp.irc_messages.append(m)  
-        #print 'importing ', m
+                       timestamp=datetime.utcfromtimestamp(e.time), text=data[0:MAX_IRC_DATA_SIZE], filename=self.file)  
+        try:                               
+            irc_message_table.insert().execute(m)                       
+        except sqlalchemy.exceptions.SQLError, e:
+            if 'IntegrityError' in e.args[0]:
+                print 'Duplicate IRC entry, skipping ', m
+            else:             
+                raise
         if not self.count % 1000:
-            print 'writing changes at %s, num %s' % (datetime.now(), self.count)
-            self.hp.save_irc_changes(self.session)
+            print '%s: written %s IRC messages' % (datetime.now(), self.count)
         
 if __name__ == '__main__': 
     import sys 

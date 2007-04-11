@@ -61,8 +61,10 @@ import sys
 import struct
 import re
 from socket import inet_ntoa
+from datetime import datetime
 import dpkt
-import pcap                 
+import pcap      
+import sqlalchemy           
 
 from honeysnap.singletonmixin import HoneysnapSingleton
 from honeysnap.model.model import *
@@ -153,9 +155,9 @@ class SebekDecode(object):
             raise SebekDecodeError("SBK_WRITE in ver 1 data!")
         if fd<3:      
             com = nonascii.sub("", com)
-            s = Sebek(version=version, type=SBK_WRITE, timestamp=t, pid=pid, fd=fd, \
+            s = dict(honeypot_id=self.hp.id, version=version, type=SBK_WRITE, timestamp=t, pid=pid, fd=fd, \
                 uid=uid, command=com, parent_pid=parent_pid, inode=inode, data=data)
-            self.hp.sebek_lines.append(s)
+            self.insert_dict(s)
         else:
             # should hex-encode data here or something
             return
@@ -166,9 +168,9 @@ class SebekDecode(object):
             raise SebekDecodeError("SBK_SOCK in ver 1 data!")
         com = nonascii.sub("", com)  
         data = nonascii.sub("", data)
-        s = Sebek(version=version, type=SBK_SOCK, timestamp=t, pid=pid, fd=fd, uid=uid, \
+        s = dict(honeypot_id=self.hp.id, version=version, type=SBK_SOCK, timestamp=t, pid=pid, fd=fd, uid=uid, \
             command=com, parent_pid=parent_pid, inode=inode, data=data)
-        self.hp.sebek_lines.append(s)
+        self.insert_dict(s)
         
     def sbk_open(self, version, t, pid, fd, uid, com, data, parent_pid, inode):
         """Decode sebek file open data"""   
@@ -176,9 +178,9 @@ class SebekDecode(object):
             raise SebekDecodeError("SBK_OPEN in ver 1 data")
         com = nonascii.sub("", com)
         data = nonascii.sub("", data)  
-        s = Sebek(version=version, type=SBK_OPEN, timestamp=t, pid=pid, fd=fd, uid=uid, \
+        s = dict(honeypot_id=self.hp.id, version=version, type=SBK_OPEN, timestamp=t, pid=pid, fd=fd, uid=uid, \
             command=com, parent_pid=parent_pid, inode=inode, data=data)
-        self.hp.sebek_lines.append(s)    
+        self.insert_dict(s)
 
     def sbk_keystrokes(self, version, t, pid, fd, uid, com, data, parent_pid=0, inode=0):
         """
@@ -209,10 +211,21 @@ class SebekDecode(object):
                 d = d.replace(i, controlmap[i])
                 # strip out nonascii junk
                 d = nonascii.sub("", d)                
-            s = Sebek(version=version, type=SBK_READ, timestamp=t, pid=pid, fd=fd, uid=uid, \
-                command=com, parent_pid=parent_pid, inode=inode, data=d) 
-            self.hp.sebek_lines.append(s)                                                                                                       
+            s = dict(honeypot_id=self.hp.id, version=version, type=SBK_READ, timestamp=t, pid=pid, fd=fd, uid=uid, \
+                command=com, parent_pid=parent_pid, inode=inode, data=d[0:MAX_SBK_DATA_SIZE]) 
+            self.insert_dict(s)                    
             del self.log[k]
+
+    def insert_dict(self, s):
+        if type(s['timestamp'] != type(datetime.now())):
+            s['timestamp'] = datetime.utcfromtimestamp(s['timestamp'])
+        try:
+            sebek_table.insert().execute(s)
+        except sqlalchemy.exceptions.SQLError, e:
+            if 'IntegrityError' in e.args[0]:
+                print 'Duplicate sebek entry, skipping ', s
+            else:             
+                raise        
 
     def run(self):
         # since we set a filter on pcap, all the
@@ -226,6 +239,5 @@ class SebekDecode(object):
                 self.packet_handler(ts, payload)
             except struct.error, e:
                 continue  
-        self.hp.save_sebek_changes(self.session)
 
 

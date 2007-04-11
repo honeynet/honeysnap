@@ -31,7 +31,10 @@ from honeysnap.util import TIMEZONE
 
 # max length of sebek data
 # must be < ~700 for mysql but can be larger for postgres
-MAX_SBK_DATA_SIZE = 512
+MAX_SBK_DATA_SIZE = 512  
+
+# ditto for IRC
+MAX_IRC_DATA_SIZE = 512
 
 class HoneysnapModelError(Exception):
     pass
@@ -141,13 +144,14 @@ irc_message_table = Table('irc_message', metadata,
         nullable=False),
     Column('from_id', Integer, ForeignKey('irc_talker.id'), nullable=False),
     Column('to_id', Integer, ForeignKey('irc_talker.id'), default=None),
-    Column('command', String(64), nullable=False),
+    Column('command', String(128), nullable=False),
     Column('src_id', Integer, ForeignKey('ip.id'), nullable=False),   
     Column('dst_id', Integer, ForeignKey('ip.id'), nullable=False),    
     Column('sport', Integer, nullable=False),
     Column('dport', Integer, nullable=False),
     Column('timestamp', DateTime, nullable=False),
-    Column('text', String(512))
+    Column('text', String(512)),
+    Column("filename", String(1024), default='Not specified', nullable=False),
 )
 
 # Indexes
@@ -232,68 +236,7 @@ class Honeypot(object):
                         dups.append(flow)
                 for flow in dups:
                     session.expunge(flow)
-                session.flush()
-                                
-    def save_sebek_changes(self, session):
-        """Save sebek records to db, dealing with duplicate entries""" 
-        seen = {}
-        dups = []
-        for sbk in session.new:   
-             if type(sbk) != type(Sebek()):
-                 continue        
-             if seen.get(sbk.unique_fields(), None): 
-                 print 'Sebek record seen twice in import, ignoring: ', repr(sbk)
-                 dups.append(sbk)
-                 continue
-             else:   
-                 seen[sbk.unique_fields()] = 1
-        for sbk in dups:
-            session.expunge(sbk)  
-        try:    
-            session.flush()
-        except exceptions.SQLError, e:     
-            if "IntegrityError" in e.args[0]:
-                dups = []
-                for sbk in session.new:
-                    if sbk.in_db():         
-                        print "Duplicate sebek record - skipping: ", repr(sbk)
-                        dups.append(sbk) 
-                for sbk in dups:
-                    session.expunge(sbk)                    
-                session.flush()                            
-     
-    def save_irc_changes(self, session):
-        """Save irc changes to db, dealing with duplicate entries"""
-        seen = {}
-        dups = []     
-        for msg in session.new:
-            if type(msg) != type(IRCMessage()):
-                continue 
-            if seen.get(msg.unique_fields(), None):
-                #print 'IRC message seen twice in import, ignoring: ', repr(msg)
-                dups.append(msg) 
-                continue 
-            else:
-                seen[msg.unique_fields()] = 1  
-        for msg in dups:                         
-            session.expunge(msg)  
-        try:        
-            session.flush()
-        except exceptions.SQLError, e:   
-            print 'hit dups in import'
-            print 'error ', e
-            if "IntegrityError" in e.args[0]:
-                seen = {} 
-                dups = []          
-                for msg in session.new:
-                    if type(msg) != type(IRCMessage()):
-                        continue 
-                    if msg.in_db():
-                        #print 'Duplicate message record seen in db - skipping ', repr(msg)
-                        dups.append(msg) 
-                for msg in dups: 
-                    session.expunge(msg) 
-                session.flush()  
+                session.flush()                                                             
 
 class Ip(object):
     """IP address and location details""" 
@@ -417,14 +360,6 @@ class Sebek(object):
              return "[%s ip:%s pid:%s uid:%s fd:%s com:%s] %s" % (self.timestamp, 
                     self.honeypot.ip_id, self.pid, self.uid, self.fd, self.command, self.data)  
         
-    def _set_data(self, data):  
-        self._data = data[0:MAX_SBK_DATA_SIZE]
-
-    def _get_data(self):
-        return self._data
-                  
-    data = property(_get_data, _set_data, None, None)
-
     def unique_fields(self):
         return (self.honeypot_id, self.type, self.timestamp, self.pid, self.fd, self.uid, self.command, self.data)
 
@@ -437,7 +372,7 @@ class Sebek(object):
                             Sebek.c.fd==self.c.fd,
                             Sebek.c.uid==self.c.uid,
                             Sebek.c.command==self.c.command,
-                            Sebek.c._data==self.c._data))>0:
+                            Sebek.c.data==self.c.data))>0:
             return True
         else:
             return False
@@ -463,7 +398,7 @@ class IRCTalker(object):
     
     def __init__(self, **kwargs):        
         for k, v in kwargs.iteritems():       
-            if k not in irc_talker_table.c.keys():
+            if not hasattr(self, k):
                 raise ValueError("Bad row name %s" % k)
             setattr(self, k, v)                
 
@@ -505,7 +440,7 @@ class IRCMessage(object):
     """store irc message details"""
     def __init__(self, **kwargs):
         for k, v in kwargs.iteritems():
-            if (k not in irc_message_table.c.keys()):
+            if not hasattr(self, k):
                 raise ValueError("Bad row name %s" % k)   
             if k == 'timestamp' and type(v) != type(datetime.now()):
                 setattr(self, k, datetime.utcfromtimestamp(v)) 
@@ -530,7 +465,7 @@ class IRCMessage(object):
             return None
             
     channel = property(_get_channel, None)        
-            
+
     def unique_fields(self):
         """return unique fields"""
         return (self.from_id, self.to_id, self.command, self.src_id, self.dst_id, self.timestamp, self.text)
@@ -584,11 +519,7 @@ mapper(Ip, ip_table, extension=IpMapperExtension())
 
 mapper(Flow, flow_table)
 
-mapper(Sebek, sebek_table,
-    properties = {
-        "_data": sebek_table.c.data,
-    }
-)                 
+mapper(Sebek, sebek_table)                 
 
 mapper(IRCTalker, irc_talker_table, extension=IRCTalkerMapperExtension())
 

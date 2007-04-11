@@ -38,7 +38,8 @@ class test_sebek_decode(unittest.TestCase):
         SebekDecode.__init__ = lambda self: None
         self.sbd = SebekDecode()  
         self.sbd.log = {}                 
-        self.session = create_session()    
+        self.session = create_session()  
+        self.sbq = self.session.query(Sebek)  
         self.sbd.hp = Honeypot.get_or_create(self.session, '192.168.0.1')   
         self.session.flush()
          
@@ -49,8 +50,9 @@ class test_sebek_decode(unittest.TestCase):
     def test_sbk_write(self): 
         """sbk_write should add line to db"""
         self.sbd.sbk_write(version=3, t=12345, pid=1, fd=1, uid=1, com="sh", data="/dev/fred", parent_pid=1, inode=12341)   
-        assert len(self.sbd.hp.sebek_lines)==1 
-        assert self.sbd.hp.sebek_lines[0].inode==12341
+        data = self.sbq.select(Sebek.c.honeypot_id==self.sbd.hp.id)
+        assert len(data)==1
+        assert data[0].inode==12341
         
     @raises(SebekDecodeError)
     def test_bad_write(self):
@@ -60,8 +62,9 @@ class test_sebek_decode(unittest.TestCase):
     def test_sbk_sock(self): 
         """sbk_sock should add line to db"""
         self.sbd.sbk_write(version=3, t=12345, pid=1, fd=1, uid=1, com="sh", data="/dev/fred", parent_pid=1, inode=12342)   
-        assert len(self.sbd.hp.sebek_lines)==1 
-        assert self.sbd.hp.sebek_lines[0].inode==12342        
+        data = self.sbq.select(Sebek.c.honeypot_id==self.sbd.hp.id)
+        assert len(data)==1  
+        assert data[0].inode==12342        
 
     @raises(SebekDecodeError)
     def test_bad_sock(self):    
@@ -71,8 +74,9 @@ class test_sebek_decode(unittest.TestCase):
     def test_sock_open(self):  
         """sbk_open should add line to db"""        
         self.sbd.sbk_open(version=3, t=12345, pid=1, fd=1, uid=1, com="sh", data="/dev/fred", parent_pid=1, inode=12343)  
-        assert len(self.sbd.hp.sebek_lines)==1 
-        assert self.sbd.hp.sebek_lines[0].inode==12343
+        data = self.sbq.select(Sebek.c.honeypot_id==self.sbd.hp.id)
+        assert len(data)==1  
+        assert data[0].inode==12343
         
     @raises(SebekDecodeError)
     def test_bad_open(self):  
@@ -92,26 +96,31 @@ class test_sebek_decode(unittest.TestCase):
     def test_sbk_keystrokes(self):
         """sbk_keystrokes should add line to db and handle multiple lines correctly"""
         self.sbd.sbk_keystrokes(version=1, t=12345, pid=1, fd=1, uid=1, com="sh", data="./scan")
-        assert len(self.sbd.hp.sebek_lines)==0
+        data = self.sbq.select(Sebek.c.honeypot_id==self.sbd.hp.id)
+        assert len(data)==0
         self.sbd.sbk_keystrokes(version=1, t=12345, pid=1, fd=1, uid=1, com="sh", data=" 192.168.0.1\n")        
-        assert len(self.sbd.hp.sebek_lines)==1  
-        assert self.sbd.hp.sebek_lines[0].data=="./scan 192.168.0.1"   
+        data = self.sbq.select(Sebek.c.honeypot_id==self.sbd.hp.id)
+        assert len(data)==1  
+        assert data[0].data=="./scan 192.168.0.1"   
 
     def test_sbk_keystrokes_v3(self):
         """sbk_keystrokes should add v3 lines to db and handle multiple lines correctly"""
         self.sbd.sbk_keystrokes(version=3, t=12345, pid=1, fd=1, uid=1, com="sh", data="./scan", parent_pid=1, inode=12345)
-        assert len(self.sbd.hp.sebek_lines)==0
+        data = self.sbq.select(Sebek.c.honeypot_id==self.sbd.hp.id)
+        assert len(data)==0               
         self.sbd.sbk_keystrokes(version=3, t=12345, pid=1, fd=1, uid=1, com="sh", data=" 192.168.0.1\n", parent_pid=1, inode=12345)        
-        assert len(self.sbd.hp.sebek_lines)==1  
-        assert self.sbd.hp.sebek_lines[0].data=="./scan 192.168.0.1" 
+        data = self.sbq.select(Sebek.c.honeypot_id==self.sbd.hp.id)
+        assert len(data)==1  
+        assert data[0].data=="./scan 192.168.0.1" 
         
     def test_sbk_keystrokes_pid(self):
         """sbk_keystrokes should not combine lines with different pids"""  
         self.sbd.sbk_keystrokes(version=3, t=12345, pid=1, fd=1, uid=1, com="sh", data="./scan", parent_pid=1, inode=12345)
         self.sbd.sbk_keystrokes(version=3, t=12345, pid=2, fd=1, uid=1, com="sh", data=" 192.168.0.1", parent_pid=1, inode=12345)        
         self.sbd.sbk_keystrokes(version=3, t=12345, pid=2, fd=1, uid=1, com="sh", data="\n", parent_pid=1, inode=12345)          
-        assert len(self.sbd.hp.sebek_lines)==1
-        assert self.sbd.hp.sebek_lines[0].data==" 192.168.0.1"
+        data = self.sbq.select(Sebek.c.honeypot_id==self.sbd.hp.id)
+        assert len(data)==1
+        assert data[0].data==" 192.168.0.1"
     
     @raises(SebekDecodeError)    
     def test_unpack_bad_ver(self):
@@ -188,44 +197,48 @@ class test_sebek_decode(unittest.TestCase):
     def test_packet_handler_bad(self):
         """packet_handler should fail silently with bad data"""
         buf = 'this\x22\x00\x22isapileofstuff'
-        self.sbd.packet_handler(12345, buf)
-        assert len(self.sbd.hp.sebek_lines)==0
+        self.sbd.packet_handler(12345, buf)  
+        assert len(self.sbq.select(Sebek.c.honeypot_id==self.sbd.hp.id))==0
 
     def test_packet_handler_read(self):  
         """packet_handler should store read data"""
         buf = '\x00\x00\x00\x01\x00\x03\x00\x00\x00\x00\x00\x01\x00\x0009\x00\xbc^\xa8\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x17bash\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x10scan\n'
-        self.sbd.packet_handler(12345, buf)
-        assert len(self.sbd.hp.sebek_lines)==1  
-        assert self.sbd.hp.sebek_lines[0].type == SBK_READ
+        self.sbd.packet_handler(12345, buf)  
+        data = self.sbq.select(Sebek.c.honeypot_id==self.sbd.hp.id)
+        assert len(data)==1  
+        assert data[0].type == SBK_READ
 
     def test_packet_handler_write(self):
         """packet_handler should store SBK_WRITE data"""  
         buf = '\x00\x00\x00\x01\x00\x03\x00\x01\x00\x00\x00\x01\x00\x0009\x00\xbc^\xa8\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x17bash\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08/dev/null'
-        self.sbd.packet_handler(12345, buf)
-        assert len(self.sbd.hp.sebek_lines)==1  
-        assert self.sbd.hp.sebek_lines[0].type == SBK_WRITE        
+        self.sbd.packet_handler(12345, buf) 
+        data = self.sbq.select(Sebek.c.honeypot_id==self.sbd.hp.id)
+        assert len(data)==1  
+        assert data[0].type == SBK_WRITE        
 
     def test_packet_handler_sock(self):
         """packet_handler should store SBK_SOCK data only if verbose=True"""
         buf = '\x00\x00\x00\x01\x00\x03\x00\x02\x00\x00\x00\x01\x00\x0009\x00\xbc^\xa8\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x17bash\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08sock'
         self.sbd.verbose = False
         self.sbd.packet_handler(12345, buf)   
-        assert len(self.sbd.hp.sebek_lines)==0             
+        assert len(self.sbq.select(Sebek.c.honeypot_id==self.sbd.hp.id))==0
         self.sbd.verbose = True
         self.sbd.packet_handler(12345, buf)
-        assert len(self.sbd.hp.sebek_lines)==1  
-        assert self.sbd.hp.sebek_lines[0].type == SBK_SOCK
+        data = self.sbq.select(Sebek.c.honeypot_id==self.sbd.hp.id)
+        assert len(data)==1  
+        assert data[0].type == SBK_SOCK
         
     def test_packet_hander_open(self):
         """packet_handler should store SBK_OPEN data only if verbose=True"""  
         buf = '\x00\x00\x00\x01\x00\x03\x00\x03\x00\x00\x00\x01\x00\x0009\x00\xbc^\xa8\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x17bash\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08/dev/null'
         self.sbd.verbose = False
-        self.sbd.packet_handler(12345, buf)   
-        assert len(self.sbd.hp.sebek_lines)==0             
+        self.sbd.packet_handler(12345, buf) 
+        assert len(self.sbq.select(Sebek.c.honeypot_id==self.sbd.hp.id))==0
         self.sbd.verbose = True
-        self.sbd.packet_handler(12345, buf)
-        assert len(self.sbd.hp.sebek_lines)==1  
-        assert self.sbd.hp.sebek_lines[0].type == SBK_OPEN
+        self.sbd.packet_handler(12345, buf)  
+        data = self.sbq.select(Sebek.c.honeypot_id==self.sbd.hp.id)
+        assert len(data)==1
+        assert data[0].type == SBK_OPEN
 
 if __name__ == '__main__':
     unittest.main()

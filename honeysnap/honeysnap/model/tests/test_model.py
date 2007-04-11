@@ -104,21 +104,6 @@ class test_model(unittest.TestCase):
         """__init__ should raises ValueError with bad key"""
         sebek = Sebek(version=3, type=0, starttime=datetime.now(), pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data='uname -a')
 
-    def test_sebek_init_long(self):
-        """__init__ should truncate data length"""
-        data = ''.join( 'a' for x in xrange(0,MAX_SBK_DATA_SIZE+5))
-        s = Sebek(version=3, type=0, timestamp=datetime.now(), pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data = data)
-        print 'data len is ', len(s.data)
-        assert len(s.data) == MAX_SBK_DATA_SIZE
-        
-    def test_sebek_insert(self):
-        """data lenth should be truncated to MAX_SBK_DATA_SIZE"""  
-        sbq = self.session.query(Sebek) 
-        h = Honeypot.by_ip(self.session, "192.168.0.1")         
-        s = Sebek(version=3, type=0, timestamp=datetime.now(), pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324)
-        s.data = ''.join('a' for x in xrange(0,MAX_SBK_DATA_SIZE+5))
-        assert len(s.data) == MAX_SBK_DATA_SIZE
-        
     @raises(SQLError)
     def test_sebek_dup(self):
         """should raise exception on duplicate sebek records"""  
@@ -128,17 +113,6 @@ class test_model(unittest.TestCase):
         h.sebek_lines.append(sebek)
         self.session.flush()        
         
-    def test_save_sebek_changes(self):
-        """save_sebek_changes should not raise an error with duplicate sebek records"""
-        h = Honeypot.by_ip(self.session, "192.168.0.1")  
-        sebek = Sebek(version=3, type=SBK_READ, timestamp=datetime(2007, 01, 01, 0, 0, 0, 0), pid=23, 
-                fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data='uname -a')
-        h.sebek_lines.append(sebek) 
-        sebek = Sebek(version=3, type=SBK_READ, timestamp=datetime(2007, 01, 01, 0, 0, 0, 0), pid=23, 
-                fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data='uname -a')
-        h.sebek_lines.append(sebek)             
-        h.save_sebek_changes(self.session)        
-            
     @raises(SQLError)
     def test_hp_unique(self):               
         """Should raise exception with duplicate ip addrs"""
