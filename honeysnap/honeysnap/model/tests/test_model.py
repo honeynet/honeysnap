@@ -22,12 +22,12 @@
 # $Id$
 
 import unittest                        
+from datetime import datetime
 from nose.tools import raises
 from sqlalchemy.exceptions import SQLError
 
 from honeysnap.importers.sebekDecode import SBK_READ, SBK_WRITE, SBK_SOCK, SBK_OPEN 
 from honeysnap.model.model import * 
-from time import mktime 
             
 class test_model(unittest.TestCase):   
     """Test some very basic properties of the model"""
@@ -45,11 +45,11 @@ class test_model(unittest.TestCase):
         self.session.save(dst) 
         self.session.flush()
         f = Flow(src_id=src.id, sport=80, packets=3, bytes=56, dst_id=dst.id, 
-            dport=45678, starttime=mktime((2007, 01, 01, 0, 0, 0, 0, 0, 0)), 
-            lastseen=mktime((2007, 01, 02, 0, 0, 0, 0, 0, 0)))
+            dport=45678, starttime=datetime(2007, 01, 01, 0, 0, 0, 0), 
+            lastseen=datetime(2007, 01, 02, 0, 0, 0, 0))
         self.session.save(f)
         h.flows.append(f)   
-        sebek = Sebek(version=3, type=SBK_READ, timestamp=mktime((2007, 01, 01, 0, 0, 0, 0, 0, 0)), 
+        sebek = Sebek(version=3, type=SBK_READ, timestamp=datetime(2007, 01, 01, 0, 0, 0, 0), 
                 pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data='uname -a')
         h.sebek_lines.append(sebek)
         self.session.flush()
@@ -85,28 +85,29 @@ class test_model(unittest.TestCase):
     def test_flow_init(self):
         """__init__ should raise ValueError with bad key"""
         f = Flow(src_id=1, sport=80, packets=3, bytes=56, dst_id=2,
-            dport=45678, starttime=mktime((2007, 01, 01, 0, 0, 0, 0, 0, 0)), 
-            last_seen=mktime((2007, 01, 02, 0, 0, 0, 0, 0, 0)))
+            dport=45678, starttime=datetime(2007, 01, 01, 0, 0, 0, 0), 
+            last_seen=datetime(2007, 01, 02, 0, 0, 0, 0))
 
     def test_flow_icmp(self):
         """flow should create with icmp_type and icmp_code"""
         f = Flow(honeypot_id=1, ip_proto=1, src_id=1, packets=3, bytes=56, dst_id=2, icmp_code=1, icmp_type=2,
-            starttime=mktime((2007, 01, 01, 0, 0, 0, 0, 23, 0)), lastseen=mktime((2007, 01, 02, 0, 0, 0, 0, 0, 0)))
+            starttime=datetime(2007, 01, 01, 0, 0, 0, 23), lastseen=datetime(2007, 01, 02, 0, 0, 0, 0))
         assert f.icmp_code == 1
         assert f.icmp_type == 2
         assert f.dport == 1
-        assert f.sport == 2     
-        assert str(f) == "[honeypot: 1, ip_proto: 1, src: 1, dst: 2, type: 2, code: 1, packets: 3, bytes: 56, starttime: Mon Jan  1 00:00:00 2007, lastseen: Tue Jan  2 00:00:00 2007, filename: None]"
+        assert f.sport == 2 
+        print str(f)    
+        assert str(f) == "[honeypot: 1, ip_proto: 1, src: 1, dst: 2, type: 2, code: 1, packets: 3, bytes: 56, starttime: 2007-01-01 00:00:00.000023, lastseen: 2007-01-02 00:00:00, filename: None]"
             
     @raises(ValueError)            
     def test_sebek_init(self):
         """__init__ should raises ValueError with bad key"""
-        sebek = Sebek(version=3, type=0, starttime=time(), pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data='uname -a')
+        sebek = Sebek(version=3, type=0, starttime=datetime.now(), pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data='uname -a')
 
     def test_sebek_init_long(self):
         """__init__ should truncate data length"""
         data = ''.join( 'a' for x in xrange(0,MAX_SBK_DATA_SIZE+5))
-        s = Sebek(version=3, type=0, timestamp=time(), pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data = data)
+        s = Sebek(version=3, type=0, timestamp=datetime.now(), pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data = data)
         print 'data len is ', len(s.data)
         assert len(s.data) == MAX_SBK_DATA_SIZE
         
@@ -114,7 +115,7 @@ class test_model(unittest.TestCase):
         """data lenth should be truncated to MAX_SBK_DATA_SIZE"""  
         sbq = self.session.query(Sebek) 
         h = Honeypot.by_ip(self.session, "192.168.0.1")         
-        s = Sebek(version=3, type=0, timestamp=time(), pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324)
+        s = Sebek(version=3, type=0, timestamp=datetime.now(), pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324)
         s.data = ''.join('a' for x in xrange(0,MAX_SBK_DATA_SIZE+5))
         assert len(s.data) == MAX_SBK_DATA_SIZE
         
@@ -122,7 +123,7 @@ class test_model(unittest.TestCase):
     def test_sebek_dup(self):
         """should raise exception on duplicate sebek records"""  
         h = Honeypot.by_ip(self.session, "192.168.0.1") 
-        sebek = Sebek(version=3, type=SBK_READ, timestamp=mktime((2007, 01, 01, 0, 0, 0, 0, 0, 0)), pid=23, 
+        sebek = Sebek(version=3, type=SBK_READ, timestamp=datetime(2007, 01, 01, 0, 0, 0, 0), pid=23, 
                 fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data='uname -a')
         h.sebek_lines.append(sebek)
         self.session.flush()        
@@ -130,10 +131,10 @@ class test_model(unittest.TestCase):
     def test_save_sebek_changes(self):
         """save_sebek_changes should not raise an error with duplicate sebek records"""
         h = Honeypot.by_ip(self.session, "192.168.0.1")  
-        sebek = Sebek(version=3, type=SBK_READ, timestamp=mktime((2007, 01, 01, 0, 0, 0, 0, 0, 0)), pid=23, 
+        sebek = Sebek(version=3, type=SBK_READ, timestamp=datetime(2007, 01, 01, 0, 0, 0, 0), pid=23, 
                 fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data='uname -a')
         h.sebek_lines.append(sebek) 
-        sebek = Sebek(version=3, type=SBK_READ, timestamp=mktime((2007, 01, 01, 0, 0, 0, 0, 0, 0)), pid=23, 
+        sebek = Sebek(version=3, type=SBK_READ, timestamp=datetime(2007, 01, 01, 0, 0, 0, 0), pid=23, 
                 fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data='uname -a')
         h.sebek_lines.append(sebek)             
         h.save_sebek_changes(self.session)        
@@ -151,7 +152,7 @@ class test_model(unittest.TestCase):
         src_id = Ip.id_get_or_create("10.0.0.1")                                               
         dst_id = Ip.id_get_or_create("254.168.0.2")
         f = Flow(src_id=src_id, sport=80, packets=3, bytes=56, dst_id=dst_id, 
-            dport=45678, starttime=mktime((2007, 01, 01, 0, 0, 0, 0, 0, 0)), lastseen=mktime((2007, 01, 02, 0, 0, 0, 0, 0, 0)))
+            dport=45678, starttime=datetime(2007, 01, 01, 0, 0, 0, 0), lastseen=datetime(2007, 01, 02, 0, 0, 0, 0))
         h = Honeypot.by_ip(self.session, "192.168.0.1")
         h.flows.append(f)     
         h.save_flow_changes(self.session)      
@@ -186,31 +187,31 @@ class test_model(unittest.TestCase):
         assert n == 1 
         n = Sebek.num_of_type(self.session, h, SBK_WRITE)                                         
         assert n == 0 
-        n = Sebek.num_of_type(self.session, h, SBK_READ, starttime=mktime((2006, 01, 01, 0, 0, 0, 0, 0, 0)), 
-            endtime=mktime((2007, 02, 01, 0, 0, 0, 0, 0, 0)))           
+        n = Sebek.num_of_type(self.session, h, SBK_READ, starttime=datetime(2006, 01, 01, 0, 0, 0, 0), 
+            endtime=datetime(2007, 02, 01, 0, 0, 0, 0))           
         assert n == 1       
-        n = Sebek.num_of_type(self.session, h, SBK_READ, starttime=mktime((2006, 01, 01, 0, 0, 0, 0, 0, 0)), 
-            endtime=mktime((2006, 02, 01, 0, 0, 0, 0, 0, 0)))           
+        n = Sebek.num_of_type(self.session, h, SBK_READ, starttime=datetime(2006, 01, 01, 0, 0, 0, 0), 
+            endtime=datetime(2006, 02, 01, 0, 0, 0, 0))           
         assert n == 0
 
     def test_get_lines(self): 
         """get_lines should correctly query sebek table"""
         h = Honeypot.by_ip(self.session, "192.168.0.1")   
-        lines = Sebek.get_lines(self.session, h, SBK_READ, starttime=mktime((2006, 01, 01, 0, 0, 0, 0, 0, 0)), 
-                endtime=mktime((2007, 02, 01, 0, 0, 0, 0, 0, 0)))     
+        lines = Sebek.get_lines(self.session, h, SBK_READ, starttime=datetime(2006, 01, 01, 0, 0, 0, 0), 
+                endtime=datetime(2007, 02, 01, 0, 0, 0, 0))     
         assert type(lines[0]) == type(Sebek())
         assert lines[0].command == 'ssh'
         assert len(lines) == 1 
-        lines = Sebek.get_lines(self.session, h, SBK_WRITE, starttime=mktime((2006, 01, 01, 0, 0, 0, 0, 0, 0)), 
-                endtime=mktime((2007, 02, 01, 0, 0, 0, 0, 0, 0)))                                         
+        lines = Sebek.get_lines(self.session, h, SBK_WRITE, starttime=datetime(2006, 01, 01, 0, 0, 0, 0), 
+                endtime=datetime(2007, 02, 01, 0, 0, 0, 0))                                         
         assert len(lines) == 0
-        lines = Sebek.get_lines(self.session, h, SBK_READ, starttime=mktime((2006, 01, 01, 0, 0, 0, 0, 0, 0)), 
-                endtime=mktime((2007, 02, 01, 0, 0, 0, 0, 0, 0)))           
+        lines = Sebek.get_lines(self.session, h, SBK_READ, starttime=datetime(2006, 01, 01, 0, 0, 0, 0), 
+                endtime=datetime(2007, 02, 01, 0, 0, 0, 0))           
         assert type(lines[0]) == type(Sebek())
         assert lines[0].command == 'ssh'
         assert len(lines) == 1
-        lines = Sebek.get_lines(self.session, h, SBK_READ, starttime=mktime((2006, 01, 01, 0, 0, 0, 0, 0, 0)), 
-                endtime=mktime((2006, 02, 01, 0, 0, 0, 0, 0, 0)), excludes=['ssh'])           
+        lines = Sebek.get_lines(self.session, h, SBK_READ, starttime=datetime(2006, 01, 01, 0, 0, 0, 0), 
+                endtime=datetime(2006, 02, 01, 0, 0, 0, 0), excludes=['ssh'])           
         assert len(lines) == 0
     
     @raises(ValueError)
@@ -220,9 +221,12 @@ class test_model(unittest.TestCase):
         
     def test_create_irc_talker(self):
         """IRCTalker __init__ should work"""
-        t = IRCTalker(name='fred')   
-        assert t.c.name=='fred'
-        assert str(t) == '[name: fred]' 
+        t = IRCTalker(name='fred!george@localhost')   
+        assert t.name=='fred!george@localhost'
+        assert str(t) == '[name: fred!george@localhost]' 
+        assert t.nick == 'fred'  
+        assert t.user == 'george'
+        assert t.host == 'localhost'
        
     @raises(ValueError)   
     def test_create_bad_irc_messsage(self):
@@ -237,10 +241,11 @@ class test_model(unittest.TestCase):
         src_id = Ip.id_get_or_create("192.168.0.2")
         dst_id = Ip.id_get_or_create("192.168.0.3") 
         m = IRCMessage(src_id=src_id, dst_id=dst_id, sport=4432, dport=6667, 
-            command='PRIVMSG', timestamp=time(), text='hi there')          
+            command='PRIVMSG', timestamp=datetime.now(), text='hi there')          
+        print m
         m.irc_from=ircsrc
         m.irc_to=ircdst    
-        h.irc_messages.append(m)
+        h.irc_messages.append(m) 
         self.session.flush()  
         
     def test_channel(self):
@@ -251,7 +256,7 @@ class test_model(unittest.TestCase):
         src_id = Ip.id_get_or_create("192.168.0.2")
         dst_id = Ip.id_get_or_create("192.168.0.3") 
         m = IRCMessage(src_id=src_id, dst_id=dst_id, sport=4432, dport=6667, 
-            command='PRIVMSG', timestamp=time(), text='hi there')          
+            command='PRIVMSG', timestamp=datetime.now(), text='hi there')          
         m.irc_from=ircsrc
         m.irc_to=ircdst 
         h.irc_messages.append(m)               

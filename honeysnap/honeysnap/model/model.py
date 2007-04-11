@@ -19,11 +19,16 @@
  
 # $Id: model.py 5038 2007-01-27 17:22:46Z arthur $
 import socket
-from time import asctime, gmtime, time
+from pytz import timezone
+from datetime import datetime
 from sqlalchemy import * 
 from sqlalchemy.ext.selectresults import SelectResults  
-from sqlalchemy.ext.activemapper import metadata
-                               
+from sqlalchemy.ext.activemapper import metadata     
+from irclib import nm_to_n, nm_to_uh, nm_to_h                                                          
+
+# probably make this a config file thing in time                        
+from honeysnap.util import TIMEZONE
+
 # max length of sebek data
 # must be < ~700 for mysql but can be larger for postgres
 MAX_SBK_DATA_SIZE = 512
@@ -99,8 +104,8 @@ flow_table = Table("flow", metadata,
     Column("dport", Integer, nullable=False),
     Column("packets", Integer, default=0, nullable=False),
     Column("bytes", Integer, default=0, nullable=False), 
-    Column("starttime", Float(50), nullable=False),
-    Column("lastseen", Float(50), nullable=False),   
+    Column("starttime", DateTime, nullable=False),
+    Column("lastseen", DateTime, nullable=False),   
     Column("filename", String(1024), default='Not specified', nullable=False),
     mysql_engine='INNODB', 
 )      
@@ -111,7 +116,7 @@ sebek_table = Table("sebek", metadata,
         nullable=False),
     Column("version", Integer, nullable=False),
     Column("type", Integer, nullable=False),
-    Column("timestamp", Float(50), nullable=False),
+    Column("timestamp", DateTime, nullable=False),
     Column("pid", Integer, nullable=False),
     Column("fd", Integer, nullable=False),
     Column("uid", Integer, nullable=False),
@@ -141,7 +146,7 @@ irc_message_table = Table('irc_message', metadata,
     Column('dst_id', Integer, ForeignKey('ip.id'), nullable=False),    
     Column('sport', Integer, nullable=False),
     Column('dport', Integer, nullable=False),
-    Column('timestamp', Float(50), nullable=False),
+    Column('timestamp', DateTime, nullable=False),
     Column('text', String(512))
 )
 
@@ -258,7 +263,7 @@ class Honeypot(object):
                 session.flush()                            
      
     def save_irc_changes(self, session):
-        """Save irc changes to db, dealing with duplicate entries""" 
+        """Save irc changes to db, dealing with duplicate entries"""
         seen = {}
         dups = []     
         for msg in session.new:
@@ -274,7 +279,9 @@ class Honeypot(object):
             session.expunge(msg)  
         try:        
             session.flush()
-        except exceptions.SQLError, e:             
+        except exceptions.SQLError, e:   
+            print 'hit dups in import'
+            print 'error ', e
             if "IntegrityError" in e.args[0]:
                 seen = {} 
                 dups = []          
@@ -282,11 +289,11 @@ class Honeypot(object):
                     if type(msg) != type(IRCMessage()):
                         continue 
                     if msg.in_db():
-                        print 'Duplicate message record seen in db - skipping ', repr(msg)
+                        #print 'Duplicate message record seen in db - skipping ', repr(msg)
                         dups.append(msg) 
                 for msg in dups: 
                     session.expunge(msg) 
-                session.flush()
+                session.flush()  
 
 class Ip(object):
     """IP address and location details""" 
@@ -322,8 +329,11 @@ class Flow(object):
     def __init__(self, **kwargs):
         for k, v in kwargs.iteritems():                      
             if not hasattr(self, k):
-                raise ValueError("Bad row name %s" % k)
-            setattr(self, k, v)    
+                raise ValueError("Bad row name %s" % k) 
+            if (k == 'starttime' or k == 'lastseen') and type(v) != type(datetime.now()):
+                setattr(self, k, datetime.utcfromtimestamp(v))
+            else:
+                setattr(self, k, v)    
         
     def __repr__(self):  
         return "[honeypot: %s, ip_proto: %s, src: %s, dst: %s, type: %s, code: %s, packets: %s, bytes: %s, starttime: %s, lastseen: %s, filename: %s]" % \
@@ -334,11 +344,11 @@ class Flow(object):
         if self.ip_proto == socket.IPPROTO_ICMP: 
             return "[honeypot: %s, ip_proto: %s, src: %s, dst: %s, type: %s, code: %s, packets: %s, bytes: %s, starttime: %s, lastseen: %s, filename: %s]" % \
                 (self.honeypot_id, self.ip_proto, self.src_id, self.dst_id, self.icmp_type, self.icmp_code, 
-                self.packets, self.bytes, asctime(gmtime(self.starttime)), asctime(gmtime(self.lastseen)), self.filename)             
+                self.packets, self.bytes, self.starttime, self.lastseen, self.filename)             
         else:
             return "[honeypot: %s, ip_proto: %s, src: %s, sport: %s, dst: %s, dport: %s, packets: %s, bytes: %s, starttime: %s, lastseen: %s, filename: %s]" % \
                 (self.honeypot_id, self.ip_proto, self.src_id, self.sport, self.dst_id, self.dport, 
-                self.packets, self.bytes, asctime(gmtime(self.starttime)), asctime(gmtime(self.lastseen)), self.filename)        
+                self.packets, self.bytes, self.starttime, self.lastseen, self.filename)        
 
     def _get_icmp_type(self):
         return self.sport
@@ -390,7 +400,10 @@ class Sebek(object):
         for k, v in kwargs.iteritems():   
             if not hasattr(self, k):
                 raise ValueError("Bad row name %s" % k)  
-            setattr(self, k, v)    
+            if k == 'timestamp' and type(v) != type(datetime.now()):
+                setattr(self, k, datetime.utcfromtimestamp(v)) 
+            else:
+                setattr(self, k, v)    
 
     def __repr__(self):
         return "[honeypot: %s, version: %s, type: %s, timestamp: %s, pid: %s, fd: %s, uid: %s, parent_pid: %s, inode: %s, command: %s, data: %s]" % \
@@ -398,10 +411,10 @@ class Sebek(object):
                 self.parent_pid, self.inode, self.command, self.data)   
     def __str__(self):   
         if self.version == 3:
-             return "[%s ip:%s parent:%s pid:%s uid:%s fd:%s inode:%s com:%s] %s" % (asctime(gmtime(self.timestamp)), 
+             return "[%s ip:%s parent:%s pid:%s uid:%s fd:%s inode:%s com:%s] %s" % (self.timestamp, 
                     self.honeypot.ip_id, self.parent_pid, self.pid, self.uid, self.fd, self.inode, self.command, self.data)
         else:
-             return "[%s ip:%s pid:%s uid:%s fd:%s com:%s] %s" % (asctime(gmtime(self.timestamp)), 
+             return "[%s ip:%s pid:%s uid:%s fd:%s com:%s] %s" % (self.timestamp, 
                     self.honeypot.ip_id, self.pid, self.uid, self.fd, self.command, self.data)  
         
     def _set_data(self, data):  
@@ -430,7 +443,7 @@ class Sebek(object):
             return False
 
     @staticmethod
-    def num_of_type(session, hp, type, starttime=0, endtime=time()):
+    def num_of_type(session, hp, type, starttime=0, endtime=datetime.now()):
         """Return count() of sebek records within date range with type type"""
         return session.query(Sebek).count(and_(Sebek.c.honeypot_id==hp.c.id, Sebek.c.type==type, \
             Sebek.c.timestamp>starttime, Sebek.c.timestamp<endtime)) 
@@ -460,6 +473,20 @@ class IRCTalker(object):
     def __str__(self):
         return "[name: %s]" % (self.name) 
 
+    def _get_nick(self):
+        return nm_to_n(self.name)
+        
+    def _get_user(self):
+        uh = nm_to_uh(self.name)
+        return uh.split('@')[0]
+
+    def _get_host(self):
+        return nm_to_h(self.name)
+        
+    nick = property(_get_nick, None, None, doc="IRC Nick")
+    user = property(_get_user, None, None, doc="IRC User")
+    host = property(_get_host, None, None, doc="IRC Host")
+
     @staticmethod    
     def id_get_or_create(name):
         """get or create an id IRCTalker object for 'name' """
@@ -477,14 +504,17 @@ class IRCTalker(object):
 class IRCMessage(object):
     """store irc message details"""
     def __init__(self, **kwargs):
-        for k, v in kwargs.iteritems():   
+        for k, v in kwargs.iteritems():
             if (k not in irc_message_table.c.keys()):
-                raise ValueError("Bad row name %s" % k)  
-            setattr(self, k, v)    
+                raise ValueError("Bad row name %s" % k)   
+            if k == 'timestamp' and type(v) != type(datetime.now()):
+                setattr(self, k, datetime.utcfromtimestamp(v)) 
+            else:
+                setattr(self, k, v)                
                                                                                               
     def __str__(self):
         return "[timestamp: %s, src_id: %s, dst_id: %s,  sport: %s, dport: %s, command: %s, from_id: %s, to_id: %s, text: %s]" % \
-            (asctime(gmtime(self.timestamp)), self.src_id, self.dst_id, 
+            (self.timestamp, self.src_id, self.dst_id, 
             self.sport, self.dport, self.command, self.from_id, self.to_id, self.text)
 
     def __repr__(self):

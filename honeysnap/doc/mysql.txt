@@ -1,0 +1,6 @@
+
+Flow identification across pcap files will be broken in MySQL until this bug:
+
+http://bugs.mysql.com/bug.php?id=8523
+
+is fixed.

@@ -201,11 +201,23 @@ flow, ip where flow.src_id = ip.id and dport = '22' group by attacker order by f
 PER DAY
 =======
 
-[XXX FIX ME] Needs fixing for new timestamp format
-
+Per day
+DISTINCT DATE_FORMAT(starttime, '%Y-%m-%d')
 
 Packets/bytes/flows per day:
+
+SELECT DISTINCT DATE_FORMAT(starttime,'%Y-%m-%d') as 
+date, count(bytes) from flow group by date;
+
+SELECT DISTINCT DATE_FORMAT(starttime, '%Y-%m-%d') as 
+date, count(distinct ip_proto) as protocols, count(*) as flows, sum(packets), sum(bytes)
+from flow group by date order by protocols;
+
 SSH traffic per day:
+
+SELECT DISTINCT DATE_FORMAT(starttime,'%Y-%m-%d') as 
+date, count(*) as flows, sum(packets), sum(bytes) from flow where dport = ‘22′ group by date;
 Unique Source IP addresses per day:
 
-
+SELECT DISTINCT DATE_FORMAT(starttime,'%Y-%m-%d') as 
+date, count(distinct src_id) from flow group by date;

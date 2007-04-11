@@ -78,27 +78,28 @@ class FlowIdentify(object):
             return
 
     def match_flow(self, ts, src, dst, sport, dport, proto, length ):
-        """have we seen matching flow in this pcap file/already? """
+        """have we seen matching flow in this pcap file/already? """     
+        ts_dt = datetime.utcfromtimestamp(ts)
         cached_flows = self.flows.get( (src, dst, sport, dport, proto), None)
         if cached_flows:
             for flow in cached_flows:      
-                if flow.lastseen > ts-FLOW_DELTA:  
-                    flow.lastseen = ts
+                if flow.lastseen > datetime.utcfromtimestamp(ts-FLOW_DELTA):  
+                    flow.lastseen = ts_dt
                     flow.bytes += length;
                     flow.packets += 1;
                     return
         srcid = Ip.id_get_or_create(src)
         dstid = Ip.id_get_or_create(dst)        
         flows = self.fq.select(and_(Flow.c.src_id == srcid, Flow.c.dst_id == dstid, Flow.c.sport == sport, 
-            Flow.c.dport == dport, Flow.c.lastseen > ts-FLOW_DELTA), order_by = desc(Flow.c.starttime))
+            Flow.c.dport == dport, Flow.c.lastseen > datetime.utcfromtimestamp(ts-FLOW_DELTA)), order_by = desc(Flow.c.starttime))
         if flows:              
             flow = flows[0]    # if more than one, append data to the last seen flow
-            if flow.starttime == ts:
+            if flow.starttime == ts_dt:
                 raise DuplicateFlow
             else:     
                 flow.bytes += length; 
                 flow.packets += 1     
-                flow.lastseen = ts
+                flow.lastseen = ts_dt
                 if not cached_flows:
                     self.flows[(src, dst, sport, dport, proto)] = []
                 self.flows[(src, dst, sport, dport, proto)].append(flow)

@@ -20,6 +20,8 @@
 
 # $Id$
 
+from irclib import irc_lower
+
 from honeysnap.importers.hsIRC import HoneysnapIRC   
 from honeysnap.singletonmixin import HoneysnapSingleton  
 from honeysnap.model.model import *
@@ -57,10 +59,10 @@ class IrcDecode(object):
         Callback to register with HoneySnapIRC
         c: instance of hsIRC.HnyServerConnection
         e: instance of irclib.Event
-        """ 
-        self.count += 1      
+        """      
         if e.eventtype() == 'all_raw_messages':
             return 
+        self.count += 1             
         src_id = Ip.id_get_or_create(e.src)
         dst_id = Ip.id_get_or_create(e.dst)
         data = ' '.join(e.arguments())      
@@ -70,14 +72,15 @@ class IrcDecode(object):
             source = e.src
         if target == None:
             target = e.dst
-        irc_src_id = IRCTalker.id_get_or_create(source)
-        irc_dst_id = IRCTalker.id_get_or_create(target)    
+        irc_src_id = IRCTalker.id_get_or_create(irc_lower(source))
+        irc_dst_id = IRCTalker.id_get_or_create(irc_lower(target))
         m = IRCMessage(src_id=src_id, dst_id=dst_id, sport=e.sport, dport=e.dport, 
                        from_id=irc_src_id, to_id=irc_dst_id, command=e.eventtype(), 
                        timestamp=e.time, text=data)          
         self.hp.irc_messages.append(m)  
-        #print 'importing ', repr(m)
+        #print 'importing ', m
         if not self.count % 1000:
+            print 'writing changes at %s, num %s' % (datetime.now(), self.count)
             self.hp.save_irc_changes(self.session)
         
 if __name__ == '__main__': 
