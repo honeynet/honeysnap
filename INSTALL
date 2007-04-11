@@ -41,7 +41,7 @@ and also libpcap-devel if that is listed separately.  For example, on
 Debian/Ubuntu with python2.4:
 
   $ sudo apt-get install python24-dev
-  $ sudo apt-get install libpcap libpcap-dev
+  $ sudo apt-get install libpcap0.8 libpcap0.8-dev
 
 Next install pypcap. Download pypcap from 
 http://code.google.com/p/pypcap
@@ -54,16 +54,16 @@ http://code.google.com/p/pypcap
 
 You should then be able to install Honeysnap and all its remaining
 dependencies (provided you have a network connection).
-E.g. for version 1.0.4:
+E.g. for version 1.0.6:
 
-  $ tar xvzf honeysnap-1.0.4
-  $ cd honeysnap-1.0.4
+  $ tar xvzf honeysnap-1.0.6
+  $ cd honeysnap-1.0.6
   $ sudo python setup.py install
 
 If you already have easy_install installed, you can simplify the
 installation process further by simply executing the following.
 
-  $ sudo easy_install honeysnap-1.0.4.tar.gz 
+  $ sudo easy_install honeysnap-1.0.6.tar.gz 
 
 This is exactly the same as untar'ing the distribution and
 running 'sudo python setup.py install'
@@ -72,7 +72,7 @@ Please note that this will install the honeysnap script into your
 PATH, usually in /usr/bin. If this isn't what you want, specify
 --script-dir. e.g
 
-$ sudo easy_install --script-dir /usr/local/bin honeysnap-1.0.3.tar.gz
+$ sudo easy_install --script-dir /usr/local/bin honeysnap-1.0.6.tar.gz
 
 3: INSTALLATION ON WINDOWS
 ==========================
@@ -102,7 +102,7 @@ ez_setup.py from
 
 and run it. This will install easy_setup. Finally run
 
-  easy_install honeysnap-1.0.4.zip
+  easy_install honeysnap-1.0.6.zip
                                                     
 This should download and install honeysnap and all its
 dependencies.
@@ -167,9 +167,9 @@ $ python2.4 setup.py install
 
 v) Install Honeysnap
 
-$ wget http://www.honeynet.org/tools/honeysnap/honeysnap-1.0.3.tar.gz
-$ tar xzvf honeysnap-1.0.3.tar.gz
-$ cd honeysnap-1.0.3
+$ wget http://www.honeynet.org/tools/honeysnap/honeysnap-1.0.6.tar.gz
+$ tar xzvf honeysnap-1.0.6.tar.gz
+$ cd honeysnap-1.0.6
 $ python2.4 setup.py install
 
 vi) Test!
