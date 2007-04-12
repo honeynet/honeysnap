@@ -43,6 +43,8 @@ from sebekDecode import SebekDecode
 from ircDecode import IrcDecode       
 from honeysnap.singletonmixin import HoneysnapSingleton
 from honeysnap.util import make_dir, check_pcap_file
+from honeysnap.model.model import TZ
+
                                     
 VERSION=pkg_resources.get_distribution('honeysnap')
 
@@ -95,8 +97,8 @@ def process_file(file):
     print "Getting pcap info for %s" % file
     pi = PCapInfo(tmpf)
     starttime, endtime = pi.get_stats()
-    hs.setOption('starttime', datetime.utcfromtimestamp(starttime))
-    hs.setOption('endtime', datetime.utcfromtimestamp(endtime))    
+    hs.setOption('starttime', datetime.fromtimestamp(starttime, TZ))
+    hs.setOption('endtime', datetime.fromtimestamp(endtime, TZ))    
     for hp in options["honeypots"]:
         print "Importing connections for %s" % hp
         s = FlowIdentify(tmpf, file, hp)

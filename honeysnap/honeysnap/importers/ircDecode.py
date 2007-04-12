@@ -79,7 +79,7 @@ class IrcDecode(object):
         irc_dst_id = IRCTalker.id_get_or_create(irc_lower(target))
         m = dict(honeypot_id=self.hp.id, src_id=src_id, dst_id=dst_id, sport=e.sport, dport=e.dport, 
                        from_id=irc_src_id, to_id=irc_dst_id, command=e.eventtype(), 
-                       timestamp=datetime.utcfromtimestamp(e.time), text=data[0:MAX_IRC_DATA_SIZE], filename=self.file)  
+                       timestamp=datetime.fromtimestamp(e.time, TZ), text=data[0:MAX_IRC_DATA_SIZE], filename=self.file)  
         self.save(m) 
         if not self.count % 10000:
             print '%s, count %s' % (datetime.now(), self.count)

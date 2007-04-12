@@ -114,7 +114,7 @@ class test_flowIdentify(unittest.TestCase):
         del f
         f = self.fid.fq.selectone(Flow.c.id==id)
         print f
-        assert f.starttime == datetime.utcfromtimestamp(ts)
+        assert f.starttime == datetime.fromtimestamp(ts, TZ)
 
     def test_match_flow_in_cache(self):
         """match_flow should spot if flow has been seen already this file"""  
@@ -125,7 +125,7 @@ class test_flowIdentify(unittest.TestCase):
                                                     bytes=20, filename='testing')]
         self.fid.match_flow(ts, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)                                                    
         assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].bytes == 32  
-        assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].lastseen == datetime.utcfromtimestamp(ts)
+        assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].lastseen == datetime.fromtimestamp(ts, TZ)
 
     def test_match_flow_over_boundary_in_cache(self):
         """match_flow should spot if flow has been seen already this file, three packet case"""  
@@ -139,7 +139,7 @@ class test_flowIdentify(unittest.TestCase):
         self.fid.match_flow(ts2, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)                                                    
         self.fid.match_flow(ts3, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)        
         assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].bytes == 44  
-        assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].lastseen == datetime.utcfromtimestamp(ts3)
+        assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].lastseen == datetime.fromtimestamp(ts3, TZ)
 
 
     def test_match_flow_in_cache_pre_hour(self):
@@ -165,7 +165,7 @@ class test_flowIdentify(unittest.TestCase):
         self.session.flush()                                                    
         self.fid.match_flow(ts+20, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)   
         assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].bytes == 32
-        assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].lastseen == datetime.utcfromtimestamp(ts+20)
+        assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].lastseen == datetime.fromtimestamp(ts+20, TZ)
                                                                                                                                
     def test_match_flow_over_boundary_in_db(self):
         """match_flow should spot flow in db and set cache correctly"""             
@@ -182,7 +182,7 @@ class test_flowIdentify(unittest.TestCase):
         self.session.flush()
         self.fid.match_flow(ts3, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)         
         assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].bytes == 44
-        assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].lastseen == datetime.utcfromtimestamp(ts3)
+        assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].lastseen == datetime.fromtimestamp(ts3, TZ)
 
     def test_match_flow_in_db_pre_hour(self):
         """match_flow should spot flow in db, but create new if it was more than FLOW_DELTA ago"""             

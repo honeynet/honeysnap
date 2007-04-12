@@ -29,9 +29,6 @@ import pcap
 import gzip
 import pytz
 
-# probably make this a config file thing in time
-TIMEZONE = pytz.timezone('UTC')           
-
 def parse_dburi(uri):
     "Turn the connection_string into a series of parameters to the connect method"
     # based on http://www.halfcooked.com/code/dburi.py 

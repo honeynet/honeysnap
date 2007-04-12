@@ -19,15 +19,15 @@
  
 # $Id: model.py 5038 2007-01-27 17:22:46Z arthur $
 import socket
-from pytz import timezone
-from datetime import datetime
+from datetime import datetime 
+import pytz
 from sqlalchemy import * 
 from sqlalchemy.ext.selectresults import SelectResults  
 from sqlalchemy.ext.activemapper import metadata     
 from irclib import nm_to_n, nm_to_uh, nm_to_h                                                          
 
 # probably make this a config file thing in time                        
-from honeysnap.util import TIMEZONE
+TZ = pytz.timezone('UTC')
 
 # max length of sebek data
 # must be < ~700 for mysql but can be larger for postgres
@@ -107,8 +107,8 @@ flow_table = Table("flow", metadata,
     Column("dport", Integer, nullable=False),
     Column("packets", Integer, default=0, nullable=False),
     Column("bytes", Integer, default=0, nullable=False), 
-    Column("starttime", DateTime, nullable=False),
-    Column("lastseen", DateTime, nullable=False),   
+    Column("starttime", DateTime(timezone=True), nullable=False),
+    Column("lastseen", DateTime(timezone=True), nullable=False),   
     Column("filename", String(1024), default='Not specified', nullable=False),
     mysql_engine='INNODB', 
 )      
@@ -119,7 +119,7 @@ sebek_table = Table("sebek", metadata,
         nullable=False),
     Column("version", Integer, nullable=False),
     Column("type", Integer, nullable=False),
-    Column("timestamp", DateTime, nullable=False),
+    Column("timestamp", DateTime(timezone=True), nullable=False),
     Column("pid", Integer, nullable=False),
     Column("fd", Integer, nullable=False),
     Column("uid", Integer, nullable=False),
@@ -149,7 +149,7 @@ irc_message_table = Table('irc_message', metadata,
     Column('dst_id', Integer, ForeignKey('ip.id'), nullable=False),    
     Column('sport', Integer, nullable=False),
     Column('dport', Integer, nullable=False),
-    Column('timestamp', DateTime, nullable=False),
+    Column('timestamp', DateTime(timezone=True), nullable=False),
     Column('text', String(512)),
     Column("filename", String(1024), default='Not specified', nullable=False),
 )
@@ -274,7 +274,7 @@ class Flow(object):
             if not hasattr(self, k):
                 raise ValueError("Bad row name %s" % k) 
             if (k == 'starttime' or k == 'lastseen') and type(v) != type(datetime.now()):
-                setattr(self, k, datetime.utcfromtimestamp(v))
+                setattr(self, k, datetime.fromtimestamp(v, TZ))
             else:
                 setattr(self, k, v)    
         
@@ -344,7 +344,7 @@ class Sebek(object):
             if not hasattr(self, k):
                 raise ValueError("Bad row name %s" % k)  
             if k == 'timestamp' and type(v) != type(datetime.now()):
-                setattr(self, k, datetime.utcfromtimestamp(v)) 
+                setattr(self, k, datetime.fromtimestamp(v, TZ)) 
             else:
                 setattr(self, k, v)    
 
@@ -352,6 +352,7 @@ class Sebek(object):
         return "[honeypot: %s, version: %s, type: %s, timestamp: %s, pid: %s, fd: %s, uid: %s, parent_pid: %s, inode: %s, command: %s, data: %s]" % \
                 (self.honeypot.id, self.version, self.type, self.timestamp, self.pid, self.fd, self.uid, 
                 self.parent_pid, self.inode, self.command, self.data)   
+
     def __str__(self):   
         if self.version == 3:
              return "[%s ip:%s parent:%s pid:%s uid:%s fd:%s inode:%s com:%s] %s" % (self.timestamp, 
@@ -443,7 +444,7 @@ class IRCMessage(object):
             if not hasattr(self, k):
                 raise ValueError("Bad row name %s" % k)   
             if k == 'timestamp' and type(v) != type(datetime.now()):
-                setattr(self, k, datetime.utcfromtimestamp(v)) 
+                setattr(self, k, datetime.fromtimestamp(v, TZ)) 
             else:
                 setattr(self, k, v)                
                                                                                               

@@ -24,7 +24,9 @@
 import unittest                                       
 import tempfile        
 from datetime import datetime
-from nose.tools import raises                                       
+from nose.tools import raises       
+
+from honeysnap.model.model import TZ                                
 
 from honeysnap.importers.pcapinfo import PCapInfo                      
 
@@ -51,4 +53,4 @@ class test_pcapinfo(unittest.TestCase):
             pcap_info.p = data
             result = pcap_info.get_stats()  
             print data, starttime, endtime, result
-            assert datetime.utcfromtimestamp(starttime), datetime.utcfromtimestamp(endtime) == result
+            assert datetime.fromtimestamp(starttime, TZ), datetime.fromtimestamp(endtime, TZ) == result
