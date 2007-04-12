@@ -220,7 +220,7 @@ class SebekDecode(object):
 
     def save(self, s):
         if type(s['timestamp'] != type(datetime.now())):
-            s['timestamp'] = datetime.fromtimestamp(s['timestamp'], TZ) 
+            s['timestamp'] = datetime.fromtimestamp(s['timestamp']) 
         if self.hash.has_key(str(s)):
             return
         self.hash[str(s)] = 1

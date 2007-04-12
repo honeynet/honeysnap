@@ -107,8 +107,8 @@ flow_table = Table("flow", metadata,
     Column("dport", Integer, nullable=False),
     Column("packets", Integer, default=0, nullable=False),
     Column("bytes", Integer, default=0, nullable=False), 
-    Column("starttime", DateTime(timezone=True), nullable=False),
-    Column("lastseen", DateTime(timezone=True), nullable=False),   
+    Column("starttime", DateTime(), nullable=False),
+    Column("lastseen", DateTime(), nullable=False),   
     Column("filename", String(1024), default='Not specified', nullable=False),
     mysql_engine='INNODB', 
 )      
@@ -119,7 +119,7 @@ sebek_table = Table("sebek", metadata,
         nullable=False),
     Column("version", Integer, nullable=False),
     Column("type", Integer, nullable=False),
-    Column("timestamp", DateTime(timezone=True), nullable=False),
+    Column("timestamp", DateTime(), nullable=False),
     Column("pid", Integer, nullable=False),
     Column("fd", Integer, nullable=False),
     Column("uid", Integer, nullable=False),
@@ -149,7 +149,7 @@ irc_message_table = Table('irc_message', metadata,
     Column('dst_id', Integer, ForeignKey('ip.id'), nullable=False),    
     Column('sport', Integer, nullable=False),
     Column('dport', Integer, nullable=False),
-    Column('timestamp', DateTime(timezone=True), nullable=False),
+    Column('timestamp', DateTime(), nullable=False),
     Column('text', String(512)),
     Column("filename", String(1024), default='Not specified', nullable=False),
 )
@@ -274,7 +274,7 @@ class Flow(object):
             if not hasattr(self, k):
                 raise ValueError("Bad row name %s" % k) 
             if (k == 'starttime' or k == 'lastseen') and type(v) != type(datetime.now()):
-                setattr(self, k, datetime.fromtimestamp(v, TZ))
+                setattr(self, k, datetime.fromtimestamp(v))
             else:
                 setattr(self, k, v)    
         
@@ -344,7 +344,7 @@ class Sebek(object):
             if not hasattr(self, k):
                 raise ValueError("Bad row name %s" % k)  
             if k == 'timestamp' and type(v) != type(datetime.now()):
-                setattr(self, k, datetime.fromtimestamp(v, TZ)) 
+                setattr(self, k, datetime.fromtimestamp(v)) 
             else:
                 setattr(self, k, v)    
 
@@ -444,7 +444,7 @@ class IRCMessage(object):
             if not hasattr(self, k):
                 raise ValueError("Bad row name %s" % k)   
             if k == 'timestamp' and type(v) != type(datetime.now()):
-                setattr(self, k, datetime.fromtimestamp(v, TZ)) 
+                setattr(self, k, datetime.fromtimestamp(v)) 
             else:
                 setattr(self, k, v)                
                                                                                               

@@ -53,4 +53,4 @@ class test_pcapinfo(unittest.TestCase):
             pcap_info.p = data
             result = pcap_info.get_stats()  
             print data, starttime, endtime, result
-            assert datetime.fromtimestamp(starttime, TZ), datetime.fromtimestamp(endtime, TZ) == result
+            assert datetime.fromtimestamp(starttime), datetime.fromtimestamp(endtime) == result

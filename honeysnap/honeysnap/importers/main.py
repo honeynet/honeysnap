@@ -97,8 +97,8 @@ def process_file(file):
     print "Getting pcap info for %s" % file
     pi = PCapInfo(tmpf)
     starttime, endtime = pi.get_stats()
-    hs.setOption('starttime', datetime.fromtimestamp(starttime, TZ))
-    hs.setOption('endtime', datetime.fromtimestamp(endtime, TZ))    
+    hs.setOption('starttime', datetime.fromtimestamp(starttime))
+    hs.setOption('endtime', datetime.fromtimestamp(endtime))    
     for hp in options["honeypots"]:
         print "Importing connections for %s" % hp
         s = FlowIdentify(tmpf, file, hp)
