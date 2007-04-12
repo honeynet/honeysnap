@@ -26,8 +26,6 @@ import tempfile
 from datetime import datetime
 from nose.tools import raises       
 
-from honeysnap.model.model import TZ                                
-
 from honeysnap.importers.pcapinfo import PCapInfo                      
 
 class test_pcapinfo(unittest.TestCase):   

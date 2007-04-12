@@ -254,5 +254,13 @@ class test_sebek_decode(unittest.TestCase):
         assert len(data)==1
         assert data[0].type == SBK_OPEN
 
+    def test_empty_insert(self):
+        """shouldn't try and write to db with empty insert_list"""
+        assert 1 == 0
+        
+    def test_already_in_db(self):
+        """should spot lines already in db and skip"""
+        assert 1 == 0
+
 if __name__ == '__main__':
     unittest.main()

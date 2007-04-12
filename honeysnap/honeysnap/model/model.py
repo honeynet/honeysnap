@@ -20,21 +20,18 @@
 # $Id: model.py 5038 2007-01-27 17:22:46Z arthur $
 import socket
 from datetime import datetime 
-import pytz
 from sqlalchemy import * 
 from sqlalchemy.ext.selectresults import SelectResults  
 from sqlalchemy.ext.activemapper import metadata     
 from irclib import nm_to_n, nm_to_uh, nm_to_h                                                          
 
-# probably make this a config file thing in time                        
-TZ = pytz.timezone('UTC')
-
 # max length of sebek data
 # must be < ~700 for mysql but can be larger for postgres
 MAX_SBK_DATA_SIZE = 512  
 
-# ditto for IRC
-MAX_IRC_DATA_SIZE = 512
+# ditto for IRC 
+MAX_IRC_COMMAND_SIZE = 64
+MAX_IRC_TEXT_SIZE = 512
 
 class HoneysnapModelError(Exception):
     pass
@@ -144,13 +141,13 @@ irc_message_table = Table('irc_message', metadata,
         nullable=False),
     Column('from_id', Integer, ForeignKey('irc_talker.id'), nullable=False),
     Column('to_id', Integer, ForeignKey('irc_talker.id'), default=None),
-    Column('command', String(128), nullable=False),
+    Column('command', String(MAX_IRC_COMMAND_SIZE), nullable=False),
     Column('src_id', Integer, ForeignKey('ip.id'), nullable=False),   
     Column('dst_id', Integer, ForeignKey('ip.id'), nullable=False),    
     Column('sport', Integer, nullable=False),
     Column('dport', Integer, nullable=False),
     Column('timestamp', DateTime(), nullable=False),
-    Column('text', String(512)),
+    Column('text', String(MAX_IRC_TEXT_SIZE)),
     Column("filename", String(1024), default='Not specified', nullable=False),
 )
 
