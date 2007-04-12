@@ -107,7 +107,9 @@ class SebekDecode(object):
         self.filename = filename
         self.p.setfilter("src host %s and udp dst port %s" % (hp, options["sebek_port"]))
         self.verbose = options['sebek_all_data']
-        self.log = {}
+        self.log = {}     
+        self.hash = {}
+        self.insert_list = []
         self.session = create_session()
         self.hp = Honeypot.get_or_create(self.session, hp)   
 
@@ -157,7 +159,7 @@ class SebekDecode(object):
             com = nonascii.sub("", com)
             s = dict(honeypot_id=self.hp.id, version=version, type=SBK_WRITE, timestamp=t, pid=pid, fd=fd, \
                 uid=uid, command=com, parent_pid=parent_pid, inode=inode, data=data)
-            self.insert_dict(s)
+            self.save(s)
         else:
             # should hex-encode data here or something
             return
@@ -170,7 +172,7 @@ class SebekDecode(object):
         data = nonascii.sub("", data)
         s = dict(honeypot_id=self.hp.id, version=version, type=SBK_SOCK, timestamp=t, pid=pid, fd=fd, uid=uid, \
             command=com, parent_pid=parent_pid, inode=inode, data=data)
-        self.insert_dict(s)
+        self.save(s)
         
     def sbk_open(self, version, t, pid, fd, uid, com, data, parent_pid, inode):
         """Decode sebek file open data"""   
@@ -180,7 +182,7 @@ class SebekDecode(object):
         data = nonascii.sub("", data)  
         s = dict(honeypot_id=self.hp.id, version=version, type=SBK_OPEN, timestamp=t, pid=pid, fd=fd, uid=uid, \
             command=com, parent_pid=parent_pid, inode=inode, data=data)
-        self.insert_dict(s)
+        self.save(s)
 
     def sbk_keystrokes(self, version, t, pid, fd, uid, com, data, parent_pid=0, inode=0):
         """
@@ -213,19 +215,34 @@ class SebekDecode(object):
                 d = nonascii.sub("", d)                
             s = dict(honeypot_id=self.hp.id, version=version, type=SBK_READ, timestamp=t, pid=pid, fd=fd, uid=uid, \
                 command=com, parent_pid=parent_pid, inode=inode, data=d[0:MAX_SBK_DATA_SIZE]) 
-            self.insert_dict(s)                    
+            self.save(s)                    
             del self.log[k]
 
-    def insert_dict(self, s):
+    def save(self, s):
         if type(s['timestamp'] != type(datetime.now())):
-            s['timestamp'] = datetime.utcfromtimestamp(s['timestamp'])
-        try:
-            sebek_table.insert().execute(s)
+            s['timestamp'] = datetime.utcfromtimestamp(s['timestamp']) 
+        if self.hash.has_key(str(s)):
+            return
+        self.hash[str(s)] = 1
+        self.insert_list.append(s)
+        
+    def write_db(self):        
+        if not self.insert_list:
+            return
+        try:                  
+            sebek_table.insert().execute(self.insert_list)
         except sqlalchemy.exceptions.SQLError, e:
-            if 'IntegrityError' in e.args[0]:
-                print 'Duplicate sebek entry, skipping ', s
-            else:             
-                raise        
+            # have some of these records already in db, maybe from a previous run
+            for s in self.insert_list:
+                try:
+                    sebek_table.insert().execute(s)
+                except sqlalchemy.exceptions.SQLError, e:
+                    if 'IntegrityError' in e.args[0]:
+                        print 'Duplicate sebek entry, skipping ', s
+                    else:             
+                        raise 
+        self.hash = {}
+        self.insert_list = []                       
 
     def run(self):
         # since we set a filter on pcap, all the
@@ -238,6 +255,7 @@ class SebekDecode(object):
             try:
                 self.packet_handler(ts, payload)
             except struct.error, e:
-                continue  
+                continue
+        self.write_db()          
 
 

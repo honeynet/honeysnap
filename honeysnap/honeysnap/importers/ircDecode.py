@@ -40,7 +40,9 @@ class IrcDecode(object):
         self.tmpf = tmpf
         self.file = file
         self.hpip = hp
-        self.ircports = []
+        self.ircports = []  
+        self.insert_list = []
+        self.hash = {}
         self.engine = connect_to_db(options['dburi'], options['debug']) 
         self.session = create_session()
         self.hp = Honeypot.get_or_create(self.session, hp) 
@@ -78,15 +80,34 @@ class IrcDecode(object):
         m = dict(honeypot_id=self.hp.id, src_id=src_id, dst_id=dst_id, sport=e.sport, dport=e.dport, 
                        from_id=irc_src_id, to_id=irc_dst_id, command=e.eventtype(), 
                        timestamp=datetime.utcfromtimestamp(e.time), text=data[0:MAX_IRC_DATA_SIZE], filename=self.file)  
-        try:                               
-            irc_message_table.insert().execute(m)                       
-        except sqlalchemy.exceptions.SQLError, e:
-            if 'IntegrityError' in e.args[0]:
-                print 'Duplicate IRC entry, skipping ', m
-            else:             
-                raise
-        if not self.count % 1000:
-            print '%s: written %s IRC messages' % (datetime.now(), self.count)
+        self.save(m) 
+        if not self.count % 10000:
+            print '%s, count %s' % (datetime.now(), self.count)
+            self.write_db()
+        
+    def save(self, m): 
+        if self.hash.has_key(str(m)):
+            return
+        self.hash[str(m)] = 1
+        self.insert_list.append(m)
+        
+    def write_db(self): 
+        if not self.insert_list:
+            return      
+        try:
+            irc_message_table.insert().execute(self.insert_list)
+        except sqlalchemy.exceptions.SQLError:
+            # insertmany failed - maybe some records exist from previous run?
+            for m in self.insert_list:
+                try:                               
+                    irc_message_table.insert().execute(m)                       
+                except sqlalchemy.exceptions.SQLError, e:
+                    if 'IntegrityError' in e.args[0]:
+                        print 'Duplicate IRC entry, skipping ', m
+                    else:             
+                        raise 
+        self.hash = {}
+        self.insert_list = []
         
 if __name__ == '__main__': 
     import sys 
