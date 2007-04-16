@@ -22,7 +22,7 @@ import socket
 from datetime import datetime 
 from sqlalchemy import * 
 from sqlalchemy.ext.selectresults import SelectResults  
-from sqlalchemy.ext.activemapper import metadata     
+from sqlalchemy.ext.activemapper import metadata    
 from irclib import nm_to_n, nm_to_uh, nm_to_h                                                          
 
 # max length of sebek data
@@ -35,6 +35,11 @@ MAX_IRC_TEXT_SIZE = 512
 
 class HoneysnapModelError(Exception):
     pass
+
+class BigInteger(types.TypeEngine):
+    """Define BigInteger for any db that supports BIGINT (postgres, sqlite, mysql at least)"""
+    def get_col_spec(self):
+        return "BIGINT"
 
 class Enum(types.Unicode):
     """Enum type from http://www.sqlalchemy.org/trac/wiki/UsageRecipes/Enum"""
@@ -123,7 +128,7 @@ sebek_table = Table("sebek", metadata,
     Column("command", String(64), nullable=False),            
     # next two fields don't exist in sebek v2 data
     Column("parent_pid", Integer, default=0, nullable=False),
-    Column("inode", Integer, default=0, nullable=False),
+    Column("inode", BigInteger, default=0, nullable=False),
     Column("data", String(MAX_SBK_DATA_SIZE)),
     mysql_engine='INNODB',  
 )              

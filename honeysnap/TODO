@@ -1,0 +1,20 @@
+# $Id$
+
+Tests for IRC importing
+
+Merge IRC spotting code from non-db branch
+
+Per-day summary code to generate same stats as non-db honeysnap
+
+Port honeymine irc frontend to sqa/honeysnap
+
+DNS lookups to db
+
+Better flow identification/extraction
+
+Flow contents to db
+      * http   
+      * ftp
+
+Sanity check -H input
+      
