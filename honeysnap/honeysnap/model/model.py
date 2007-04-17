@@ -23,7 +23,7 @@ from datetime import datetime
 from sqlalchemy import * 
 from sqlalchemy.ext.selectresults import SelectResults  
 from sqlalchemy.ext.activemapper import metadata    
-from irclib import nm_to_n, nm_to_uh, nm_to_h                                                          
+from irclib import nm_to_n, nm_to_uh, nm_to_h, irc_lower                                                          
 
 # max length of sebek data
 # must be < ~700 for mysql but can be larger for postgres
@@ -428,6 +428,7 @@ class IRCTalker(object):
     @staticmethod    
     def id_get_or_create(name):
         """get or create an id IRCTalker object for 'name' """
+        name = irc_lower(name)
         if IRCTalker.id_cache.get(name, None):   
             return IRCTalker.id_cache[name]
         t = irc_talker_table.select(irc_talker_table.c.name==name).execute().fetchone() 

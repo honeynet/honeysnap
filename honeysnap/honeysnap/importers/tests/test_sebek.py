@@ -256,11 +256,18 @@ class test_sebek_decode(unittest.TestCase):
 
     def test_empty_insert(self):
         """shouldn't try and write to db with empty insert_list"""
-        assert 1 == 0
+        self.sbd.insert_list = []
+        # insertmany barfs with emtpy list so this is valid test
+        self.sbd.write_db()
         
     def test_already_in_db(self):
-        """should spot lines already in db and skip"""
-        assert 1 == 0
+        """should spot lines already in db and skip"""   
+        self.sbd.sbk_keystrokes(version=3, t=12345, pid=1, fd=1, uid=1, com="sh", data="./scan\n", parent_pid=1, inode=12345)
+        self.sbd.write_db()   
+        for i in xrange(1, 5):   
+            assert self.sbq.count() == 1
+            self.sbd.sbk_keystrokes(version=3, t=12345, pid=1, fd=1, uid=1, com="sh", data="./scan\n", parent_pid=1, inode=12345)
+            self.sbd.write_db()
 
 if __name__ == '__main__':
     unittest.main()

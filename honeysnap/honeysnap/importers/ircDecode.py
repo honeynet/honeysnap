@@ -20,9 +20,11 @@
 
 # $Id$
 
-from datetime import datetime
-from irclib import irc_lower
+from datetime import datetime 
+from socket import inet_aton
+
 import sqlalchemy 
+import dpkt                       
 
 from honeysnap.importers.hsIRC import HoneysnapIRC   
 from honeysnap.singletonmixin import HoneysnapSingleton  
@@ -74,8 +76,8 @@ class IrcDecode(object):
             source = e.src
         if target == None:
             target = e.dst
-        irc_src_id = IRCTalker.id_get_or_create(irc_lower(source))
-        irc_dst_id = IRCTalker.id_get_or_create(irc_lower(target))
+        irc_src_id = IRCTalker.id_get_or_create(source)
+        irc_dst_id = IRCTalker.id_get_or_create(target)
         m = dict(honeypot_id=self.hp.id, src_id=src_id, dst_id=dst_id, sport=e.sport, dport=e.dport, 
                        from_id=irc_src_id, to_id=irc_dst_id, command=e.eventtype()[0:MAX_IRC_COMMAND_SIZE], 
                        timestamp=datetime.fromtimestamp(e.time), text=data[0:MAX_IRC_TEXT_SIZE], filename=self.file)  

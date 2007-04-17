@@ -22,7 +22,8 @@
 
 import unittest
 from honeysnap.model.model import *
-from honeysnap.importers.ircDecode import *
+from honeysnap.importers.ircDecode import * 
+from honeysnap.importers.hsIRC import HnyEvent
 
 class test_ircDecode(unittest.TestCase):
     def setUp(self):
@@ -30,7 +31,9 @@ class test_ircDecode(unittest.TestCase):
         IrcDecode.__init__ = lambda self: None
         self.ircd = IrcDecode()
         self.ircd.hash = {}
-        self.ircd.insert_list = []       
+        self.ircd.insert_list = []  
+        self.ircd.count = 0
+        self.ircd.file = 'testing'     
         self.session = create_session()
         self.ircd.hp = Honeypot.get_or_create(self.session, '192.168.0.1')   
         self.session.flush()
@@ -41,35 +44,103 @@ class test_ircDecode(unittest.TestCase):
 
     def test_raw_message(self):
        """shouldn't store messages of type all_raw_messages in db"""
-       assert 1 == 0
+       assert self.ircd.count == 0
+       cmd = 'all_raw_messages'
+       srcid = IRCTalker.id_get_or_create('fred!fred@localhost')
+       dstid = IRCTalker.id_get_or_create('george!zzz@dsfdf.sdfd.com')   
+       pkt = dpkt.ip.IP()
+       pkt.src = inet_aton('192.168.0.1')
+       pkt.dst = inet_aton('192.168.0.2')
+       pkt.data = dpkt.tcp.TCP()
+       pkt.data.dport = 234
+       pkt.data.sport = 6667
+       src = 'fred!fred@localhost'
+       dst = 'george!zzz@dsfdf.sdfd.com'
+       e  = HnyEvent(1111.0, pkt, cmd, src, dst, '')
+       self.ircd.decode('', e)
+       assert self.ircd.count == 0
+       assert len(self.ircd.insert_list) == 0
        
     def test_max_data_size(self):
-       """should restict max data size"""
-       assert 1 == 0
+       """should restict max data size (ie not raise SQLError)"""  
+       text = ''.join( 'a' for x in xrange(0,MAX_IRC_TEXT_SIZE+5))
+       srcid = IRCTalker.id_get_or_create('fred!fred@localhost')
+       dstid = IRCTalker.id_get_or_create('george!zzz@dsfdf.sdfd.com')   
+       pkt = dpkt.ip.IP()
+       pkt.src = inet_aton('192.168.0.1')
+       pkt.dst = inet_aton('192.168.0.2')
+       pkt.data = dpkt.tcp.TCP()
+       pkt.data.dport = 234
+       pkt.data.sport = 6667
+       src = 'fred!fred@localhost'
+       dst = 'george!zzz@dsfdf.sdfd.com'
+       e  = HnyEvent(1111.0, pkt, 'privmsg', src, dst, text)
+       self.ircd.decode('', e)
+       self.ircd.write_db()
        
     def test_max_command_size(self):
-       """shold restrict max command size"""
-       assert 1 == 0
-       
-    def test_create_new_talker(self):
-       """should create new talker if it doesn't exist"""
-       assert 1 == 0
-       
-    def test_existing_talker(self):
-       """should not create talker if we have seen it before"""
-       assert 1 == 0
+       """shold restrict max command size (ie not raise SQLError)"""
+       cmd = ''.join( 'a' for x in xrange(0,MAX_IRC_COMMAND_SIZE+5))
+       srcid = IRCTalker.id_get_or_create('fred!fred@localhost')
+       dstid = IRCTalker.id_get_or_create('george!zzz@dsfdf.sdfd.com')   
+       pkt = dpkt.ip.IP()
+       pkt.src = inet_aton('192.168.0.1')
+       pkt.dst = inet_aton('192.168.0.2')
+       pkt.data = dpkt.tcp.TCP()
+       pkt.data.dport = 234
+       pkt.data.sport = 6667
+       src = 'fred!fred@localhost'
+       dst = 'george!zzz@dsfdf.sdfd.com'
+       e  = HnyEvent(1111.0, pkt, cmd, src, dst, '')
+       self.ircd.decode('', e)
+       self.ircd.write_db()       
        
     def test_dup_lines(self):
-       """shouldn't try and store dup lines in insert_list"""
-       assert 1 == 0
+       """shouldn't try and store dup lines in insert_list""" 
+       cmd = 'privmsg'
+       srcid = IRCTalker.id_get_or_create('fred!fred@localhost')
+       dstid = IRCTalker.id_get_or_create('george!zzz@dsfdf.sdfd.com')   
+       pkt = dpkt.ip.IP()
+       pkt.src = inet_aton('192.168.0.1')
+       pkt.dst = inet_aton('192.168.0.2')
+       pkt.data = dpkt.tcp.TCP()
+       pkt.data.dport = 234
+       pkt.data.sport = 6667
+       src = 'fred!fred@localhost'
+       dst = 'george!zzz@dsfdf.sdfd.com'
+       for i in xrange(1,5):
+           e  = HnyEvent(1111.0, pkt, cmd, src, dst, '')
+           self.ircd.decode('', e)
+           assert len(self.ircd.insert_list) == 1   
                                         
     def test_already_in_db(self):
        """should spot lines already in db and skip"""
-       assert 1 == 0
+       ircmq = self.session.query(IRCMessage)
+       cmd = 'privmsg'
+       srcid = IRCTalker.id_get_or_create('fred!fred@localhost')
+       dstid = IRCTalker.id_get_or_create('george!zzz@dsfdf.sdfd.com')   
+       pkt = dpkt.ip.IP()
+       pkt.src = inet_aton('192.168.0.1')
+       pkt.dst = inet_aton('192.168.0.2')
+       pkt.data = dpkt.tcp.TCP()
+       pkt.data.dport = 234
+       pkt.data.sport = 6667
+       src = 'fred!fred@localhost'
+       dst = 'george!zzz@dsfdf.sdfd.com'
+       e  = HnyEvent(1111.0, pkt, cmd, src, dst, '')
+       self.ircd.decode('', e)
+       self.ircd.write_db()       
+       assert ircmq.count() == 1
+       e  = HnyEvent(1111.0, pkt, cmd, src, dst, '')
+       self.ircd.decode('', e)
+       self.ircd.write_db()     
+       assert ircmq.count() == 1  
        
     def test_empty_insert_list(self):
        """shouldn't try and write to db if insert_list is emptry"""
-       assert 1 == 0
+       self.ircd.insert_list = []                                  
+       # insert_many would barf if we passed it an empty list so this is a valid test
+       self.ircd.write_db()
 
     
 if __name__ == '__main__':

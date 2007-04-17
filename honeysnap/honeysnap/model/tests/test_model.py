@@ -201,7 +201,29 @@ class test_model(unittest.TestCase):
         assert t.nick == 'fred'  
         assert t.user == 'george'
         assert t.host == 'localhost'
-       
+  
+    def test_irc_id_get_or_create(self): 
+        """IRCTalker.id_get_or_create should return valid id and create if needed"""
+        ipid = IRCTalker.id_get_or_create("fred!fred@localhost")
+        assert ipid == 1                                      
+        ipid = Ip.id_get_or_create("george!george@dsf.com")
+        assert type(ipid) == type(1)
+        assert ipid != 1
+        ipid2 = Ip.id_get_or_create("george!george@dsf.com")
+        assert ipid == ipid2
+
+    def test_irc_id_get_or_create_delete(self):
+        """IRCTalker.id_get_or_create should do the right thing if an object has been deleted"""
+        ipid1 = IRCTalker.id_get_or_create("me@me.com")
+        ipid2 = IRCTalker.id_get_or_create("fred!fred@fred.com")
+        ipid3 = IRCTalker.id_get_or_create("l33t@hacker")
+        ip = self.session.query(Ip).get_by(id=ipid1)
+        self.session.delete(ip)
+        self.session.flush()
+        ipid4 = Ip.id_get_or_create("31337!mum@aol.com")
+        ipid5 = Ip.id_get_or_create("me@me.com")
+        assert ipid5 != ipid1  
+
     @raises(ValueError)   
     def test_create_bad_irc_messsage(self):
         """IRCTalker.__init__ should raise an exception with bad argument"""

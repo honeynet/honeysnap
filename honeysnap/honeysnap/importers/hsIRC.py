@@ -31,8 +31,8 @@ import pcap
 import time
 from datetime import datetime
 from socket import inet_ntoa 
-import sys
-       
+import sys     
+
        
 class HnyEvent(irclib.Event):
     """
