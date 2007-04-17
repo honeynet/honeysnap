@@ -39,8 +39,8 @@ class SocksDecode(base.Base):
         self.p = pcapObj
         self.outdir = ""
         self.hp = hp
-        self.dataFound = False
-        
+        self.dataFound = False  
+        self.tf = options['time_convert_fn']     
         self.cdList = [90,91,92,93]
         self.commandCode = {
             90:'Request granted', 
@@ -48,7 +48,6 @@ class SocksDecode(base.Base):
             92:'Request rejected: SOCKS server cannot connect to identd on the client',
             93:'Request rejected: Client program and identd report different user-ids'
         }   
-        
         self.replyCode = {
             0:'Succeeded', 
             1:'General socks server failure',
@@ -60,7 +59,6 @@ class SocksDecode(base.Base):
             7:'Command not supported',
             8:'Address type not supported'
         }   
-        
         self.requestCommand = [1,2,3]
 
     def setOutdir(self, dir):
@@ -95,76 +93,59 @@ class SocksDecode(base.Base):
                 tcp = subpkt.data
                 dport = tcp.dport
                 sport = tcp.sport
-                
                 payload = tcp.data
-                
                 #TODO Not sure what the max length should be
                 if len(payload) >= 8 and len(payload) <= 60 :
-                    
                     #TODO This needs work since I have no udp test data to play with
                     if proto == socket.IPPROTO_UDP and len(payload) >= 10:
                         if self.hp == dhost:
                             self.writeUDPConnection(ts, shost, sport, dhost, dport, payload)
                         return
-                    
                     # Get socks version and command code
                     vn, cd = struct.unpack("!BB", payload[0:2])
-                    
                     # Check request
                     if vn == 4 and cd == 1:
                         if self.hp == dhost:
                             self.writeS4Connection(vn, ts, shost, sport, dhost, dport, payload)
                         return
-                    
                     # Check reply
                     if vn == 0 and cd in self.cdList:
                         if self.hp == shost:
                             version = 4
                             self.writeConnectionReply(version, ts, shost, sport, dhost, dport, payload)  
                         return
-                    
                     # Check request
                     if vn == 5 and cd in self.requestCommand and self.hp == dhost:                        
                         self.writeS5Connection(vn, ts, shost, sport, dhost, dport, payload)
                         return
-                    
                     # Check reply
                     if vn == 5 and cd in self.replyCode and self.hp == shost:
                         self.writeConnectionReply(vn, ts, shost, sport, dhost, dport, payload)  
                         return
-
         except dpkt.Error:
             return
        
     def writeUDPConnection(self, ts, shost, sport, dhost, dport, payload):
         self.dataFound = True 
         version = 5
-        
         rsv, frag, atyp, ip1, ip2, ip3, ip4, port = struct.unpack("!HBBBBBBH", payload[0:10])
-                        
         ipAddress = self.createIp(ip1, ip2, ip3, ip4)
-                        
         if not ipAddress:
             return
-        
         source = shost + ':' + str(sport)
         dest = ipAddress + ':' + str(port)
         socksServer = dhost + ':' + str(dport)
-    
-        out = '%s : S%s: %s -> %s -> %s\n' %(str(ts), str(version), source, socksServer, dest)
+        out = '%s : S%s: %s -> %s -> %s\n' %(self.tf(ts), str(version), source, socksServer, dest)
         self.fp.write(out)
  
     def writeS5Connection(self,version, ts, shost, sport, dhost, dport, payload):
         self.dataFound = True
-        
         data = []
-        
         # Need to determine address type
         ver, cmd, rsv, atyp, size = struct.unpack("!BBBBB", payload[0:5])
         if atyp == 1:
             vn, cd, rsv, atyp, ip1, ip2, ip3, ip4, port = struct.unpack("!BBBBBBBBH", payload[0:10])
             targetString = self.createIp(ip1, ip2, ip3, ip4)
-            
             if not targetString:
                 return
             target = targetString + ':' + str(port)
@@ -173,54 +154,40 @@ class SocksDecode(base.Base):
             unpackString = '!BBBBB'
             for i in range(size):
                 unpackString += 'B'
-            
             # Add for port number
             unpackString += 'H'
-            
             payloadSize = 7 + size    
-            
             data = struct.unpack(unpackString, payload[0:payloadSize])
-            
             targetSlice = 5 + size
             targetData = data[5:targetSlice]
-            
             targetString = ''
             for s in targetData:
                 targetString += chr(s)
-            
             targetPort = str(data[len(data)-1])
             target = targetString + ':' + targetPort
         else:
             # unknown 
             return
-            
         source = shost + ':' + str(sport)
         socksServer = dhost + ':' + str(dport)
-    
         out = '%s : S%s: %s: %s -> %s -> %s\n' \
-            %(str(ts), str(version), atyp, source, socksServer, target)
-        
+            %(self.tf(ts), str(version), atyp, source, socksServer, target)
         self.fp.write(out)                    
                             
     def writeS4Connection(self, version, ts, shost, sport, dhost, dport, payload):
         self.dataFound = True
-        
         vn, cd, port, ip1, ip2, ip3, ip4 = struct.unpack("!BBHBBBB", payload[0:8])
-                        
         ipAddress = self.createIp(ip1, ip2, ip3, ip4)
-                        
         if not ipAddress:
             return
         source = shost + ':' + str(sport)
         dest = ipAddress + ':' + str(port)
         socksServer = dhost + ':' + str(dport)
-    
-        out = '%s : S%s: %s -> %s -> %s\n' %(str(ts), str(version), source, socksServer, dest)
+        out = '%s : S%s: %s -> %s -> %s\n' %(self.tf(ts), str(version), source, socksServer, dest)
         self.fp.write(out)
            
     def writeConnectionReply(self, version, ts, shost, sport, dhost, dport, payload):
         ''' Reply is from the socks server to the client. '''
-       
         self.dataFound = True 
         if version == 4:
             vn, cd, port, ip1, ip2, ip3, ip4 = struct.unpack("!BBHBBBB", payload[0:8])
@@ -228,24 +195,19 @@ class SocksDecode(base.Base):
         else:
             vn, cd, rsv, atyp, ip1, ip2, ip3, ip4, port = struct.unpack("!BBBBBBBBH", payload[0:10])
             reply = self.replyCode[cd]
-        
         # These fields are ignored and do not always contain correct ip                
         ipAddress = self.createIp(ip1, ip2, ip3, ip4)
-                        
         if not ipAddress:
             return
-        
         #reply = self.commandCode[cd]
         sockServer = shost + ':' + str(sport)
         # I don't think this should be included - fields are ignored
         #dest = ipAddress + ':' + str(port)
         client = dhost + ':' + str(dport)
-    
-        out = '%s : S%s: %s: %s -> %s \n' %(str(ts), str(version), reply, client, sockServer)
+        out = '%s : S%s: %s: %s -> %s \n' %(self.tf(ts), str(version), reply, client, sockServer)
         self.fp.write(out)
-        #print '%s : S4: %s: %s -> %s -> %s' %(str(ts), reply, client, sockServer, dest)
+        #print '%s : S4: %s: %s -> %s -> %s' %(self.tf(ts), reply, client, sockServer, dest)
         
-    
     def createIp(self, ip1, ip2, ip3, ip4):
         if ip1 < 0 or ip1 > 255:
             return None
@@ -255,9 +217,7 @@ class SocksDecode(base.Base):
             return None
         elif ip4 < 0 or ip4 > 255:
             return None
-        
         ip = str(ip1) + '.' + str(ip2) + '.' +  str(ip3) + '.' + str(ip4)
-        
         return ip
                 
 
