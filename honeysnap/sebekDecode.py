@@ -92,7 +92,8 @@ class sebekDecode(base.Base):
     def __init__(self, hp):
         hs = HoneysnapSingleton.getInstance()
         options = hs.getOptions()
-        self.excludes = options['sebek_excludes']
+        self.excludes = options['sebek_excludes']  
+        self.data_excludes = options['sebek_data_excludes']
         self.p = pcap.pcap(options["tmpf"], promisc=False)
         self.p.setfilter("src host %s and udp dst port %s" % (hp, options["sebek_port"]))
         self.log = {}
@@ -208,33 +209,52 @@ class sebekDecode(base.Base):
             del self.log[k]
 
     def print_summary(self):
-        """Print our data"""
-        excludes = self.excludes
-        count = [ 0 for exclude in excludes ] 
-        print_count = 0
+        """
+        Print our data
+        
+        Exclude commands in excludes and any data lines that match a regex in data_excludes from printing,
+        along with blank lines
+        
+        """
+        excludes = self.excludes  
+        data_excludes = [ re.compile(x) for x in self.data_excludes]
+        blank_line = re.compile('^\s*$')
+        print_count = 0      
+        blank_exclude_count = 0
+        com_exclude_count = 0
+        regex_exclude_count = 0
         if len(self.output['keystrokes'])==0 and len(self.output['sbk_write'])==0 and len(self.output['sbk_sock'])==0:
             self.doOutput('No sebek data seen\n')
         else:                                                                                                
             if len(self.output['keystrokes'])>0:
-                for data in self.output["keystrokes"]:
-                    (com, line, d) = data
-                    try:
-                        index = excludes.index(com)
-                        count[index] += 1
-                    except ValueError:
-                        if d != "":    
-                            self.doOutput('%s %s\n' % (line, d))
-                            print_count += 1 
-                    self.fp.write('%s %s\n' % (line, d))                          
+                for data in self.output["keystrokes"]:  
+                    (com, line, d) = data  
+                    self.fp.write('%s %s\n' % (line, d)) 
+                    if excludes.count(com): 
+                        com_exclude_count += 1
+                        continue
+                    if blank_line.match(d):   
+                        blank_exclude_count += 1 
+                        continue
+                    matches = [ regex.match(d) for regex in data_excludes ]
+                    if len(filter(lambda x: x, matches)) != 0:  
+                        regex_exclude_count += 1
+                        continue
+                    self.doOutput('%s %s\n' % (line, d))
+                    print_count += 1                          
                 self.doOutput('\nSaw %s sbk_read/keystroke lines and printed %s\n' % (len(self.output['keystrokes']), print_count) )     
-                self.doOutput('(screen output excludes commands %s)\n' % zip(excludes, count))
+                self.doOutput('(screen output excluded %s line(s) with command in %s ' % (com_exclude_count, excludes))   
+                self.doOutput('and %s line(s) containing one of %s ' % (regex_exclude_count, self.data_excludes))
+                self.doOutput('and %s line(s) with blank data field\n' % blank_exclude_count) 
+            s = ''    
             for type in ['sbk_write', 'sbk_sock', 'sbk_open']:
                 if len(self.output[type])>0: 
                     self.fp.write('\nSebek %s data\n\n' % type)   
                     for data in self.output[type]:
                         for line in self.output[type]:
                             self.fp.write('%s\n' % line)
-                    self.doOutput('\n%s %s lines saved in file\n' % (len(self.output[type]), type)) 
+                s += '%s %s line(s) saved in file. ' % (len(self.output[type]), type)
+            self.doOutput('%s\n' % s)
          
     def run(self):
         # since we set a filter on pcap, all the

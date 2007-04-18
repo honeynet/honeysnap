@@ -456,7 +456,8 @@ def parseOptions():
         'do_sebek'          : 'NO',
         'do_telnet'         : 'NO',
         'sebek_port'        : 1101,
-        'sebek_excludes'    : ["configure", "prelink", "sshd", "sa2", "makewhatis"],
+        'sebek_excludes'    : ["configure", "prelink", "sshd", "sa2", "makewhatis"], 
+        'sebek_data_excludes': [],
         'sebek_all_data'    : 'NO',
         'all_flows'         : 'NO',
         'output_data_directory'   : 'output',
@@ -518,7 +519,9 @@ def parseOptions():
         help = "Extract Sebek data")
     parser.add_option("--sebek-port", dest="sebek_port", type="int", help = "Port for sebek traffic (default 1101)")
     parser.add_option("--sebek-excludes", dest="sebek_excludes", action="extend", type="string",
-        help = "Exclude these commands when printing sebek output")
+        help = "Exclude these commands when printing sebek output")  
+    parser.add_option("--sebek-data-excludes", dest="sebek_data_excludes", action="extend", type="string",
+        help = "Exclude these regexes if matched in the data portion when printing sebek output")        
     parser.add_option("--sebek-all-data", dest="sebek_all_data", action="store_const", const="YES",
         help = "Extract all sebek data? Warning - produces a very large amount of data (gigabytes)")
     parser.add_option("--all-flows", dest="all_flows", action="store_const", const="YES",
@@ -549,7 +552,7 @@ def parseOptions():
                             fileopts[i[0]] = [ int(n) for n in i[1].split(',') ]
                         elif i[0] == 'flow_count_limit' or i[0]=='irc_limit' or i[0]=='sebek_port':
                             fileopts[i[0]] = int(i[1])
-                        elif i[0] == 'honeypots' or i[0]=='sebek_excludes':
+                        elif i[0] == 'honeypots' or i[0]=='sebek_excludes' or i[0]=='sebek_data_excludes':
                             fileopts[i[0]] = i[1].split()
                         elif i[0] == 'user_filter_list':
                             store_filter_array(None, None, i[1], parser)
@@ -596,13 +599,18 @@ def parseOptions():
     options['irc_ports'] = {}  
     options['irc_ports']['global'] = set(irc_port_list)
     for hp in options['honeypots']:
-        options['irc_ports'][hp] = set(irc_port_list)
+        options['irc_ports'][hp] = set(irc_port_list) 
         
+    # test regexes
+    try:
+        x = [ re.compile(r) for r in options['sebek_data_excludes']]    
+    except:
+        print "Bad regex for sebek data excludes"
+        sys.exit(1)
     return (parser.print_help, options, args)
 
 def main():
     """Set everything off and handle files/stdin etc"""
-
     print_help, options, args = parseOptions()
     if len(sys.argv)>1:
         if options['honeypots'] is None:
@@ -637,7 +645,6 @@ def main():
             processFile(tmpf)
             # all done, delete the tmp file
             os.unlink(tmpf)
-
         cleanup(options)
     else:
         print_help()
