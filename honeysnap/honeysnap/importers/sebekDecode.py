@@ -218,7 +218,8 @@ class SebekDecode(object):
             self.save(s)                    
             del self.log[k]
 
-    def save(self, s):
+    def save(self, s):                                    
+        """save a record to the insert list"""
         if type(s['timestamp'] != type(datetime.now())):
             s['timestamp'] = datetime.fromtimestamp(s['timestamp']) 
         if self.hash.has_key(str(s)):
@@ -226,7 +227,11 @@ class SebekDecode(object):
         self.hash[str(s)] = 1
         self.insert_list.append(s)
         
-    def write_db(self):        
+    def write_db(self):
+        """
+        write everything from the insert_list to the db
+        First try insert_many; if that fails go to one-by-one, skipping dups
+        """        
         if not self.insert_list:
             return
         try:                  
