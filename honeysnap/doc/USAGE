@@ -42,6 +42,21 @@ In [3]: Do you wish to commit your database changes? [yes]
 
 Do you really want to exit ([y]/n)?
 
+Graphing Data using Matplotlib
+==============================
+
+If you install matplotlib (best done via your OS's package management system as there's a lot
+of dependencies), you can plot graphs of your queries in hs-shell.
+
+$ hs-shell --dburi='sqlite:///fred.db' --pylab
+
+See
+
+http://matplotlib.sourceforge.net/tutorial.html
+
+for examples of how to plot data in matplotlib.
+
+
 Using Raw SQL
 =============
 
