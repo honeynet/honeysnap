@@ -28,8 +28,8 @@ from nose.tools import raises
 
 from honeysnap.importers.main import parse_options
 
-class test_pcapinfo(unittest.TestCase):   
-    """Test pcapinfo"""
+class test_main(unittest.TestCase):   
+    """Test main"""
     
     @raises(SystemExit)
     def test_empty_config_file(self):
@@ -58,6 +58,15 @@ class test_pcapinfo(unittest.TestCase):
         """parse_options should exit if sebek_port is not an int"""
         sys.argv = ['honeysnap', '-H', '192.168.0.1', '--sebek-port', 'a']
         print_help, options, arg = parse_options()        
+
+    def test_irc_port_list(self):
+        """irc_port list should be an empty list per hp"""
+        sys.argv = ['honeysnap', '-H', '192.168.0.1,192.168.0.2']
+        print_help, options, arg = parse_options()      
+        assert type(options['irc_ports']) == type({})
+        assert len(options['irc_ports']) == 2
+        assert options['irc_ports']['192.168.0.1'] == []
+        assert options['irc_ports']['192.168.0.2'] == []
 
     def test_command_over_default(self):
         """parse_options should take command line options over defaults"""

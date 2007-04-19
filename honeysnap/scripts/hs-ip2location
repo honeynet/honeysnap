@@ -65,7 +65,7 @@ count = ipsr.count()
 print '%s total entries to do' % count
 for i in xrange(0, count, STEP_SIZE):
     for ip in ipsr[i:i+STEP_SIZE-1]:
-        for k, v in ipdb.all(ip.ip_addr):
+        for k, v in ipdb.all(ip.ip_addr).iteritems():
             setattr(ip, k, v) 
     print '%s entries, flushing...' % i
     session.flush()  

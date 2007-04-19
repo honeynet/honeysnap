@@ -35,7 +35,8 @@ class test_ircDecode(unittest.TestCase):
         self.ircd.count = 0
         self.ircd.file = 'testing'     
         self.session = create_session()
-        self.ircd.hp = Honeypot.get_or_create(self.session, '192.168.0.1')   
+        self.ircd.hp = '192.168.0.1'
+        self.ircd.hpid = Honeypot.get_or_create(self.session, '192.168.0.1').id   
         self.session.flush()
 
     def tearDown(self):

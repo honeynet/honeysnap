@@ -1,8 +1,7 @@
 # $Id$
 
-Tests for IRC importing
-
-Merge IRC spotting code from non-db branch
+Re-write flow importing in non-ORM way for speed
+Change all importers to do all hps at once
 
 Per-day summary code to generate same stats as non-db honeysnap
 
@@ -18,3 +17,7 @@ Flow contents to db
 
 Sanity check -H input
       
+Features/Bugs
+-------------
+
+Can't associate an IRC message with a flow

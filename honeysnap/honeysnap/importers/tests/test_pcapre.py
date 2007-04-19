@@ -116,9 +116,26 @@ class test_pcapre(unittest.TestCase):
             assert p.results[key] == i
 
     def test_server_ports(self):
-        """test server_ports here"""
-        assert 1 == 0
-
+        """
+        server_ports should guess at which end of the connection is a server
+        based on port numbers and flows
+        """  
+        p = PcapReCounter('dummy')
+        p.results = { (6, '192.168.0.1', 889, '192.168.0.2', 6668) : 34,
+                      (6, '192.168.0.2', 6668, '192.168.0.1', 889) : 34,
+                    }
+        assert p.server_ports() == [889]
+        assert p.server_ports([6668]) == [6668]
+        p.results = { (6, '192.168.0.1', 56783, '192.168.0.2', 25) : 45,
+                      (6, '192.168.0.3', 45, '192.168.0.1', 25) : 1,
+                      (6, '192.168.0.2', 25, '192.168.0.1', 56784) : 43,
+                      (6, '192.168.0.5', 6667, '192.168.0.1', 4567) : 34,
+                      (6, '192.168.0.1', 4567, '192.168.0.5', 6667) : 34,
+        }
+        assert p.server_ports() == [25, 4567]
+        assert p.server_ports([6667]) == [25, 6667] 
+        assert p.server_ports([23, 6667]) == [25, 6667]
+        assert p.server_ports([25, 6667]) == [25, 6667]
     
 if __name__ == '__main__':
     unittest.main()

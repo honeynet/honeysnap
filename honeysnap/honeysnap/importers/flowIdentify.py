@@ -78,7 +78,11 @@ class FlowIdentify(object):
             return
 
     def match_flow(self, ts, src, dst, sport, dport, proto, length):
-        """have we seen matching flow in this pcap file/already? """     
+        """
+        have we seen matching flow in this pcap file/already? 
+        If we've seen in in this before, update cache, otherwise try and match in db
+        If that doesn't match, then create new object
+        """     
         ts_dt = datetime.fromtimestamp(ts)
         cached_flows = self.flows.get( (src, dst, sport, dport, proto), None)
         if cached_flows:

@@ -281,8 +281,8 @@ class Flow(object):
                 setattr(self, k, v)    
         
     def __repr__(self):  
-        return "[honeypot: %s, ip_proto: %s, src: %s, dst: %s, type: %s, code: %s, packets: %s, bytes: %s, starttime: %s, lastseen: %s, filename: %s]" % \
-            (self.honeypot_id, self.ip_proto, self.src_id, self.dst_id, self.icmp_type, self.icmp_code, 
+        return "[honeypot: %s, ip_proto: %s, src: %s, dst: %s, sport: %s, dport: %s, packets: %s, bytes: %s, starttime: %s, lastseen: %s, filename: %s]" % \
+            (self.honeypot_id, self.ip_proto, self.src_id, self.dst_id, self.sport, self.dport, 
             self.packets, self.bytes, self.starttime, self.lastseen, self.filename)             
 
     def __str__(self):

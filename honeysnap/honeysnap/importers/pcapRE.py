@@ -65,12 +65,17 @@ class PcapRE(object):
         self.pattern = pattern
 
     def set_action(self, action):
+        """add callback to run on each packet"""
         self.action=action
+                               
+    def set_filter(self, filter):
+        """set pcap filter"""
+        self.p.setfilter(filter)
 
     def start(self):
         """Iterate over a pcap object"""  
         if not self.action:
-            raise PcapReError('Action not set (use setAction)')  
+            raise PcapReError('Action not set (use set_action)')  
         for ts, buf in self.p:
             self.packet_handler(ts, buf)
 

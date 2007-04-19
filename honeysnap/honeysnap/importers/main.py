@@ -97,7 +97,7 @@ def process_file(file):
     starttime, endtime = pi.get_stats()
     hs.setOption('starttime', datetime.fromtimestamp(starttime))
     hs.setOption('endtime', datetime.fromtimestamp(endtime))    
-    for hp in options["honeypots"]:
+    for hp in options["honeypots"]: 
         print "Importing connections for %s" % hp
         s = FlowIdentify(tmpf, file, hp)
         s.run()
@@ -127,10 +127,10 @@ def parse_options():
         'debug'             : False,   
         'sebek_port'        : 1101,
         'sebek_all_data'    : False,
+        'irc_ports'         : {},
     }
 
     parser = OptionParser(version="%s" % VERSION)
-
     parser.add_option("-c", "--config", dest="config",type="string", 
         help="Config file")
     parser.add_option("-H", "--honeypots", dest="honeypots", type="string",
@@ -143,7 +143,6 @@ def parse_options():
         help = "Port for sebek traffic (default 1101)")
     parser.add_option("--sebek-all-data", dest="sebek_all_data", action="store_const", const=True, 
         help = "Extract all sebek data? Warning - produces a very large amount of data (gigabytes)") 
-        
     (cmdopts, args) = parser.parse_args()
                               
     # now pull in config file if defined
@@ -156,17 +155,14 @@ def parse_options():
         except ConfigParser.Error:
             print "Problem with the config file! Check format and permissions"
             sys.exit(1)
-
     # command line over-rides config 
     for k, v in cmdopts.__dict__.iteritems():  
         if v:
             defaults[k] = v
-
     if not defaults['honeypots']: 
         parser.print_help()
         print "No honeypots specified! Please use either -H or the config file to specify some"
         sys.exit(1)
-    
     for k in ['honeypots']:
         defaults[k] = defaults[k].split(',')
     for k in ['sebek_port']:
@@ -174,7 +170,8 @@ def parse_options():
             defaults[k] = int(defaults[k])
         except ValueError:
             pass                  
-
+    for hp in defaults['honeypots']:
+        defaults['irc_ports'][hp] = []
     return (parser.print_help, defaults, args)  
 
 def start():
