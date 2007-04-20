@@ -34,14 +34,14 @@ class test_flowIdentify(unittest.TestCase):
         # this is very nasty....           
         # don't want to run __init__ as don't have options or a file      
         self.session = create_session()        
-        FlowIdentify.__init__ = lambda self: None
+        FlowIdentify.__init__ = lambda self: None 
+        self.hp = Honeypot.get_or_create(self.session, '192.168.0.1')
         self.fid = FlowIdentify()   
         self.fid.filename = 'testing'
-        self.fid.flows = {}        
-        self.fid.fq = self.session.query(Flow)  
-        self.fid.ipq = self.session.query(Ip)     
-        self.fid.hp = Honeypot.get_or_create(self.session, '192.168.0.1')
-        self.session.flush()  
+        self.fid.new_flows = {}
+        self.fid.updated_flows = {}
+        self.fid.count = 0 
+        self.fid.hpid =self.hp.id
 
     def tearDown(self):
         Ip.id_cache = {}
@@ -108,112 +108,112 @@ class test_flowIdentify(unittest.TestCase):
         f = Flow( ip_proto=6, src_id=1, dst_id=1, sport=80, 
                   dport=664, starttime=ts, lastseen=ts, packets=1, 
                   bytes=20, filename='testing') 
-        self.fid.hp.flows.append(f) 
+        self.hp.flows.append(f) 
         self.session.flush()
         id = f.id
         del f
-        f = self.fid.fq.selectone(Flow.c.id==id)
-        print f
+        f = self.session.query(Flow).selectone(Flow.c.id==id)
         assert f.starttime == datetime.fromtimestamp(ts)
 
     def test_match_flow_in_cache(self):
         """match_flow should spot if flow has been seen already this file"""  
-        ts = 111111 
-        self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ] = \
-                                                    [Flow( ip_proto=6, src_id=1, dst_id=2, sport=80, 
-                                                    dport=664, starttime=ts, lastseen=ts, packets=1, 
+        ts = 111111.0 
+        self.fid.new_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ] = \
+                                                    [dict(honeypot_id=self.fid.hpid, ip_proto=6, src_id=1, dst_id=2, sport=80, 
+                                                    dport=664, starttime=datetime.fromtimestamp(ts), 
+                                                    lastseen=datetime.fromtimestamp(ts), packets=1, 
                                                     bytes=20, filename='testing')]
         self.fid.match_flow(ts, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)                                                    
-        assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].bytes == 32  
-        assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].lastseen == datetime.fromtimestamp(ts)
+        assert self.fid.new_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['bytes'] == 32  
+        assert self.fid.new_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['lastseen'] == datetime.fromtimestamp(ts)
 
     def test_match_flow_over_boundary_in_cache(self):
         """match_flow should spot if flow has been seen already this file, three packet case"""  
-        ts1 = 111111  
+        ts1 = 111111.0  
         ts2 = ts1 + FLOW_DELTA -3
         ts3 = ts1 + FLOW_DELTA + 10
-        self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ] = \
-                                                    [Flow( ip_proto=6, src_id=1, dst_id=2, sport=80, 
-                                                    dport=664, starttime=ts1, lastseen=ts1, packets=1, 
+        self.fid.new_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ] = \
+                                                    [dict(honeypot_id=self.fid.hpid, ip_proto=6, src_id=1, dst_id=2, sport=80, 
+                                                    dport=664, starttime=datetime.fromtimestamp(ts1), 
+                                                    lastseen=datetime.fromtimestamp(ts1), packets=1, 
                                                     bytes=20, filename='testing')]
         self.fid.match_flow(ts2, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)                                                    
         self.fid.match_flow(ts3, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)        
-        assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].bytes == 44  
-        assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].lastseen == datetime.fromtimestamp(ts3)
+        assert self.fid.new_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['bytes'] == 44  
+        assert self.fid.new_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['lastseen'] == datetime.fromtimestamp(ts3)
 
 
     def test_match_flow_in_cache_pre_hour(self):
         """match_flow should spot if flow has been seen already this file, but create new if it was more than FLOW_DELTA ago"""
-        ts1 = 111111
+        ts1 = 111111.0
         ts2 = ts1+FLOW_DELTA+3600
-        self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ] = \
-                                                    [Flow( ip_proto=6, src_id=1, dst_id=2, sport=80, 
-                                                    dport=664, starttime=ts1, lastseen=ts1, packets=1, 
+        self.fid.new_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ] = \
+                                                    [dict(honeypot_id=self.fid.hpid, ip_proto=6, src_id=1, dst_id=2, sport=80, 
+                                                    dport=664, starttime=datetime.fromtimestamp(ts1), 
+                                                    lastseen=datetime.fromtimestamp(ts1), packets=1, 
                                                     bytes=20, filename='testing')]
         self.fid.match_flow(ts2, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)                                                    
-        assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].bytes == 20
-        assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][1].bytes == 12  
+        assert self.fid.new_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['bytes'] == 20
+        assert self.fid.new_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][1]['bytes'] == 12  
 
     def test_match_flow_in_db(self):
         """match_flow should spot flow in db and set cache correctly"""             
         src_id = Ip.id_get_or_create('192.168.0.1')
         dst_id = Ip.id_get_or_create('192.168.0.2')  
-        ts = 111111
-        self.fid.hp.flows.append( Flow( ip_proto=6, src_id=src_id, dst_id=dst_id, sport=80, 
-                                                    dport=664, starttime=ts, lastseen=ts, packets=1, 
+        ts = 111111.0                
+        ts_dt = datetime.fromtimestamp(ts)
+        flow_table.insert().execute(dict(honeypot_id=self.fid.hpid, ip_proto=6, src_id=src_id, dst_id=dst_id, sport=80, 
+                                                    dport=664, starttime=ts_dt, lastseen=ts_dt, packets=1, 
                                                     bytes=20, filename='testing')) 
-        self.session.flush()                                                    
         self.fid.match_flow(ts+20, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)   
-        assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].bytes == 32
-        assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].lastseen == datetime.fromtimestamp(ts+20)
+        print self.fid.updated_flows
+        assert self.fid.updated_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['bytes'] == 32
+        assert self.fid.updated_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['lastseen'] == datetime.fromtimestamp(ts+20)
                                                                                                                                
     def test_match_flow_over_boundary_in_db(self):
         """match_flow should spot flow in db and set cache correctly"""             
         src_id = Ip.id_get_or_create('192.168.0.1')
         dst_id = Ip.id_get_or_create('192.168.0.2')  
-        ts1 = 111111  
-        ts2 = ts1 + FLOW_DELTA -3
+        ts1 = 111111.0  
+        ts2 = ts1 + FLOW_DELTA - 3
         ts3 = ts1 + FLOW_DELTA + 10
-        self.fid.hp.flows.append( Flow( ip_proto=6, src_id=src_id, dst_id=dst_id, sport=80, 
-                                                    dport=664, starttime=ts1, lastseen=ts1, packets=1, 
+        flow_table.insert().execute( dict(honeypot_id=self.fid.hpid, ip_proto=6, src_id=src_id, dst_id=dst_id, sport=80, 
+                                                    dport=664, starttime=datetime.fromtimestamp(ts1), 
+                                                    lastseen=datetime.fromtimestamp(ts1), packets=1, 
                                                     bytes=20, filename='testing')) 
-        self.session.flush()                                                    
-        self.fid.match_flow(ts2, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)   
-        self.session.flush()
-        self.fid.match_flow(ts3, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)         
-        assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].bytes == 44
-        assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].lastseen == datetime.fromtimestamp(ts3)
+        self.fid.match_flow(ts2, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)
+        self.fid.match_flow(ts3, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)
+        assert self.fid.updated_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['bytes'] == 44
+        assert self.fid.updated_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['lastseen'] == datetime.fromtimestamp(ts3)
 
     def test_match_flow_in_db_pre_hour(self):
         """match_flow should spot flow in db, but create new if it was more than FLOW_DELTA ago"""             
         src_id = Ip.id_get_or_create('192.168.0.1')
         dst_id = Ip.id_get_or_create('192.168.0.2') 
-        ts1 = 111111
+        ts1 = 111111.0
         ts2 = ts1+FLOW_DELTA+564
-        self.fid.hp.flows.append( Flow( ip_proto=6, src_id=src_id, dst_id=dst_id, sport=80, 
+        flow_table.insert().execute(dict(honeypot_id=self.fid.hpid, ip_proto=6, src_id=src_id, dst_id=dst_id, sport=80, 
                                                     dport=664, starttime=ts1, lastseen=ts1, packets=1, 
                                                     bytes=20, filename='testing'))       
-        self.session.flush()                                                    
         self.fid.match_flow(ts2, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)                                                    
-        assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].bytes == 12     
+        assert self.fid.new_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['bytes'] == 12     
 
     def test_match_flow_new(self):
         """match_flow should create new flow if no flow matches"""    
-        ts1 = 111111
+        ts1 = 111111.0
         ts2 = ts1+3
         src_id = Ip.id_get_or_create('192.168.0.1')
         dst_id = Ip.id_get_or_create('192.168.0.2')      
-        flow = Flow( ip_proto=6, src_id=src_id, dst_id=dst_id, sport=80, 
-                    dport=664, starttime=ts1, lastseen=ts1, packets=1, 
+        flow = dict(honeypot_id=self.fid.hpid, ip_proto=6, src_id=src_id, dst_id=dst_id, sport=80, 
+                    dport=664, starttime=datetime.fromtimestamp(ts1), 
+                    lastseen=datetime.fromtimestamp(ts1), packets=1, 
                     bytes=20, filename='testing')
-        self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ] = \
+        flow_table.insert().execute(flow)
+        self.fid.updated_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ] = \
                     [flow]
-        self.fid.hp.flows.append(flow) 
-        self.session.flush()                                                    
         self.fid.match_flow(ts2, '192.168.0.1', '192.168.0.3', 80, 664, 6, 12)                                                             
-        self.session.flush()
-        assert self.fid.flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0].bytes == 20        
-        assert self.fid.flows[ ('192.168.0.1', '192.168.0.3', 80, 664, 6) ][0].bytes == 12 
+        assert self.fid.updated_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['bytes'] == 20        
+        assert self.fid.new_flows[ ('192.168.0.1', '192.168.0.3', 80, 664, 6) ][0]['bytes'] == 12 
 
 if __name__ == '__main__':
     unittest.main()

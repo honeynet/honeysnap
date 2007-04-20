@@ -26,7 +26,8 @@ import sys
 import time                        
 from time import time
 
-import dpkt                                                        
+import dpkt 
+import sqlalchemy                                                       
 
 from honeysnap.singletonmixin import HoneysnapSingleton      
 from honeysnap.model.model import *
@@ -55,18 +56,18 @@ class FlowIdentify(object):
         self.p = pcap.pcap(file)
         self.p.setfilter("host %s" % hp)
         self.session = create_session()
-        self.fq = self.session.query(Flow)  
-        self.ipq = self.session.query(Ip)
-        self.hp = Honeypot.get_or_create(self.session, hp) 
-        self.flows = {}    
+        self.hp = hp
+        self.hpid = Honeypot.get_or_create(self.session, hp).id
+        self.new_flows = {}    
+        self.updated_flows = {}
         self.count = 0
 
     def run(self):
         """Iterate over a pcap object"""
         for ts, buf in self.p:
             self.packet_handler(ts, buf)
-        self.hp.save_flow_changes(self.session)
-
+        self.write_db()
+        
     def packet_handler(self, ts, buf):
         """Process a pcap packet buffer"""   
         try:
@@ -78,50 +79,62 @@ class FlowIdentify(object):
         except DuplicateFlow:
             return
 
+    def update_in_cache(self, cache, key, ts, length):
+        """
+        Look for flow identified by key in cache cache. 
+        Update flow if it needs updating, allowing for times.
+        Return True if we find a update to flow, False otherwise
+        """                  
+        if not cache.has_key(key): 
+            return
+        ts_dt = datetime.fromtimestamp(ts) 
+        for i in xrange(0, len(cache[key])):                             
+            if cache[key][i]['lastseen'] > datetime.fromtimestamp(ts-FLOW_DELTA): 
+                cache[key][i]['lastseen'] = ts_dt
+                cache[key][i]['bytes'] += length;
+                cache[key][i]['packets'] += 1;  
+                return True       
+        return False
+
     def match_flow(self, ts, src, dst, sport, dport, proto, length):
         """
         have we seen matching flow in this pcap file/already? 
         If we've seen in in this before, update cache, otherwise try and match in db
         If that doesn't match, then create new object
         """      
-        self.count += 1
-        if not self.count % 1000:
+        self.count += 1    
+        key = (src, dst, sport, dport, proto)
+        if not self.count % 10000:
+            self.write_db()
             print 'Inserted/updated %s flows' % self.count
-            self.hp.save_flow_changes(self.session)
-        ts_dt = datetime.fromtimestamp(ts)
-        cached_flows = self.flows.get( (src, dst, sport, dport, proto), None)
-        if cached_flows:
-            for flow in cached_flows:      
-                if flow.lastseen > datetime.fromtimestamp(ts-FLOW_DELTA):  
-                    # hit a match in the cache
-                    flow.lastseen = ts_dt
-                    flow.bytes += length;
-                    flow.packets += 1;
-                    return
+        ts_dt = datetime.fromtimestamp(ts)  
+        if self.update_in_cache(self.new_flows, key, ts, length):  
+            return               
+        if self.update_in_cache(self.updated_flows, key, ts, length):
+            return
         srcid = Ip.id_get_or_create(src)
-        dstid = Ip.id_get_or_create(dst)        
-        flows = self.fq.select(and_(Flow.c.src_id == srcid, Flow.c.dst_id == dstid, Flow.c.sport == sport, 
-            Flow.c.dport == dport, Flow.c.lastseen > datetime.fromtimestamp(ts-FLOW_DELTA)), order_by = desc(Flow.c.starttime))
+        dstid = Ip.id_get_or_create(dst)          
+        flows = flow_table.select(and_(flow_table.c.src_id == srcid, 
+            flow_table.c.dst_id == dstid, flow_table.c.sport == sport, 
+            flow_table.c.dport == dport, flow_table.c.lastseen > datetime.fromtimestamp(ts-FLOW_DELTA)),
+            order_by = [desc(flow_table.c.starttime)]).execute().fetchall()
         if flows:
-            # exists in db              
-            flow = flows[0]    # if more than one, append data to the last seen flow
-            if flow.starttime == ts_dt:
+            # exists in db   
+            flow = dict(flows[0])    # if more than one, append data to the last seen flow
+            if flow['starttime'] == ts_dt:
                 raise DuplicateFlow
-            else:     
-                flow.bytes += length; 
-                flow.packets += 1     
-                flow.lastseen = ts_dt
-                if not cached_flows:
-                    self.flows[(src, dst, sport, dport, proto)] = []
-                self.flows[(src, dst, sport, dport, proto)].append(flow)
+            else:      
+                flow['bytes'] += length; 
+                flow['packets'] += 1     
+                flow['lastseen'] = ts_dt
+                self.updated_flows.setdefault(key, [])
+                self.updated_flows[key].append(dict(flow))  
         else:             
-            # new flow      
-            flow = Flow(ip_proto=proto, src_id=srcid, dst_id=dstid, sport=sport, dport=dport, 
-                        starttime=ts, lastseen=ts, packets=1, bytes=length, filename=self.filename)
-            self.hp.flows.append(flow)                   
-            if not cached_flows:
-                self.flows[(src, dst, sport, dport, proto)] = []
-            self.flows[(src, dst, sport, dport, proto)].append(flow)
+            # new flow  
+            flow = dict(honeypot_id=self.hpid, ip_proto=proto, src_id=srcid, dst_id=dstid, sport=sport, dport=dport, 
+                        starttime=ts_dt, lastseen=ts_dt, packets=1, bytes=length, filename=self.filename)
+            self.new_flows.setdefault(key, [])
+            self.new_flows[key].append(flow)  
 
     def decode_packet(self, buf):
         """extract basic info (src, dst, sport, dport, length) from a packet and return the data"""
@@ -150,4 +163,29 @@ class FlowIdentify(object):
             length = len(subpkt.data) 
         return (src, dst, sport, dport, proto, length)            
 
-
+    def write_db(self):
+        """write data to db"""
+        insert_list = []             
+        update_list = []             
+        for v in self.new_flows.values(): 
+            for f in v:
+                insert_list.append(f)
+        for v in self.updated_flows.values():
+            for f in v:
+                update_list.append(f)
+        if insert_list:
+            try:
+                flow_table.insert().execute(insert_list)  
+            except sqlalchemy.exceptions.SQLError, e:
+                for f in insert_list:
+                    try:
+                        flow_table.insert().execute(f)
+                    except sqlalchemy.exceptions.SQLError, e:
+                        if 'IntegrityError' in e.args[0]:
+                            print "Skipping duplicate flow ", f
+                        else:
+                            raise
+            self.new_flows = {}
+        if update_list:
+            flow_table.update(flow_table.c.id==bindparam('id')).execute(update_list)
+            self.updated_flows = {}

@@ -221,24 +221,7 @@ class Honeypot(object):
         try:    
             return session.query(Honeypot).selectone(Honeypot.c.ip_id == Ip.id_get_or_create(ip))
         except exceptions.InvalidRequestError:
-            raise HoneysnapModelError("Honeypot not defined in DB!") 
-
-    def save_flow_changes(self, session):
-        """Save flow stats to db, dealing with duplicate entries"""
-        try:    
-            session.flush()
-        except exceptions.SQLError, e:     
-            if "IntegrityError" in e.args[0]:
-                dups = []
-                for flow in session.new:   
-                    if type(flow) != type(Flow()):
-                        continue
-                    if flow.in_db():
-                        print "Duplicate flow - skipping: ", flow
-                        dups.append(flow)
-                for flow in dups:
-                    session.expunge(flow)
-                session.flush()                                                             
+            raise HoneysnapModelError("Honeypot not defined in DB!")                                                             
 
 class Ip(object):
     """IP address and location details""" 

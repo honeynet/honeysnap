@@ -119,17 +119,7 @@ class test_model(unittest.TestCase):
         ipid = Ip.id_get_or_create("192.168.0.1")
         h = Honeypot(name="test", ip_id=ipid, state="Up")   
         self.session.save(h)
-        self.session.flush()  
-        
-    def test_save_flow_changes(self):   
-        """save_flow_changes should not raise an error with duplicate flows"""
-        src_id = Ip.id_get_or_create("10.0.0.1")                                               
-        dst_id = Ip.id_get_or_create("254.168.0.2")
-        f = Flow(src_id=src_id, sport=80, packets=3, bytes=56, dst_id=dst_id, 
-            dport=45678, starttime=datetime(2007, 01, 01, 0, 0, 0, 0), lastseen=datetime(2007, 01, 02, 0, 0, 0, 0))
-        h = Honeypot.by_ip(self.session, "192.168.0.1")
-        h.flows.append(f)     
-        h.save_flow_changes(self.session)      
+        self.session.flush()               
         
     def test_id_get_or_create(self): 
         """id_get_or_create should return valid id and create if needed"""

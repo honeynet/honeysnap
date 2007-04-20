@@ -109,9 +109,11 @@ class SebekDecode(object):
         self.verbose = options['sebek_all_data']
         self.log = {}     
         self.hash = {}
-        self.insert_list = []
-        self.session = create_session()
-        self.hp = Honeypot.get_or_create(self.session, hp)   
+        self.insert_list = []  
+        self.count = 0
+        self.session = create_session()  
+        self.hp = hp
+        self.hpid = Honeypot.get_or_create(self.session, hp).id   
 
     def unpack_sebek(self, payload):
         """unpack sebek data"""
@@ -150,6 +152,10 @@ class SebekDecode(object):
             self.sbk_sock(version, t, pid, fd, uid, com, rest, parent_pid, inode) 
         elif type == SBK_OPEN and self.verbose:                                                           
             self.sbk_open(version, t, pid, fd, uid, com, rest, parent_pid, inode) 
+        self.count += 1
+        if not self.count % 10000:
+            print 'Written %s sebek records to db' % self.count
+            self.write_db()    
       
     def sbk_write(self, version, t, pid, fd, uid, com, data, parent_pid, inode):
         """Decode sebek write data. Store data for stdin, stdout and stderr only for now"""
@@ -157,7 +163,7 @@ class SebekDecode(object):
             raise SebekDecodeError("SBK_WRITE in ver 1 data!")
         if fd<3:      
             com = nonascii.sub("", com)
-            s = dict(honeypot_id=self.hp.id, version=version, type=SBK_WRITE, timestamp=t, pid=pid, fd=fd, \
+            s = dict(honeypot_id=self.hpid, version=version, type=SBK_WRITE, timestamp=t, pid=pid, fd=fd, \
                 uid=uid, command=com, parent_pid=parent_pid, inode=inode, data=data)
             self.save(s)
         else:
@@ -170,7 +176,7 @@ class SebekDecode(object):
             raise SebekDecodeError("SBK_SOCK in ver 1 data!")
         com = nonascii.sub("", com)  
         data = nonascii.sub("", data)
-        s = dict(honeypot_id=self.hp.id, version=version, type=SBK_SOCK, timestamp=t, pid=pid, fd=fd, uid=uid, \
+        s = dict(honeypot_id=self.hpid, version=version, type=SBK_SOCK, timestamp=t, pid=pid, fd=fd, uid=uid, \
             command=com, parent_pid=parent_pid, inode=inode, data=data)
         self.save(s)
         
@@ -180,7 +186,7 @@ class SebekDecode(object):
             raise SebekDecodeError("SBK_OPEN in ver 1 data")
         com = nonascii.sub("", com)
         data = nonascii.sub("", data)  
-        s = dict(honeypot_id=self.hp.id, version=version, type=SBK_OPEN, timestamp=t, pid=pid, fd=fd, uid=uid, \
+        s = dict(honeypot_id=self.hpid, version=version, type=SBK_OPEN, timestamp=t, pid=pid, fd=fd, uid=uid, \
             command=com, parent_pid=parent_pid, inode=inode, data=data)
         self.save(s)
 
@@ -213,7 +219,7 @@ class SebekDecode(object):
                 d = d.replace(i, controlmap[i])
                 # strip out nonascii junk
                 d = nonascii.sub("", d)                
-            s = dict(honeypot_id=self.hp.id, version=version, type=SBK_READ, timestamp=t, pid=pid, fd=fd, uid=uid, \
+            s = dict(honeypot_id=self.hpid, version=version, type=SBK_READ, timestamp=t, pid=pid, fd=fd, uid=uid, \
                 command=com, parent_pid=parent_pid, inode=inode, data=d[0:MAX_SBK_DATA_SIZE]) 
             self.save(s)                    
             del self.log[k]
