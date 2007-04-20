@@ -32,7 +32,7 @@ setup(name="honeysnap",
         "dpkt>=1.6",
         "sqlalchemy>=0.3.1", 
          #"pysqlite>=2.3.2", 
-        'ipython>-0.7.2',
+        'ipython>=0.8',
     ],
     dependency_links = [    
     #    "http://monkey.org/~dugsong/pypcap/pypcap-1.1.tar.gz" 

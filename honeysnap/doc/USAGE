@@ -54,7 +54,12 @@ See
 
 http://matplotlib.sourceforge.net/tutorial.html
 
-for examples of how to plot data in matplotlib.
+for examples of how to plot data in matplotlib and
+
+http://matplotlib.sourceforge.net/matplotlib.toolkits.basemap.basemap.html
+
+for map plotting (the randompoints.py example from the basemap example 
+set is also useful)
 
 
 Using Raw SQL
