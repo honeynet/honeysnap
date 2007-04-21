@@ -66,7 +66,8 @@ class IrcDecode(object):
             hirc.connect(self.tmpf, "host %s and tcp and port %s" % (self.hpip, port) )
             hirc.addHandler("all_events", self.decode, -1)
             hirc.ircobj.process_once()   
-            self.write_db() 
+            self.write_db()  
+            print '\tProcessed %s IRC messages' % self.count
 
     def find_irc_ports(self):
         """
@@ -105,7 +106,7 @@ class IrcDecode(object):
                        timestamp=datetime.fromtimestamp(e.time), text=data[0:MAX_IRC_TEXT_SIZE], filename=self.file)  
         self.save(m) 
         if not self.count % 10000:
-            print '%s, count %s' % (datetime.now(), self.count)
+            print '\tProcessed %s IRC messages' % self.count
             self.write_db()
         
     def save(self, m): 
@@ -126,22 +127,9 @@ class IrcDecode(object):
                     irc_message_table.insert().execute(m)                       
                 except sqlalchemy.exceptions.SQLError, e:
                     if 'IntegrityError' in e.args[0]:
-                        print 'Duplicate IRC entry, skipping ', m
+                        print '\tDuplicate IRC entry, skipping ', m
                     else:             
                         raise 
         self.hash = {}
         self.insert_list = []
-        
-if __name__ == '__main__': 
-    import sys 
-    from honeysnap.importers.hsIRC import HoneySnapIRC    
-    
-    print 'Looking at file %s host %s' % (sys.argv[1], sys.argv[2])
-    hirc = HoneysnapIRC()
-    hirc.connect(sys.argv[1], "host %s and tcp and port %s" % (sys.argv[2], 6667))
-    hd = ircDecode()
-    hirc.addHandler("all_events", hd.decodeCB, -1)
-    hirc.ircobj.process_once()
-        
-        
         

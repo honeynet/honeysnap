@@ -66,7 +66,8 @@ class FlowIdentify(object):
         """Iterate over a pcap object"""
         for ts, buf in self.p:
             self.packet_handler(ts, buf)
-        self.write_db()
+        self.write_db() 
+        print '\tInserted/updated %s flows' % self.count
         
     def packet_handler(self, ts, buf):
         """Process a pcap packet buffer"""   
@@ -106,7 +107,7 @@ class FlowIdentify(object):
         key = (src, dst, sport, dport, proto)
         if not self.count % 10000:
             self.write_db()
-            print 'Inserted/updated %s flows' % self.count
+            print '\tInserted/updated %s flows' % self.count
         ts_dt = datetime.fromtimestamp(ts)  
         if self.update_in_cache(self.new_flows, key, ts, length):  
             return               
@@ -141,8 +142,8 @@ class FlowIdentify(object):
         pkt = dpkt.ethernet.Ethernet(buf)
         subpkt = pkt.data
         if type(subpkt) != type(dpkt.ip.IP()):
-            # skip non IP packets
-            raise DecodeError('Not an IP packet')
+            # skip non IP packets for now
+            raise DecodeError('\tNot an IP packet')
         proto = subpkt.p
         src = socket.inet_ntoa(subpkt.src)
         dst = socket.inet_ntoa(subpkt.dst)
@@ -182,7 +183,7 @@ class FlowIdentify(object):
                         flow_table.insert().execute(f)
                     except sqlalchemy.exceptions.SQLError, e:
                         if 'IntegrityError' in e.args[0]:
-                            print "Skipping duplicate flow ", f
+                            print "\tSkipping duplicate flow ", f
                         else:
                             raise
             self.new_flows = {}

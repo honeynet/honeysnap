@@ -7,7 +7,7 @@ import ez_setup
 ez_setup.use_setuptools()
                        
 from setuptools import setup
-VERSION="1.1.1db2-dev16"
+VERSION="1.1.1db2-dev17"
 
 setup(name="honeysnap",
     version=VERSION,

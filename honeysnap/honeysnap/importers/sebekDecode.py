@@ -154,7 +154,7 @@ class SebekDecode(object):
             self.sbk_open(version, t, pid, fd, uid, com, rest, parent_pid, inode) 
         self.count += 1
         if not self.count % 10000:
-            print 'Written %s sebek records to db' % self.count
+            print '\tProcessed %s sebek records' % self.count
             self.write_db()    
       
     def sbk_write(self, version, t, pid, fd, uid, com, data, parent_pid, inode):
@@ -249,7 +249,7 @@ class SebekDecode(object):
                     sebek_table.insert().execute(s)
                 except sqlalchemy.exceptions.SQLError, e:
                     if 'IntegrityError' in e.args[0]:
-                        print 'Duplicate sebek entry, skipping ', s
+                        print '\tDuplicate sebek entry, skipping ', s
                     else:             
                         raise 
         self.hash = {}
@@ -267,6 +267,8 @@ class SebekDecode(object):
                 self.packet_handler(ts, payload)
             except struct.error, e:
                 continue
-        self.write_db()          
+        self.write_db()  
+        print '\tProcessed %s sebek records' % self.count
+                
 
 
