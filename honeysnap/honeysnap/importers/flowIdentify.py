@@ -55,19 +55,26 @@ class FlowIdentify(object):
         self.filename = filename
         self.p = pcap.pcap(file)
         self.p.setfilter("host %s" % hp)
-        self.session = create_session()
+        self.session = create_session()  
         self.hp = hp
         self.hpid = Honeypot.get_or_create(self.session, hp).id
         self.new_flows = {}    
         self.updated_flows = {}
-        self.count = 0
-
+        self.count = 0        
+        self.fq = flow_table.select(and_(
+                flow_table.c.src_id == bindparam('srcid'), 
+                flow_table.c.dst_id == bindparam('dstid'), 
+                flow_table.c.sport == bindparam('sport'), 
+                flow_table.c.dport == bindparam('dport'), 
+                flow_table.c.lastseen > bindparam('timedelta')),
+                order_by = [desc(flow_table.c.starttime)]).compile()
+                
     def run(self):
         """Iterate over a pcap object"""
         for ts, buf in self.p:
             self.packet_handler(ts, buf)
         self.write_db() 
-        print '\tInserted/updated %s flows' % self.count
+        print '\tRead %s packets' % self.count
         
     def packet_handler(self, ts, buf):
         """Process a pcap packet buffer"""   
@@ -107,18 +114,16 @@ class FlowIdentify(object):
         key = (src, dst, sport, dport, proto)
         if not self.count % 10000:
             self.write_db()
-            print '\tInserted/updated %s flows' % self.count
+            print '\tRead %s packets' % self.count
         ts_dt = datetime.fromtimestamp(ts)  
         if self.update_in_cache(self.new_flows, key, ts, length):  
             return               
         if self.update_in_cache(self.updated_flows, key, ts, length):
             return
         srcid = Ip.id_get_or_create(src)
-        dstid = Ip.id_get_or_create(dst)          
-        flows = flow_table.select(and_(flow_table.c.src_id == srcid, 
-            flow_table.c.dst_id == dstid, flow_table.c.sport == sport, 
-            flow_table.c.dport == dport, flow_table.c.lastseen > datetime.fromtimestamp(ts-FLOW_DELTA)),
-            order_by = [desc(flow_table.c.starttime)]).execute().fetchall()
+        dstid = Ip.id_get_or_create(dst)  
+        flows = self.fq.execute(srcid=srcid, dstid=dstid, sport=sport,
+                                dport=dport, timedelta=datetime.fromtimestamp(ts-FLOW_DELTA)).fetchall()
         if flows:
             # exists in db   
             flow = dict(flows[0])    # if more than one, append data to the last seen flow
