@@ -249,6 +249,16 @@ class test_model(unittest.TestCase):
         self.session.flush()
         assert m.channel == '#secret'    
         
+    def test_save_table(self):
+        """save_table should save a list to a table"""  
+        s1 = dict(honeypot_id=1, version=3, type=SBK_READ, timestamp=datetime(2007, 01, 01, 0, 0, 1, 0), 
+                pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data='uname -al')    
+        s2 = dict(honeypot_id=1, version=3, type=SBK_READ, timestamp=datetime(2007, 01, 01, 0, 0, 2, 0), 
+                pid=23, fd=23, uid=0, command='ssh', parent_pid=1, inode=34324, data='hello world')
+        for i in [1,2]:
+            save_table(sebek_table, [s1, s2])                                        
+            assert self.session.query(Sebek).count() == 3
+        
         
 if __name__ == '__main__':
     unittest.main()

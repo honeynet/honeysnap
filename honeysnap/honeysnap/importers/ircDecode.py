@@ -52,14 +52,14 @@ class IrcDecode(object):
         self.hp = hp
         self.hpid = Honeypot.get_or_create(self.session, hp).id
         self.count = 0
-
+            
     def run(self):
         """run over file for one honeypot and a set of ports"""
         self.find_irc_ports()
         if self.irc_ports:
-            print "Trying to decode IRC on port(s) ", self.irc_ports
+            print "\tTrying to decode IRC on port(s) ", self.irc_ports
         else:       
-            print "No IRC seen"
+            print "\tNo IRC seen"
             return
         for port in self.irc_ports:
             hirc = HoneysnapIRC()
@@ -116,20 +116,7 @@ class IrcDecode(object):
         self.insert_list.append(m)
         
     def write_db(self): 
-        if not self.insert_list:
-            return      
-        try:
-            irc_message_table.insert().execute(self.insert_list)
-        except sqlalchemy.exceptions.SQLError:
-            # insertmany failed - maybe some records exist from previous run?
-            for m in self.insert_list:
-                try:                               
-                    irc_message_table.insert().execute(m)                       
-                except sqlalchemy.exceptions.SQLError, e:
-                    if 'IntegrityError' in e.args[0]:
-                        print '\tDuplicate IRC entry, skipping ', m
-                    else:             
-                        raise 
+        save_table(irc_message_table, self.insert_list)
         self.hash = {}
         self.insert_list = []
         

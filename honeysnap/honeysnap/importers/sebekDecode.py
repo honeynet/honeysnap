@@ -102,10 +102,9 @@ class SebekDecode(object):
     def __init__(self, file, filename, hp):
         hs = HoneysnapSingleton.getInstance()
         options = hs.getOptions()
+        self._init_pcap(file)
         self.engine = connect_to_db(options['dburi'], options['debug']) 
-        self.p = pcap.pcap(file)      
         self.filename = filename
-        self.p.setfilter("src host %s and udp dst port %s" % (hp, options["sebek_port"]))
         self.verbose = options['sebek_all_data']
         self.log = {}     
         self.hash = {}
@@ -114,6 +113,12 @@ class SebekDecode(object):
         self.session = create_session()  
         self.hp = hp
         self.hpid = Honeypot.get_or_create(self.session, hp).id   
+      
+    def _init_pcap(self, file):
+        """helper method to init pcap file"""
+        # this method exist to make unit tests cleaner
+        self.p = pcap.pcap(file)   
+        self.p.setfilter("src host %s and udp dst port %s" % (hp, options["sebek_port"]))
 
     def unpack_sebek(self, payload):
         """unpack sebek data"""
@@ -238,20 +243,7 @@ class SebekDecode(object):
         write everything from the insert_list to the db
         First try insert_many; if that fails go to one-by-one, skipping dups
         """        
-        if not self.insert_list:
-            return
-        try:                  
-            sebek_table.insert().execute(self.insert_list)
-        except sqlalchemy.exceptions.SQLError, e:
-            # have some of these records already in db, maybe from a previous run
-            for s in self.insert_list:
-                try:
-                    sebek_table.insert().execute(s)
-                except sqlalchemy.exceptions.SQLError, e:
-                    if 'IntegrityError' in e.args[0]:
-                        print '\tDuplicate sebek entry, skipping ', s
-                    else:             
-                        raise 
+        save_table(sebek_table, self.insert_list)
         self.hash = {}
         self.insert_list = []                       
 

@@ -30,22 +30,15 @@ from honeysnap.importers.flowIdentify import *
 
 class test_flowIdentify(unittest.TestCase):
     def setUp(self):      
-        self.engine = connect_to_db('sqlite:///') 
-        # this is very nasty....           
-        # don't want to run __init__ as don't have options or a file      
-        self.session = create_session()        
-        FlowIdentify.__init__ = lambda self: None 
-        self.hp = Honeypot.get_or_create(self.session, '192.168.0.1')
-        self.fid = FlowIdentify()   
-        self.fid.filename = 'testing'
-        self.fid.new_flows = {}
-        self.fid.updated_flows = {}
-        self.fid.count = 0 
-        self.fid.hpid =self.hp.id
+        # don't want to run _init_pcap as don't have options or a file      
+        singleton = HoneysnapSingleton.getInstance({'dburi' : 'sqlite:///', 'debug' : False})
+        FlowIdentify._init_pcap = lambda self, file: None 
+        self.fid = FlowIdentify(None, 'testing', '192.168.0.1')
 
     def tearDown(self):
+        HoneysnapSingleton._forgetClassInstanceReferenceForTesting()        
         Ip.id_cache = {}
-        self.session.clear()   
+        self.fid.session.clear()   
         metadata.drop_all()
                                   
     @raises(DecodeError) 
@@ -104,15 +97,14 @@ class test_flowIdentify(unittest.TestCase):
 
     def test_sub_second_ts(self):
         """should store sub-second time stamps correctly"""  
-        ts = 11111.23456
-        f = Flow( ip_proto=6, src_id=1, dst_id=1, sport=80, 
-                  dport=664, starttime=ts, lastseen=ts, packets=1, 
+        ts = 11111.23456               
+        ts_dt = datetime.fromtimestamp(ts)
+        f = dict(honeypot_id = self.fid.hpid, ip_proto=6, src_id=1, dst_id=1, sport=80, 
+                  dport=664, starttime=ts_dt, lastseen=ts_dt, packets=1, 
                   bytes=20, filename='testing') 
-        self.hp.flows.append(f) 
-        self.session.flush()
-        id = f.id
-        del f
-        f = self.session.query(Flow).selectone(Flow.c.id==id)
+        r = flow_table.insert().execute(f)
+        id = r.last_inserted_ids()[0]
+        f = self.fid.session.query(Flow).selectone(Flow.c.id==id)
         assert f.starttime == datetime.fromtimestamp(ts)
 
     def test_match_flow_in_cache(self):

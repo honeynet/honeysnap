@@ -518,8 +518,25 @@ mapper(IRCMessage, irc_message_table, properties={
     }
 )
 
-# init and create tables if needed  
+def save_table(table, records):
+    """save a table, trying insert_many first, then record-by-record"""
+    if not records:
+        return
+    try:                  
+        table.insert().execute(records)
+    except exceptions.SQLError, e:
+        # have some of these records already in db, maybe from a previous run
+        for r in records:
+            try:
+                table.insert().execute(r)
+            except exceptions.SQLError, e:
+                if 'IntegrityError' in e.args[0]:
+                    print '\tDuplicate entry, skipping ', r
+                else:             
+                    raise        
+
 def connect_to_db(dburi, debug=False):
+    """Initialise, and create tables"""
     db = create_engine(dburi)
     db.echo = debug
     metadata.connect(db)

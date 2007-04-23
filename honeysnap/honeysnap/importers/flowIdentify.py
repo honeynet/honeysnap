@@ -51,10 +51,9 @@ class FlowIdentify(object):
         """Create object, open pcap file, set filter and create queries"""
         hs = HoneysnapSingleton.getInstance()
         options = hs.getOptions()
+        self._init_pcap(file)
         self.engine = connect_to_db(options['dburi'], options['debug'])
         self.filename = filename
-        self.p = pcap.pcap(file)
-        self.p.setfilter("host %s" % hp)
         self.session = create_session()  
         self.hp = hp
         self.hpid = Honeypot.get_or_create(self.session, hp).id
@@ -68,6 +67,10 @@ class FlowIdentify(object):
                 flow_table.c.dport == bindparam('dport'), 
                 flow_table.c.lastseen > bindparam('timedelta')),
                 order_by = [desc(flow_table.c.starttime)]).compile()
+
+    def _init_pcap(self, file):
+        self.p = pcap.pcap(file)
+        self.p.setfilter("host %s" % hp)
                 
     def run(self):
         """Iterate over a pcap object"""
@@ -91,7 +94,7 @@ class FlowIdentify(object):
         """
         Look for flow identified by key in cache cache. 
         Update flow if it needs updating, allowing for times.
-        Return True if we find a update to flow, False otherwise
+        Return True if we update a flow, False otherwise
         """                  
         if not cache.has_key(key): 
             return
@@ -179,19 +182,8 @@ class FlowIdentify(object):
         for v in self.updated_flows.values():
             for f in v:
                 update_list.append(f)
-        if insert_list:
-            try:
-                flow_table.insert().execute(insert_list)  
-            except sqlalchemy.exceptions.SQLError, e:
-                for f in insert_list:
-                    try:
-                        flow_table.insert().execute(f)
-                    except sqlalchemy.exceptions.SQLError, e:
-                        if 'IntegrityError' in e.args[0]:
-                            print "\tSkipping duplicate flow ", f
-                        else:
-                            raise
-            self.new_flows = {}
+        save_table(flow_table, insert_list)
+        self.new_flows = {}
         if update_list:
             flow_table.update(flow_table.c.id==bindparam('id')).execute(update_list)
             self.updated_flows = {}

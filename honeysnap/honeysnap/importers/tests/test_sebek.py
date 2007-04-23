@@ -32,23 +32,15 @@ class test_sebek_decode(unittest.TestCase):
     """Test sebek decoding"""
     
     def setUp(self): 
-        self.engine = connect_to_db('sqlite:///')
-        # this is very nasty....           
-        # don't want to run __init__ as don't have options or a file 
-        SebekDecode.__init__ = lambda self: None
-        self.sbd = SebekDecode()  
-        self.sbd.log = {}                 
-        self.session = create_session()  
-        self.sbq = self.session.query(Sebek)  
-        self.sbd.hash = {}
-        self.sbd.insert_list = []   
-        self.sbd.count = 0
-        self.sbd.hp = '192.168.0.1'
-        self.sbd.hpid = Honeypot.get_or_create(self.session, '192.168.0.1').id   
-        self.session.flush()
+        singleton = HoneysnapSingleton.getInstance({ 'dburi' : 'sqlite:///', 'debug' : False, 'sebek_all_data' : False})
+        # don't want to run _init_pcap as don't have options or a file 
+        SebekDecode._init_pcap = lambda self, file: None
+        self.sbd = SebekDecode(None, 'testing', '192.168.0.1')       
+        self.sbq = self.sbd.session.query(Sebek)
          
     def tearDown(self):
-        self.session.clear() 
+        HoneysnapSingleton._forgetClassInstanceReferenceForTesting()        
+        self.sbd.session.clear() 
         metadata.drop_all()
         
     def test_sbk_write(self): 

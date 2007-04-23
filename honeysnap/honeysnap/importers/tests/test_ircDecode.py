@@ -25,22 +25,16 @@ from honeysnap.model.model import *
 from honeysnap.importers.ircDecode import * 
 from honeysnap.importers.hsIRC import HnyEvent
 
+from honeysnap.singletonmixin import HoneysnapSingleton                                                             
+
 class test_ircDecode(unittest.TestCase):
     def setUp(self):
-        self.engine = connect_to_db('sqlite:///')
-        IrcDecode.__init__ = lambda self: None
-        self.ircd = IrcDecode()
-        self.ircd.hash = {}
-        self.ircd.insert_list = []  
-        self.ircd.count = 0
-        self.ircd.file = 'testing'     
-        self.session = create_session()
-        self.ircd.hp = '192.168.0.1'
-        self.ircd.hpid = Honeypot.get_or_create(self.session, '192.168.0.1').id   
-        self.session.flush()
+        singleton = HoneysnapSingleton.getInstance({ 'dburi' : 'sqlite:///', 'debug' : False, 'irc_ports' : { '192.168.0.1' : []} })
+        self.ircd = IrcDecode(None, 'testing', '192.168.0.1')  
 
-    def tearDown(self):
-        self.session.clear() 
+    def tearDown(self):   
+        HoneysnapSingleton._forgetClassInstanceReferenceForTesting()        
+        self.ircd.session.clear() 
         metadata.drop_all()        
 
     def test_raw_message(self):
@@ -116,7 +110,7 @@ class test_ircDecode(unittest.TestCase):
                                         
     def test_already_in_db(self):
        """should spot lines already in db and skip"""
-       ircmq = self.session.query(IRCMessage)
+       ircmq = self.ircd.session.query(IRCMessage)
        cmd = 'privmsg'
        srcid = IRCTalker.id_get_or_create('fred!fred@localhost')
        dstid = IRCTalker.id_get_or_create('george!zzz@dsfdf.sdfd.com')   
