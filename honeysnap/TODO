@@ -1,6 +1,5 @@
 # $Id$
 
-Re-write flow importing in non-ORM way for speed
 Change all importers to do all hps at once
 
 Per-day summary code to generate same stats as non-db honeysnap
@@ -16,6 +15,11 @@ Flow contents to db
       * ftp
 
 Sanity check -H input
+
+Matplotlib
+----------
+
+Add funcs to plot trends over time via matplotlib.
       
 Features/Bugs
 -------------

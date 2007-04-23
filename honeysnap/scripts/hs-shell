@@ -67,7 +67,8 @@ ip.ex("from honeysnap.model.model import *")
 ip.ex("from honeysnap.importers.sebekDecode import SBK_READ, SBK_WRITE, SBK_OPEN, SBK_SOCK")   
 ip.ex("""
 try:
-    from matplotlib.toolkits.basemap import Basemap
+    from matplotlib.toolkits.basemap import Basemap  
+    from honeysnap.tools.maptools import Maptools, MaptoolsError
 except:
     pass
 """)
