@@ -19,7 +19,7 @@ class MaptoolsError(Exception):
     """generic error"""
     pass
 
-class Maptools:
+class Worldmap(object):
     """helper class for plotting ip objects on a world map"""
     def __init__(self, meridians = False):
         """Setup a maptool class. Meridians: Plot meridians or not"""

@@ -69,6 +69,7 @@ ip.ex("""
 try:
     from matplotlib.toolkits.basemap import Basemap  
     from honeysnap.tools.maptools import Maptools, MaptoolsError
+    from matplotlib.dates import YEARLY, MONTHLY, DAILY, HOURLY    
 except:
     pass
 """)
