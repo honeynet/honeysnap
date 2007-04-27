@@ -504,7 +504,10 @@ mapper(Honeypot, honeypot_table, properties={
       
 mapper(Ip, ip_table, extension=IpMapperExtension())  
 
-mapper(Flow, flow_table)
+mapper(Flow, flow_table, properties={
+    "src": relation(Ip, primaryjoin=ip_table.c.id==flow_table.c.src_id),
+    "dst": relation(Ip, primaryjoin=ip_table.c.id==flow_table.c.dst_id)
+})
 
 mapper(Sebek, sebek_table)                 
 

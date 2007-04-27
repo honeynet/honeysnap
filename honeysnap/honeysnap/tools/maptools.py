@@ -32,17 +32,21 @@ class Worldmap(object):
         if meridians:
             meridians = arange(-180, 180, 45,)
             self.map.drawmeridians(meridians, labels=[1,1,1,1])
-        self.lats = []
-        self.longs = []
         
-    def plot_ips(self, ips, size=20):
-        """add a marker to the map for each ip in ips"""
+    def plot_ips(self, ips, size=20, color='blue', marker='o'):
+        """
+        Add a marker to the map for each ip in ips
+        Ips can be either a list of IP objects or a sqa resultproxy object
+        color and size are passed though to Basemap.scatter
+        """           
+        lats = []
+        longs = []
         for ip in ips:                    
             if ip.latitude and ip.longitude:
-                self.lats.append(ip.latitude)
-                self.longs.append(ip.longitude)
+                lats.append(ip.latitude)
+                longs.append(ip.longitude)
             else:
                 raise MaptoolsError("Missing latitude or longitude for %s" % ip.ip_addr) 
-        x, y = self.map(self.longs, self.lats)        
-        self.map.scatter(x, y, s=size)
+        x, y = self.map(longs, lats)        
+        self.map.scatter(x, y, s=size, color=color, marker=marker)
 
