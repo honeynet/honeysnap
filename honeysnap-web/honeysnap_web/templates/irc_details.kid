@@ -17,8 +17,8 @@ transitional.dtd">
 <div py:replace="mainmenu(request)" />
 <div py:replace="ircmenu(action='details')"/>
           
-<div>          
-    <p>Nice paginated grid to go here</p>
+<div>        
+    <span py:replace="list(messages)"/>
 </div>
           
 <div py:replace="bottommenu()" />

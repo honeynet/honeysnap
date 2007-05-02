@@ -1,8 +1,10 @@
 from turbogears import controllers, expose
 from model import *
 from turbogears import identity, redirect
-from turbogears import widgets, validators, validate, error_handler
+from turbogears import validators, validate, error_handler, paginate
 from turbogears.database import session
+from turbogears.widgets import PaginateDataGrid, TableForm, TextField 
+from turbogears.widgets.big_widgets import CalendarDateTimePicker
 from cherrypy import request, response
 # from honeysnap_web import json
 # import logging
@@ -23,28 +25,42 @@ class IRCMessages(controllers.Controller, identity.SecureResource):
 
     #require = identity.in_group("admin")
 
-    IRCSearchForm = widgets.TableForm( fields=[ widgets.TextField(name="text",     label="Text"),
-                                                widgets.TextField(name="channel",  label="Channel"),
-                                                widgets.TextField(name="IRC From", label="From"),
-                                                widgets.TextField(name="IRC To",   label="To"),
-                                                widgets.TextField(name="command",  label="Command"),
-                                                widgets.TextField(name="Source", validator=validators.Regex(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')),
-                                                widgets.TextField(name="Destination", validator=validators.Regex(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')),
-                                                widgets.big_widgets.CalendarDateTimePicker(name="starttime",
+    IRCMessageGrid = PaginateDataGrid(
+        fields=[                                                     
+            PaginateDataGrid.Column('timestamp', 'timestamp', 'Time',
+                            options=dict(sortable=True)),        
+            PaginateDataGrid.Column('from_id', 'irc_from', 'from',
+                                options=dict(sortable=True)),        
+            PaginateDataGrid.Column('text', 'text', 'Text')                                
+            ],
+        )
+
+    IRCSearchForm = TableForm( fields=[ TextField(name="text",     label="Text"),
+                                                TextField(name="channel",  label="Channel"),
+                                                TextField(name="IRC From", label="From"),
+                                                TextField(name="IRC To",   label="To"),
+                                                TextField(name="command",  label="Command"),
+                                                TextField(name="Source", validator=validators.Regex(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')),
+                                                TextField(name="Destination", validator=validators.Regex(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')),
+                                                CalendarDateTimePicker(name="starttime",
                                                                 label="Start time",
                                                                 validator=validators.DateTimeConverter(),
                                                                 default=datetime(1990,1,1,0,0)),
-                                                widgets.big_widgets.CalendarDateTimePicker(name="endtime",
+                                                CalendarDateTimePicker(name="endtime",
                                                                 label="End time",
                                                                 default=datetime.now(),
                                                                 validator=validators.DateTimeConverter())
                                                 ],
                                        submit_text="Search")  
                                        
-    @expose(template="honeysnap_web.templates.irc_details")
+    @expose(template="honeysnap_web.templates.irc_details") 
+    @paginate('messages', default_order='timestamp')
     def details(self, order='timestamp', page=0, stride=20, **fields):
-       """display IRC messages in a paged table"""
-       return { 'request': None, 'form' : self.IRCSearchForm }
+       """display IRC messages in a paged table""" 
+       ircq = session.query(IRCMessage)
+       messages = SelectResults(ircq)
+       return { 'request': None, 'form' : self.IRCSearchForm, 'messages' : messages,
+                'list': self.IRCMessageGrid }
 
     @expose(template="honeysnap_web.templates.irc_summary")
     def summary(self, **fields):
@@ -56,7 +72,7 @@ class IPSearch(controllers.Controller, identity.SecureResource):
 
     #require = identity.in_group('admin')
 
-    IPSearchForm = widgets.TableForm(fields=[ widgets.TextField("ipaddr") ], submit_text="Search")
+    IPSearchForm = TableForm(fields=[ TextField("ipaddr") ], submit_text="Search")
 
     @expose(template="honeysnap_web.templates.ip_search")
     def index(self):
