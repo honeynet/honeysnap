@@ -68,4 +68,5 @@ for i in xrange(0, count, STEP_SIZE):
         for k, v in ipdb.all(ip.ip_addr).iteritems():
             setattr(ip, k, v) 
     print '%s entries, flushing...' % i
-    session.flush()  
+    session.flush() 
+    session.clear() 

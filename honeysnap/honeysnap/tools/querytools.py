@@ -23,6 +23,25 @@ from sqlalchemy.ext.selectresults import SelectResults
 from honeysnap.model.model import *             
 
 _session = create_session()
+                          
+
+# other stuff to wrap at some point
+
+# ssh packets per honeypot                                       
+#  q = select( [honeypot_table.c.name, honeypot_table.c.id, func.sum(flow_table.c.packets)], 
+#               flow_table.c.dport==22,  group_by=[honeypot_table.c.name, honeypot_table.c.id], distinct=True)
+
+
+# e.g. count of ssh flows per honeypot                                                                                    
+# q = select( [honeypot_table.c.name, honeypot_table.c.id, func.count(flow_table.c.id)], flow_table.c.dport==22, 
+#               group_by=[honeypot_table.c.id, honeypot_table.c.name], distinct=True)
+
+
+# top talkers to N honeypots            
+#sub_q = select( [func.count(flow_table.c.honeypot_id).label('nodes'), ip_table.c.id, ip_table.c.ip_addr, ip_table.c.longitude, ip_table.c.latitude], flow_table.c.src_id==ip_table.c.id, distinct=True, use_labels=True, group_by=([flow_table.c.honeypot_id, ip_table.c.id, ip_table.c.ip_addr, ip_table.c.longitude, ip_table.c.latitude])).alias('sub_q')
+#q = select( [sub_q.c.nodes, sub_q.c.ip_ip_addr, sub_q.c.ip_longitude, sub_q.c.ip_latitude], from_obj=[sub_q], order_by=[desc(sub_q.c.nodes)], group_by=[sub_q.c.nodes, sub_q.c.ip_ip_addr, sub_q.c.ip_longitude, sub_q.c.ip_latitude])
+#q.append_having(sub_q.c.nodes>5)
+
 
 def to_port_count(honeypot, starttime, endtime, port, timerange='DAY'):
     """

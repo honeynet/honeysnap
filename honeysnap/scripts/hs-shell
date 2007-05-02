@@ -52,13 +52,13 @@ else:
    sys.argv = [ sys.argv[0] ] 
 
 try:
-    engine = model.connect_to_db(opts.dburi, opts.debug)                
+    db = model.connect_to_db(opts.dburi, opts.debug)                
 except Exception, e:
     print "Error connecting to database: ", e
     sys.exit(1)
 sqa_session=create_session() 
 
-namesp = dict(engine=engine, session=sqa_session)
+namesp = dict(db=db, session=sqa_session)
 session = ipapi.make_session(namesp)
 ip = ipapi.get()
 ip.ex("from sqlalchemy import *")
