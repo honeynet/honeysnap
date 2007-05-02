@@ -32,7 +32,7 @@ class Flows(controllers.Controller, identity.SecureResource):
                 options=dict(sortable=True)),  
             PaginateDataGrid.Column('lastseen', 'lastseen', 'Endtime',
                 options=dict(sortable=True)),                  
-            PaginateDataGrid.Column('honeypot', 'honeypot_name', 'Honeypot',
+            PaginateDataGrid.Column('honeypot_id', 'honeypot_name', 'Honeypot',
                 options=dict(sortable=True)),                    
             PaginateDataGrid.Column('src_id', 'ip_src_addr', 'Source',
                                 options=dict(sortable=True)),                    
@@ -50,6 +50,12 @@ class Flows(controllers.Controller, identity.SecureResource):
     FlowSearchForm = TableForm( 
         fields=[ 
                 TextField(name="honeypot", label="honeypot"),
+                TextField(name="bytes_less", label="Less than N Bytes"),
+                TextField(name="bytes_more", label="More than N Bytes"),
+                TextField(name="packets_less", label="Less than N Packets"),
+                TextField(name="packets_less", label="More than N Packets"),
+                TextField(name="duration_min", label="Lasts more than N seconds"),
+                TextField(name="duration_max", label="Lasts less than N seconds"),
                 CalendarDateTimePicker(name="starttime",
                                 label="Start time",
                                 validator=validators.DateTimeConverter(),
@@ -80,7 +86,7 @@ class SebekMessages(controllers.Controller, identity.SecureResource):
         fields = [
             PaginateDataGrid.Column('timestamp', 'timestamp', 'Time',
                 options=dict(sortable=True)),                    
-            PaginateDataGrid.Column('honeypot', 'honeypot_name', 'Honeypot',
+            PaginateDataGrid.Column('honeypot_id', 'honeypot_name', 'Honeypot',
                 options=dict(sortable=True)),                    
             PaginateDataGrid.Column('type', 'type', 'Type',
                 options=dict(sortable=True)),                                                                               
@@ -142,7 +148,7 @@ class IRCMessages(controllers.Controller, identity.SecureResource):
         fields=[                                                     
             PaginateDataGrid.Column('timestamp', 'timestamp', 'Time',
                             options=dict(sortable=True)),                    
-            PaginateDataGrid.Column('honeypot', 'honeypot_name', 'Honeypot',
+            PaginateDataGrid.Column('honeypot_id', 'honeypot_name', 'Honeypot',
                                 options=dict(sortable=True)),                                                                            
             PaginateDataGrid.Column('src_id', 'ip_src_addr', 'Source',
                                 options=dict(sortable=True)),                    
@@ -214,7 +220,7 @@ class IPSearch(controllers.Controller, identity.SecureResource):
     @error_handler(index)    
     def by_ip(self, ipaddr):
         """returns details for given IPs"""
-        return {}
+        return { 'request': None}
 
     @expose(template="honeysnap_web.templates.ip_summary")
     def summary(self):
@@ -234,9 +240,13 @@ class Root(controllers.RootController):
     # @identity.require(identity.in_group("admin"))
     def index(self):
         import time    
-        flow_count = session.query(Flow).count()
+        flows = session.query(Flow).count()
+        sebek = session.query(Sebek).count()
+        irc = session.query(IRCMessage).count()      
+        honeypots = session.query(Honeypot).count()
         # log.debug("Happy TurboGears Controller Responding For Duty")
-        return dict(request=None, now=time.ctime(), flow_count=flow_count)
+        return dict(request=None, now=time.ctime(), flows=flows,
+            sebek=sebek, irc=irc, honeypots=honeypots)
 
     @expose(template="honeysnap_web.templates.login")
     def login(self, forward_url=None, previous_url=None, *args, **kw):
