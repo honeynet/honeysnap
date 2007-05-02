@@ -27,22 +27,24 @@
     </div>
 
     <div id="menu" py:def="mainmenu(request)">
-      <div py:if="request"> 
-        Flows |
-        <a href="${tg.url('/irc/summary', request)}"> IRC Summary </a>| 
-        <a href="${tg.url('/irc/details', request)}"> IRC Details </a>| 
-        <a href="${tg.url('/ip/summary', request)}">  IP Summary </a>|
-        <a href="${tg.url('/ip', request)}">IP Lookup </a>| 
-        Keyword Management 
-      </div>
-      <div py:if="not request">
-        Flows |
-        <a href="${tg.url('/irc/summary')}"> IRC Summary </a>| 
-        <a href="${tg.url('/irc/details')}"> IRC Details </a>| 
-        <a href="${tg.url('/ip/summary')}">  IP Summary </a>|
-        <a href="${tg.url('/ip')}">IP Lookup </a>| 
-        Keyword Management
-      </div>
+        <div py:if="request"> 
+            <a href="${tg.url('/', request)}"> Summary </a> |
+            <a href="${tg.url('/flows/details', request)}"> Flow Details </a>  |
+            <a href="${tg.url('/sebek/details', request)}"> Sebek Details </a> |
+            <a href="${tg.url('/irc/summary', request)}"> IRC Summary </a>| 
+            <a href="${tg.url('/irc/details', request)}"> IRC Details </a>| 
+            <a href="${tg.url('/ip/summary', request)}">  IP Summary </a>|
+            <a href="${tg.url('/ip', request)}">IP Lookup </a>| 
+        </div>
+        <div py:if="not request">
+            <a href="${tg.url('/', request)}"> Summary </a> |
+            <a href="${tg.url('/flows/details', request)}"> Flow Details </a> |
+            <a href="${tg.url('/sebek/details', request)}"> Sebek Details </a> |
+            <a href="${tg.url('/irc/summary')}"> IRC Summary </a>| 
+            <a href="${tg.url('/irc/details')}"> IRC Details </a>| 
+            <a href="${tg.url('/ip/summary')}">  IP Summary </a>|
+            <a href="${tg.url('/ip')}">IP Lookup </a>| 
+        </div>
     </div>
 
     <div py:def="ircmenu(action)">

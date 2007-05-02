@@ -5,8 +5,8 @@ transitional.dtd">
 
 <head>
     <meta content="text/html; charset=UTF-8" http-equiv="content-type" py:replace="''"/> 
-    <LINK MEDIA="all" HREF="/static/css/irc_common.css" TYPE="text/css" REL="stylesheet" />
-    <LINK MEDIA="all" HREF="/static/css/irc_details.css" TYPE="text/css" REL="stylesheet" />
+    <LINK MEDIA="all" HREF="/static/css/details_common.css" TYPE="text/css" REL="stylesheet" />
+
     <title>HoneyMine</title>
 </head>
 

@@ -7,14 +7,13 @@
     <title>HoneyMine</title>
 </head>
 
-<body>
+<body>                              
+    <div py:if="not tg.identity.anonymous" py:replace="logout()" />
+    <div py:replace="mainmenu(request)" />
+    
     <h2>Welcome to Honeymine</h2>
     
-    <UL>
-      <LI> <A HREF="${tg.url('/summary')}"> Summary page </A></LI>
-      <LI> <A HREF="${tg.url('/ip')}"> IP search page </A></LI>
-      <LI> <A HREF="${tg.url('/ircsearch')}"> IRC search page</A></LI>
-    </UL>
-
+    <p>Time is ${now}</p>
+    <div py:replace="bottommenu()" />
 </body>
 </html>

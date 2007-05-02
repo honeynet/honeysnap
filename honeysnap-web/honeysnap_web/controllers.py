@@ -19,6 +19,119 @@ def irc_url_helper(type, field, text):
     link = ElementTree.Element('a', href='%s?%s=%s' % (url, field, text))
     link.text = urllib.unquote(text)
     return link
+
+
+class Flows(controllers.Controller, identity.SecureResource):
+    """Flow data""" 
+    
+    # require = identity.in_group("admin")
+    
+    FlowGrid = PaginateDataGrid(
+        fields = [
+            PaginateDataGrid.Column('starttime', 'starttime', 'Starttime',
+                options=dict(sortable=True)),  
+            PaginateDataGrid.Column('lastseen', 'lastseen', 'Endtime',
+                options=dict(sortable=True)),                  
+            PaginateDataGrid.Column('honeypot', 'honeypot_name', 'Honeypot',
+                options=dict(sortable=True)),                    
+            PaginateDataGrid.Column('src_id', 'ip_src_addr', 'Source',
+                                options=dict(sortable=True)),                    
+            PaginateDataGrid.Column('dst_id', 'ip_dst_addr', 'Destination',
+                                options=dict(sortable=True)),                    
+            PaginateDataGrid.Column('sport', 'sport', 'Src Port',
+                                options=dict(sortable=True)),                    
+            PaginateDataGrid.Column('dport', 'dport', 'Dst Port',
+                                options=dict(sortable=True)),                    
+            PaginateDataGrid.Column('packets', 'packets', 'Packets'),
+            PaginateDataGrid.Column('bytes', 'bytes', 'Bytes'),
+            ]
+    )   
+
+    FlowSearchForm = TableForm( 
+        fields=[ 
+                TextField(name="honeypot", label="honeypot"),
+                CalendarDateTimePicker(name="starttime",
+                                label="Start time",
+                                validator=validators.DateTimeConverter(),
+                                default=datetime(1990,1,1,0,0)),
+                CalendarDateTimePicker(name="endtime",
+                                label="End time",
+                                default=datetime.now(),
+                                validator=validators.DateTimeConverter())
+                        ],
+               submit_text="Search",
+           )
+    
+    @expose(template="honeysnap_web.templates.details") 
+    @paginate('messages', default_order='starttime', limit=25)
+    def details(self):
+       """display flows in a paged table""" 
+       fq = session.query(Flow)
+       flows = SelectResults(fq)
+       return { 'request': None, 'form' : self.FlowSearchForm, 'messages' : flows,
+                'list': self.FlowGrid }    
+
+class SebekMessages(controllers.Controller, identity.SecureResource):
+    """Sebek output"""
+
+    # require = identity.in_group("admin")
+    
+    SebekMessageGrid = PaginateDataGrid(
+        fields = [
+            PaginateDataGrid.Column('timestamp', 'timestamp', 'Time',
+                options=dict(sortable=True)),                    
+            PaginateDataGrid.Column('honeypot', 'honeypot_name', 'Honeypot',
+                options=dict(sortable=True)),                    
+            PaginateDataGrid.Column('type', 'type', 'Type',
+                options=dict(sortable=True)),                                                                               
+            PaginateDataGrid.Column('pid', 'pid', 'PID',
+                options=dict(sortable=True)),   
+            PaginateDataGrid.Column('uid', 'uid', 'UID',
+                options=dict(sortable=True)),
+            PaginateDataGrid.Column('fd', 'fd', 'FD',
+                options=dict(sortable=True)),                  
+            PaginateDataGrid.Column('parent_pid', 'parent_pid', 'PPID',
+                options=dict(sortable=True)),    
+            PaginateDataGrid.Column('inode', 'inode', 'INODE',
+                options=dict(sortable=True)),                
+            PaginateDataGrid.Column('command', 'command', 'Command',
+                options=dict(sortable=True)),                    
+            PaginateDataGrid.Column('data', 'data', 'Data',
+                options=dict(sortable=True)),
+            ]                               
+    )   
+    
+    SebekSearchForm = TableForm( 
+        fields=[ 
+                TextField(name="data", label="Data"),
+                TextField(name="honeypot", label="Honeypot"),
+                TextField(name="type",   label="Type"),
+                TextField(name="pid",  label="PID"),
+                TextField(name="uid", label="UID"),
+                TextField(name="fd", label="FD"),
+                TextField(name="command", label="Command"),
+                TextField(name="parent_pid", label="PPID"),
+                TextField(name="inode", label="INODE"),
+                CalendarDateTimePicker(name="starttime",
+                                label="Start time",
+                                validator=validators.DateTimeConverter(),
+                                default=datetime(1990,1,1,0,0)),
+                CalendarDateTimePicker(name="endtime",
+                                label="End time",
+                                default=datetime.now(),
+                                validator=validators.DateTimeConverter())
+                        ],
+               submit_text="Search",
+           )                          
+    
+    @expose(template="honeysnap_web.templates.details") 
+    @paginate('messages', default_order='timestamp', limit=25)
+    def details(self):
+       """display sebek messages in a paged table""" 
+       sbq = session.query(Sebek)
+       messages = SelectResults(sbq)
+       return { 'request': None, 'form' : self.SebekSearchForm, 'messages' : messages,
+                'list': self.SebekMessageGrid }    
                
 class IRCMessages(controllers.Controller, identity.SecureResource):
     """IRC output"""
@@ -28,34 +141,52 @@ class IRCMessages(controllers.Controller, identity.SecureResource):
     IRCMessageGrid = PaginateDataGrid(
         fields=[                                                     
             PaginateDataGrid.Column('timestamp', 'timestamp', 'Time',
-                            options=dict(sortable=True)),        
-            PaginateDataGrid.Column('from_id', 'irc_from', 'from',
-                                options=dict(sortable=True)),        
+                            options=dict(sortable=True)),                    
+            PaginateDataGrid.Column('honeypot', 'honeypot_name', 'Honeypot',
+                                options=dict(sortable=True)),                                                                            
+            PaginateDataGrid.Column('src_id', 'ip_src_addr', 'Source',
+                                options=dict(sortable=True)),                    
+            PaginateDataGrid.Column('dst_id', 'ip_dst_addr', 'Destination',
+                                options=dict(sortable=True)),                    
+            PaginateDataGrid.Column('port', 'port', 'Port',
+                                options=dict(sortable=True)),                                                                                                           
+            PaginateDataGrid.Column('from_id', 'irc_from_name', 'From',
+                                options=dict(sortable=True)),                    
+            PaginateDataGrid.Column('to_id', 'irc_to_name', 'To',
+                                options=dict(sortable=True)),                    
+            PaginateDataGrid.Column('command', 'command', 'Command',
+                                options=dict(sortable=True)),
             PaginateDataGrid.Column('text', 'text', 'Text')                                
             ],
         )
 
-    IRCSearchForm = TableForm( fields=[ TextField(name="text",     label="Text"),
-                                                TextField(name="channel",  label="Channel"),
-                                                TextField(name="IRC From", label="From"),
-                                                TextField(name="IRC To",   label="To"),
-                                                TextField(name="command",  label="Command"),
-                                                TextField(name="Source", validator=validators.Regex(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')),
-                                                TextField(name="Destination", validator=validators.Regex(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')),
-                                                CalendarDateTimePicker(name="starttime",
-                                                                label="Start time",
-                                                                validator=validators.DateTimeConverter(),
-                                                                default=datetime(1990,1,1,0,0)),
-                                                CalendarDateTimePicker(name="endtime",
-                                                                label="End time",
-                                                                default=datetime.now(),
-                                                                validator=validators.DateTimeConverter())
-                                                ],
-                                       submit_text="Search")  
+    IRCSearchForm = TableForm( 
+        fields=[ 
+            TextField(name="text", label="Text"),
+            TextField(name="irc_from", label="From"),
+            TextField(name="irc_to",   label="To"),
+            TextField(name="command",  label="Command"),
+            TextField(name="src", label="IP Source", 
+                      validator=validators.Regex(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')),
+            TextField(name="dst", label="IP Destination", 
+                      validator=validators.Regex(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')),  
+            TextField(name="port", label="Port"),
+            TextField(name="honeypot", label="Honeypot"),
+            CalendarDateTimePicker(name="starttime",
+                            label="Start time",
+                            validator=validators.DateTimeConverter(),
+                            default=datetime(1990,1,1,0,0)),
+            CalendarDateTimePicker(name="endtime",
+                            label="End time",
+                            default=datetime.now(),
+                            validator=validators.DateTimeConverter())
+        ],
+        submit_text="Search"
+    )  
                                        
-    @expose(template="honeysnap_web.templates.irc_details") 
-    @paginate('messages', default_order='timestamp')
-    def details(self, order='timestamp', page=0, stride=20, **fields):
+    @expose(template="honeysnap_web.templates.details") 
+    @paginate('messages', default_order='timestamp', limit=25)
+    def details(self):
        """display IRC messages in a paged table""" 
        ircq = session.query(IRCMessage)
        messages = SelectResults(ircq)
@@ -63,7 +194,7 @@ class IRCMessages(controllers.Controller, identity.SecureResource):
                 'list': self.IRCMessageGrid }
 
     @expose(template="honeysnap_web.templates.irc_summary")
-    def summary(self, **fields):
+    def summary(self):
         """Summary of IRC stats"""
         return { 'request': None, 'form' : self.IRCSearchForm }
 
@@ -95,7 +226,9 @@ class IPSearch(controllers.Controller, identity.SecureResource):
 class Root(controllers.RootController):  
     
     irc = IRCMessages()
-    ip = IPSearch()
+    ip = IPSearch() 
+    sebek = SebekMessages() 
+    flows = Flows()
     
     @expose(template="honeysnap_web.templates.welcome")
     # @identity.require(identity.in_group("admin"))
@@ -103,7 +236,7 @@ class Root(controllers.RootController):
         import time    
         flow_count = session.query(Flow).count()
         # log.debug("Happy TurboGears Controller Responding For Duty")
-        return dict(now=time.ctime(), flow_count=flow_count)
+        return dict(request=None, now=time.ctime(), flow_count=flow_count)
 
     @expose(template="honeysnap_web.templates.login")
     def login(self, forward_url=None, previous_url=None, *args, **kw):
