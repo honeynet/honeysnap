@@ -1,0 +1,38 @@
+#pageLogin
+{
+  font-size: 10px;
+  font-family: verdana;
+  text-align: right;
+  }
+#menu
+{
+  text-align: center;
+  color: white;
+  font-size: 11pt;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  background: red;
+  width: 100%;
+  }
+#menu a:link {  color: white; }
+#menu a:visited { color: white; }
+
+#bottommenu
+{
+  text-align: center;
+  color: white;
+  font-size: 11pt;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  background: red;
+  width: 100%;
+  }
+#bottommenu a:link {  color: white; }
+#bottommenu a:visited { color: white; }
+
+
+#logout
+{ 
+  text-align: right;
+  size: 8pt;
+}

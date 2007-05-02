@@ -26,7 +26,8 @@ from sqlalchemy.ext.selectresults import SelectResults
 from turbogears.database import session
 from turbogears import identity 
          
-# honeysnap stuff
+# honeysnap stuff  
+# DO NOT ADD DATA TABLES HERE! Add them to honeysnap.model.model instead
    
 from honeysnap.model.model import *
 
