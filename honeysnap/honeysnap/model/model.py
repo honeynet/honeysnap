@@ -137,7 +137,7 @@ sebek_table = Table("sebek", metadata,
 
 irc_talker_table = Table('irc_talker', metadata,
     Column('id', Integer, primary_key=True),
-    Column('name', Unicode(512), nullable=False, unique=True),
+    Column('name', String(512), nullable=False, unique=True),
 )
                                    
 irc_message_table = Table('irc_message', metadata,
@@ -148,7 +148,8 @@ irc_message_table = Table('irc_message', metadata,
     Column('to_id', Integer, ForeignKey('irc_talker.id'), default=None),
     Column('command', String(MAX_IRC_COMMAND_SIZE), nullable=False),
     Column('src_id', Integer, ForeignKey('ip.id'), nullable=False),   
-    Column('dst_id', Integer, ForeignKey('ip.id'), nullable=False),    
+    Column('dst_id', Integer, ForeignKey('ip.id'), nullable=False),  
+    Column('port', Integer, nullable=False),
     Column('sport', Integer, nullable=False),
     Column('dport', Integer, nullable=False),
     Column('timestamp', DateTime(), nullable=False),
@@ -180,7 +181,8 @@ ircindex = Index('ircindex',
                   irc_message_table.c.to_id,
                   irc_message_table.c.command,
                   irc_message_table.c.src_id,
-                  irc_message_table.c.dst_id,
+                  irc_message_table.c.dst_id, 
+                  irc_message_table.c.port,
                   irc_message_table.c.timestamp,
                   irc_message_table.c.text,
                   unique=True)                    
@@ -292,6 +294,11 @@ class Flow(object):
         
     icmp_type = property(_get_icmp_type, _set_icmp_type, doc="icmp type")    
     icmp_code = property(_get_icmp_code, _set_icmp_code, doc="icmp code")
+
+    # properties just for PaginateDataGrid
+    honeypot_name = property(lambda self: self.honeypot.name)
+    ip_src_addr   = property(lambda self: self.ip_src.ip_addr)
+    ip_dst_addr   = property(lambda self: self.ip_dst.ip_addr)    
         
     def in_db(self):
         """return True if object is in db"""
@@ -345,6 +352,9 @@ class Sebek(object):
         else:
              return "[%s ip:%s pid:%s uid:%s fd:%s com:%s] %s" % (self.timestamp, 
                     self.honeypot.ip_id, self.pid, self.uid, self.fd, self.command, self.data)  
+
+    # property just for PaginateDataGrid
+    honeypot_name = property(lambda self: self.honeypot.name)
         
     def unique_fields(self):
         return (self.honeypot_id, self.type, self.timestamp, self.pid, self.fd, self.uid, self.command, self.data)
@@ -377,7 +387,7 @@ class Sebek(object):
         else:
             return session.query(Sebek).select(and_(Sebek.c.timestamp>starttime, Sebek.c.timestamp<endtime, \
                 Sebek.c.honeypot_id==hp.c.id, Sebek.c.type==type))
-            
+
 class IRCTalker(object):
     """Store details of a sender or receiver of an IRC messsage (could be channel, nick or server)"""
     id_cache = {}
@@ -451,7 +461,14 @@ class IRCMessage(object):
         else:
             return None
             
-    channel = property(_get_channel, None)        
+    channel = property(_get_channel, None)
+    
+    # next properties are just for PaginateDataGrid
+    irc_from_name = property(lambda self: self.irc_from.name)
+    irc_to_name   = property(lambda self: self.irc_to.name)  
+    ip_src_addr   = property(lambda self: self.ip_src.ip_addr)
+    ip_dst_addr   = property(lambda self: self.ip_dst.ip_addr) 
+    honeypot_name = property(lambda self: self.honeypot.name)
 
     def unique_fields(self):
         """return unique fields"""
@@ -504,20 +521,32 @@ mapper(Honeypot, honeypot_table, properties={
       
 mapper(Ip, ip_table, extension=IpMapperExtension())  
 
-mapper(Flow, flow_table, properties={
-    "src": relation(Ip, primaryjoin=ip_table.c.id==flow_table.c.src_id),
-    "dst": relation(Ip, primaryjoin=ip_table.c.id==flow_table.c.dst_id)
+mapper(Flow, flow_table, properties={     
+    "honeypot": relation(Honeypot, primaryjoin=flow_table.c.honeypot_id==honeypot_table.c.id,
+                cascade="all, delete-orphan"),
+    "ip_src": relation(Ip, primaryjoin=ip_table.c.id==flow_table.c.src_id),
+    "ip_dst": relation(Ip, primaryjoin=ip_table.c.id==flow_table.c.dst_id)
 })
 
-mapper(Sebek, sebek_table)                 
+mapper(Sebek, sebek_table, properties={   
+    "honeypot": relation(Honeypot, primaryjoin=sebek_table.c.honeypot_id==honeypot_table.c.id,
+                cascade="all, delete-orphan"),
+    }
+)                 
 
 mapper(IRCTalker, irc_talker_table, extension=IRCTalkerMapperExtension())
 
-mapper(IRCMessage, irc_message_table, properties={
+mapper(IRCMessage, irc_message_table, properties={ 
+    "honeypot": relation(Honeypot, primaryjoin=irc_message_table.c.honeypot_id==honeypot_table.c.id,
+                cascade="all, delete-orphan"),
     "irc_from": relation(IRCTalker, primaryjoin=irc_message_table.c.from_id==irc_talker_table.c.id,
                 cascade="all, delete-orphan"),
     "irc_to": relation(IRCTalker, primaryjoin=irc_message_table.c.to_id==irc_talker_table.c.id,
+                cascade="all, delete-orphan"),            
+    "ip_src": relation(Ip, primaryjoin=irc_message_table.c.src_id==ip_table.c.id,
                 cascade="all, delete-orphan"),
+    "ip_dst": relation(Ip, primaryjoin=irc_message_table.c.dst_id==ip_table.c.id,
+                cascade="all, delete-orphan"),     
     }
 )
 

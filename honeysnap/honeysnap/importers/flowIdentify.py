@@ -51,12 +51,12 @@ class FlowIdentify(object):
         """Create object, open pcap file, set filter and create queries"""
         hs = HoneysnapSingleton.getInstance()
         options = hs.getOptions()
-        self._init_pcap(file)
         self.engine = connect_to_db(options['dburi'], options['debug'])
         self.filename = filename
         self.session = create_session()  
         self.hp = hp
         self.hpid = Honeypot.get_or_create(self.session, hp).id
+        self._init_pcap(file)
         self.new_flows = {}    
         self.updated_flows = {}
         self.count = 0        
@@ -70,7 +70,7 @@ class FlowIdentify(object):
 
     def _init_pcap(self, file):
         self.p = pcap.pcap(file)
-        self.p.setfilter("host %s" % hp)
+        self.p.setfilter("host %s" % self.hp)
                 
     def run(self):
         """Iterate over a pcap object"""

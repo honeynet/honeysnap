@@ -44,7 +44,8 @@ class IrcDecode(object):
         self.irc_ports = options['irc_ports'][hp]
         self.tmpf = tmpf
         self.file = file
-        self.hpip = hp
+        self.hpip = hp  
+        self.port = 0
         self.insert_list = []
         self.hash = {}
         self.engine = connect_to_db(options['dburi'], options['debug']) 
@@ -62,7 +63,8 @@ class IrcDecode(object):
             print "\tNo IRC seen"
             return
         for port in self.irc_ports:
-            hirc = HoneysnapIRC()
+            hirc = HoneysnapIRC()  
+            self.port = port
             hirc.connect(self.tmpf, "host %s and tcp and port %s" % (self.hpip, port) )
             hirc.addHandler("all_events", self.decode, -1)
             hirc.ircobj.process_once()   
@@ -103,7 +105,8 @@ class IrcDecode(object):
         irc_dst_id = IRCTalker.id_get_or_create(target)
         m = dict(honeypot_id=self.hpid, src_id=src_id, dst_id=dst_id, sport=e.sport, dport=e.dport, 
                        from_id=irc_src_id, to_id=irc_dst_id, command=e.eventtype()[0:MAX_IRC_COMMAND_SIZE], 
-                       timestamp=datetime.fromtimestamp(e.time), text=data[0:MAX_IRC_TEXT_SIZE], filename=self.file)  
+                       timestamp=datetime.fromtimestamp(e.time), text=data[0:MAX_IRC_TEXT_SIZE], 
+                       port=self.port, filename=self.file)  
         self.save(m) 
         if not self.count % 10000:
             print '\tProcessed %s IRC messages' % self.count
