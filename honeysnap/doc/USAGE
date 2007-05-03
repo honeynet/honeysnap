@@ -60,7 +60,50 @@ http://matplotlib.sourceforge.net/matplotlib.toolkits.basemap.basemap.html
 
 for map plotting (the randompoints.py example from the basemap example 
 set is also useful)
+         
+To plot trends, there are some helper classes:
 
+s1 = rand(31)
+s2 = rand(31)
+st = datetime(2007,01,01)
+ft = datetime(2007,02,01)
+d = DateSeries(st, ft)
+d.plot_dates(s1)
+d.plot_dates(s2, color='red')
+
+To plot on the map, there's also some helpers. Want to
+see which IPs are talking to all our Honeypots?
+
+> sub_q = select(
+     [func.count(flow_table.c.honeypot_id).label('nodes'), ip_table.c.id,
+                 ip_table.c.ip_addr, ip_table.c.longitude,
+                 ip_table.c.latitude
+     ],
+     flow_table.c.src_id==ip_table.c.id,
+     distinct=True, use_labels=True,
+     group_by=([flow_table.c.honeypot_id, ip_table.c.id,
+               ip_table.c.ip_addr, ip_table.c.longitude,
+               ip_table.c.latitude
+              ])
+     ).alias('sub_q')
+
+> q = select( [sub_q.c.nodes, sub_q.c.ip_ip_addr, sub_q.c.ip_longitude, sub_q.c.ip_latitude],
+              from_obj=[sub_q],
+              order_by=[desc(sub_q.c.nodes)],
+              group_by=[sub_q.c.nodes, sub_q.c.ip_ip_addr, sub_q.c.ip_longitude, sub_q.c.ip_latitude])
+
+> q.append_having(sub_q.c.nodes>5)
+
+> l = list(q.execute())
+> m = Wordmap()
+> m.plot(l)
+
+in hs-shell gives you all those ips, nicely plotted on a worldmap. Want to compare with anyother set of ips?
+
+m.plot(l2, color='red')
+          
+For now, you need to write SQLAlchemy queries to get data to plot. 
+This will be abstracted more in the future :) 
 
 Using Raw SQL
 =============

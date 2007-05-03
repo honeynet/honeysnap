@@ -30,8 +30,9 @@ from honeysnap.singletonmixin import HoneysnapSingleton
 class test_ircDecode(unittest.TestCase):
     def setUp(self):
         singleton = HoneysnapSingleton.getInstance({ 'dburi' : 'sqlite:///', 'debug' : False, 'irc_ports' : { '192.168.0.1' : []} })
-        self.ircd = IrcDecode(None, 'testing', '192.168.0.1')  
-
+        self.ircd = IrcDecode(None, 'testing', '192.168.0.1')
+        self.ircd.port = 6667
+        
     def tearDown(self):   
         HoneysnapSingleton._forgetClassInstanceReferenceForTesting()        
         self.ircd.session.clear() 

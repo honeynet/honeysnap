@@ -149,7 +149,7 @@ irc_message_table = Table('irc_message', metadata,
     Column('command', String(MAX_IRC_COMMAND_SIZE), nullable=False),
     Column('src_id', Integer, ForeignKey('ip.id'), nullable=False),   
     Column('dst_id', Integer, ForeignKey('ip.id'), nullable=False),  
-    Column('port', Integer, nullable=False),
+    Column('port', Integer, nullable=False),    # server port
     Column('sport', Integer, nullable=False),
     Column('dport', Integer, nullable=False),
     Column('timestamp', DateTime(), nullable=False),
@@ -297,8 +297,8 @@ class Flow(object):
 
     # properties just for PaginateDataGrid
     honeypot_name = property(lambda self: self.honeypot.name)
-    ip_src_addr   = property(lambda self: self.ip_src.ip_addr)
-    ip_dst_addr   = property(lambda self: self.ip_dst.ip_addr)    
+    ip_src_addr   = property(lambda self: self.src.ip_addr)
+    ip_dst_addr   = property(lambda self: self.dst.ip_addr)    
         
     def in_db(self):
         """return True if object is in db"""
@@ -522,31 +522,26 @@ mapper(Honeypot, honeypot_table, properties={
 mapper(Ip, ip_table, extension=IpMapperExtension())  
 
 mapper(Flow, flow_table, properties={     
-    "honeypot": relation(Honeypot, primaryjoin=flow_table.c.honeypot_id==honeypot_table.c.id,
-                cascade="all, delete-orphan"),
-    "ip_src": relation(Ip, primaryjoin=ip_table.c.id==flow_table.c.src_id),
-    "ip_dst": relation(Ip, primaryjoin=ip_table.c.id==flow_table.c.dst_id)
+    "honeypot": relation(Honeypot, primaryjoin=flow_table.c.honeypot_id==honeypot_table.c.id),
+    "src": relation(Ip, primaryjoin=ip_table.c.id==flow_table.c.src_id),
+    "dst": relation(Ip, primaryjoin=ip_table.c.id==flow_table.c.dst_id),
 })
 
 mapper(Sebek, sebek_table, properties={   
-    "honeypot": relation(Honeypot, primaryjoin=sebek_table.c.honeypot_id==honeypot_table.c.id,
-                cascade="all, delete-orphan"),
+    "honeypot": relation(Honeypot, primaryjoin=sebek_table.c.honeypot_id==honeypot_table.c.id)
     }
 )                 
 
 mapper(IRCTalker, irc_talker_table, extension=IRCTalkerMapperExtension())
 
 mapper(IRCMessage, irc_message_table, properties={ 
-    "honeypot": relation(Honeypot, primaryjoin=irc_message_table.c.honeypot_id==honeypot_table.c.id,
-                cascade="all, delete-orphan"),
+    "honeypot": relation(Honeypot, primaryjoin=irc_message_table.c.honeypot_id==honeypot_table.c.id),
     "irc_from": relation(IRCTalker, primaryjoin=irc_message_table.c.from_id==irc_talker_table.c.id,
                 cascade="all, delete-orphan"),
     "irc_to": relation(IRCTalker, primaryjoin=irc_message_table.c.to_id==irc_talker_table.c.id,
                 cascade="all, delete-orphan"),            
-    "ip_src": relation(Ip, primaryjoin=irc_message_table.c.src_id==ip_table.c.id,
-                cascade="all, delete-orphan"),
-    "ip_dst": relation(Ip, primaryjoin=irc_message_table.c.dst_id==ip_table.c.id,
-                cascade="all, delete-orphan"),     
+    "ip_src": relation(Ip, primaryjoin=irc_message_table.c.src_id==ip_table.c.id),
+    "ip_dst": relation(Ip, primaryjoin=irc_message_table.c.dst_id==ip_table.c.id),
     }
 )
 

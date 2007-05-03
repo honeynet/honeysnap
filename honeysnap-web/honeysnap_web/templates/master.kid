@@ -6,14 +6,8 @@
     <meta content="text/html; charset=UTF-8" http-equiv="content-type" py:replace="''"/> >
     <LINK MEDIA="all" HREF="/static/css/master.css" TYPE="text/css" REL="stylesheet" />
     <title py:replace="''">Your title goes here</title>
-    <meta py:replace="item[:]"/>
-    <script type="text/javascript" language="javascript" charset="utf-8">
-      // <![CDATA[
-        function toggleVisible(elem) {
-            toggleElementClass("invisible", elem);
-        }
-      // ]]>
-      </script>
+    <meta py:replace="item[:]"/>  
+	<script type="text/javascript" src="/static/javascript/common.js" />
 </head>
 
 <body py:match="item.tag=='{http://www.w3.org/1999/xhtml}body'" py:attrs="item.items()">
@@ -48,14 +42,14 @@
     </div>
 
     <div py:def="ircmenu(action)">
-      <div id="ircsearchform" class="invisible" align="center">
+      <div id="searchform" class="invisible" align="center">
     ${form(action=action)}
       </div>
-      <div id="ircsearchtab" class="ircsearchtab">
-        <a href="#" onclick="toggleVisible('ircsearchform'); toggleVisible('ircsearchtab'); toggleVisible('irchidetab')"> Detailed Search </a>
+      <div id="searchtab" class="searchtab">
+        <a href="#" onclick="toggleVisible('searchform'); toggleVisible('searchtab'); toggleVisible('hidetab')"> Detailed Search </a>
       </div>
-      <div id="irchidetab" class="invisible" align="center">
-        <a href="#" onclick="toggleVisible('ircsearchform'); toggleVisible('ircsearchtab'); toggleVisible('irchidetab')"> Hide Search Form </a>
+      <div id="hidetab" class="invisible" align="center">
+        <a href="#" onclick="toggleVisible('searchform'); toggleVisible('searchtab'); toggleVisible('hidetab')"> Hide Search Form </a>
       </div>
     </div>
 

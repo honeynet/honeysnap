@@ -5,23 +5,13 @@ from turbogears import validators, validate, error_handler, paginate
 from turbogears.database import session
 from turbogears.widgets import PaginateDataGrid, TableForm, TextField 
 from turbogears.widgets.big_widgets import CalendarDateTimePicker
-from cherrypy import request, response
+from cherrypy import request, response    
+import time    
 # from honeysnap_web import json
-# import logging
-# log = logging.getLogger("honeysnap_web.controllers")
+import logging
+log = logging.getLogger("honeysnap_web.controllers")
         
-def irc_url_helper(type, field, text):
-    if type == 'details':
-        url = turbogears.url('/irc/details')
-    else:
-        url = turbogears.url('/irc/summary')
-    text = urllib.quote(text)
-    link = ElementTree.Element('a', href='%s?%s=%s' % (url, field, text))
-    link.text = urllib.unquote(text)
-    return link
-
-
-class Flows(controllers.Controller, identity.SecureResource):
+class Flows(controllers.Controller):
     """Flow data""" 
     
     # require = identity.in_group("admin")
@@ -71,13 +61,13 @@ class Flows(controllers.Controller, identity.SecureResource):
     @expose(template="honeysnap_web.templates.details") 
     @paginate('messages', default_order='starttime', limit=25)
     def details(self):
-       """display flows in a paged table""" 
+       """display flows in a paged table"""    
        fq = session.query(Flow)
        flows = SelectResults(fq)
        return { 'request': None, 'form' : self.FlowSearchForm, 'messages' : flows,
                 'list': self.FlowGrid }    
 
-class SebekMessages(controllers.Controller, identity.SecureResource):
+class SebekMessages(controllers.Controller):
     """Sebek output"""
 
     # require = identity.in_group("admin")
@@ -139,7 +129,7 @@ class SebekMessages(controllers.Controller, identity.SecureResource):
        return { 'request': None, 'form' : self.SebekSearchForm, 'messages' : messages,
                 'list': self.SebekMessageGrid }    
                
-class IRCMessages(controllers.Controller, identity.SecureResource):
+class IRCMessages(controllers.Controller):
     """IRC output"""
 
     #require = identity.in_group("admin")
@@ -189,11 +179,13 @@ class IRCMessages(controllers.Controller, identity.SecureResource):
         ],
         submit_text="Search"
     )  
-                                       
+       
     @expose(template="honeysnap_web.templates.details") 
     @paginate('messages', default_order='timestamp', limit=25)
     def details(self):
        """display IRC messages in a paged table""" 
+       log.debug("######################## Happy TurboGears IRC Responding For Duty")
+       
        ircq = session.query(IRCMessage)
        messages = SelectResults(ircq)
        return { 'request': None, 'form' : self.IRCSearchForm, 'messages' : messages,
@@ -204,7 +196,7 @@ class IRCMessages(controllers.Controller, identity.SecureResource):
         """Summary of IRC stats"""
         return { 'request': None, 'form' : self.IRCSearchForm }
 
-class IPSearch(controllers.Controller, identity.SecureResource):
+class IPSearch(controllers.Controller):
     """Provides IP search stuff"""
 
     #require = identity.in_group('admin')
@@ -228,9 +220,8 @@ class IPSearch(controllers.Controller, identity.SecureResource):
         return { 'request': None }
 
        
-
 class Root(controllers.RootController):  
-    
+
     irc = IRCMessages()
     ip = IPSearch() 
     sebek = SebekMessages() 
@@ -239,12 +230,11 @@ class Root(controllers.RootController):
     @expose(template="honeysnap_web.templates.welcome")
     # @identity.require(identity.in_group("admin"))
     def index(self):
-        import time    
         flows = session.query(Flow).count()
         sebek = session.query(Sebek).count()
         irc = session.query(IRCMessage).count()      
         honeypots = session.query(Honeypot).count()
-        # log.debug("Happy TurboGears Controller Responding For Duty")
+        log.debug("Happy TurboGears Controller Responding For Duty")
         return dict(request=None, now=time.ctime(), flows=flows,
             sebek=sebek, irc=irc, honeypots=honeypots)
 

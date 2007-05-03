@@ -226,7 +226,7 @@ class test_model(unittest.TestCase):
         ircdst = IRCTalker(name='george') 
         src_id = Ip.id_get_or_create("192.168.0.2")
         dst_id = Ip.id_get_or_create("192.168.0.3") 
-        m = IRCMessage(src_id=src_id, dst_id=dst_id, sport=4432, dport=6667, 
+        m = IRCMessage(src_id=src_id, dst_id=dst_id, sport=4432, dport=6667, port=6667, 
             command='PRIVMSG', timestamp=datetime.now(), text='hi there')          
         print m
         m.irc_from=ircsrc
@@ -241,7 +241,7 @@ class test_model(unittest.TestCase):
         ircdst = IRCTalker(name='#secret') 
         src_id = Ip.id_get_or_create("192.168.0.2")
         dst_id = Ip.id_get_or_create("192.168.0.3") 
-        m = IRCMessage(src_id=src_id, dst_id=dst_id, sport=4432, dport=6667, 
+        m = IRCMessage(src_id=src_id, dst_id=dst_id, sport=4432, dport=6667, port=6667, 
             command='PRIVMSG', timestamp=datetime.now(), text='hi there')          
         m.irc_from=ircsrc
         m.irc_to=ircdst 

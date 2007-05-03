@@ -12,6 +12,8 @@ broken down into the following parts.
 3: Installation on Windows
 4: Installation on a Honeywall
 5: Running Honeysnap
+6: OPTIONAL. Installing matplotlib 
+7: OPTIONAL. Install the web front end                      
 
 
 1. DEPENDENCIES
@@ -246,7 +248,45 @@ options:
   -h, --help            show this help message and exit
   [.... more options snipped....]
 
-  Please see the accompanying documentation for instructions on
+  Please see the accompanying documentation (doc/USAGE) for instructions on
   configuration.
 
-       
+6: OPTIONAL. Installing Matplotlib
+=================================
+
+This doens't autoinstall yet as it's not essential, and is
+best installed via your systems package management. It's
+easiest on Ubuntu: Install
+
+ipython
+python-numpy python-numpy-dev
+python-matplotlib python-matplotlib-data python-matplotlib-doc
+                   
+for matplotlib. To install basemap (for the world maps) get 
+basemap-0.9.5.tgz and follow the install instructions in the README
+http://sourceforge.net/project/showfiles.php?group_id=80706
+
+For testing, try
+
+$ ipython -pylab
+> plot([1,2,3]
+
+If that produces a graph, it's good.
+      
+7: OPTIONAL. Installing the web front end
+=========================================
+
+Install TurboGears from http://www.turbogears.org/download, or just
+
+wget http://www.turbogears.org/download/tgsetup.py
+sudo python tgsetup.py
+
+cd honeysnap-web, edit the sqlalchemy.dburi option in dev.cfg to point at your
+database. Run 
+
+$ tg-admin sql create
+$ ./start-honeysnap_web.py
+
+Then go to http://localhost:8080
+
+to explore.

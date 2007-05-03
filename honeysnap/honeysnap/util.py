@@ -27,7 +27,6 @@ from operator import itemgetter
 import tempfile
 import pcap 
 import gzip
-import pytz
 
 def parse_dburi(uri):
     "Turn the connection_string into a series of parameters to the connect method"

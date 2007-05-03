@@ -32,9 +32,10 @@ class test_sebek_decode(unittest.TestCase):
     """Test sebek decoding"""
     
     def setUp(self): 
-        singleton = HoneysnapSingleton.getInstance({ 'dburi' : 'sqlite:///', 'debug' : False, 'sebek_all_data' : False})
+        singleton = HoneysnapSingleton.getInstance({ 'dburi' : 'sqlite:///', 
+            'debug' : False, 'sebek_all_data' : False, 'sebek_port' : 1101})
         # don't want to run _init_pcap as don't have options or a file 
-        SebekDecode._init_pcap = lambda self, file: None
+        SebekDecode._init_pcap = lambda self, file, port: None
         self.sbd = SebekDecode(None, 'testing', '192.168.0.1')       
         self.sbq = self.sbd.session.query(Sebek)
          
