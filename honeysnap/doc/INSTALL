@@ -259,7 +259,7 @@ best installed via your systems package management. It's
 easiest on Ubuntu: Install
 
 ipython
-python-numpy python-numpy-dev
+python-numpy python-numpy-dev python-scipy
 python-matplotlib python-matplotlib-data python-matplotlib-doc
                    
 for matplotlib. To install basemap (for the world maps) get 
@@ -269,7 +269,7 @@ http://sourceforge.net/project/showfiles.php?group_id=80706
 For testing, try
 
 $ ipython -pylab
-> plot([1,2,3]
+> plot([1,2,3])
 
 If that produces a graph, it's good.
       
