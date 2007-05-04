@@ -64,6 +64,12 @@ class test_model(unittest.TestCase):
         h = Honeypot.by_ip(self.session, "192.168.0.1")
         assert h.name == "ukad01"        
 
+    def test_lat_long(self):
+        """Lat and Long should default to NULL"""
+        i = Ip(ip_addr="10.1.1.1")
+        assert i.latitude == None
+        assert i.longitude == None
+
     def test_get_or_create(self):                        
         """get_or_create() should get or create"""
         h = Honeypot.get_or_create(self.session, "192.168.0.1")

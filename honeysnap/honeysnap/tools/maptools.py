@@ -53,7 +53,7 @@ class Worldmap(object):
         lats = []
         longs = []
         for ip in ips:                    
-            if ip.latitude and ip.longitude:
+            if ip.latitude != None and ip.longitude != None:
                 lats.append(ip.latitude)
                 longs.append(ip.longitude)
             else:

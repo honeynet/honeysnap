@@ -95,7 +95,7 @@ see which IPs are talking to all our Honeypots?
 > q.append_having(sub_q.c.nodes>5)
 
 > l = list(q.execute())
-> m = Wordmap()
+> m = Worldmap()
 > m.plot_ips(l)
 
 in hs-shell gives you all those ips, nicely plotted on a worldmap. Want to compare with anyother set of ips?
