@@ -53,7 +53,8 @@ class DateSeries(object):
         """
         plot data series s e.g. s = [45,3,53]
         To plot two or more data series on the same graph, just call this function
-        again with the other data set and specify suitable colours etc.
+        again with the other data set and specify suitable colours etc. 
+        For details on the color, marker and linestyle options, see pylab.plot
         """    
         dates = drange(self.starttime, self.endtime, self.delta)
         pylab.plot_date(dates, s, color=color, marker=marker, linestyle=linestyle) 

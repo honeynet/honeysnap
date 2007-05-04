@@ -20,9 +20,20 @@ class MaptoolsError(Exception):
     pass
 
 class Worldmap(object):
-    """helper class for plotting ip objects on a world map"""
+    """
+    Tool for plotting IP objects (or any SQL result with a
+    latitude and longitude column) on a world map.
+    
+    Summary:    
+    i = session.query(Ip).select(limit=10)
+    m = Worldmap()
+    m.plot_ips(i)
+    """
     def __init__(self, meridians = False):
-        """Setup a maptool class. Meridians: Plot meridians or not"""
+        """
+        Setup a maptool class. 
+        Meridians: Plot meridians or not
+        """
         self.map = Basemap(projection = 'mill')
         self.map.drawcoastlines(linewidth=0.5)
         self.map.drawcountries()                        
@@ -46,7 +57,8 @@ class Worldmap(object):
                 lats.append(ip.latitude)
                 longs.append(ip.longitude)
             else:
-                raise MaptoolsError("Missing latitude or longitude for %s" % ip.ip_addr) 
+                print "Missing latitude or longitude for %s: skipping" % ip.ip_addr
+                #raise MaptoolsError("Missing latitude or longitude for %s" % ip.ip_addr) 
         x, y = self.map(longs, lats)        
         self.map.scatter(x, y, s=size, color=color, marker=marker)
 
