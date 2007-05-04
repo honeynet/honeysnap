@@ -151,10 +151,12 @@ def parse_options():
         try:
             cp.read(cmdopts.config) 
             defaults.update(dict(cp.items('IO')))
-            defaults.update(dict(cp.items('OPTIONS')))
+            defaults.update(dict(cp.items('OPTIONS'))) 
+            if len(defaults) > 7 or defaults['irc_ports'] != {}:
+                raise ConfigParser.Error
         except ConfigParser.Error:
             print "Problem with the config file! Check format and permissions"
-            sys.exit(1)
+            sys.exit(1) 
     # command line over-rides config 
     for k, v in cmdopts.__dict__.iteritems():  
         if v:
