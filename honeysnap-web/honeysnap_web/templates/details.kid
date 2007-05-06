@@ -4,9 +4,7 @@ transitional.dtd">
     py:extends="'master.kid'">
 
 <head>
-    <meta content="text/html; charset=UTF-8" http-equiv="content-type" py:replace="''"/> 
     <LINK MEDIA="all" HREF="/static/css/details_common.css" TYPE="text/css" REL="stylesheet" />
-
     <title>Honeysnap</title>
 </head>
 
@@ -15,11 +13,16 @@ transitional.dtd">
 
 <div py:if="not tg.identity.anonymous" py:replace="logout()" />
 <div py:replace="mainmenu(request)" />
-<div py:replace="ircmenu(action='details')"/>
+<div py:replace="search_menu(action='details')"/>
           
-<div>        
+<div py:if="len>0">        
     <span py:replace="list(messages)"/>
-</div>
+</div>           
+<div py:if="len==0">   
+    <p>
+    No matching data in database
+    </p>        
+</div>    
           
 <div py:replace="bottommenu()" />
 </body>

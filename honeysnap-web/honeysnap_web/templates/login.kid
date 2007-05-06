@@ -4,8 +4,6 @@
     xmlns:py="http://purl.org/kid/ns#">
 
 <head>
-    <meta content="text/html; charset=UTF-8"
-        http-equiv="content-type" py:replace="''"/>
     <title>Login</title>
     <style type="text/css">
         #loginBox

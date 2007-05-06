@@ -260,7 +260,7 @@ class SebekDecode(object):
             except struct.error, e:
                 continue
         self.write_db()  
-        print '\tProcessed %s sebek records' % self.count
+        print '\tProcessed %s sebek packets' % self.count
                 
 
 

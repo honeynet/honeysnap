@@ -100,12 +100,14 @@ class IrcDecode(object):
         if source == None:
             source = e.src
         if target == None:
-            target = e.dst
+            target = e.dst    
         irc_src_id = IRCTalker.id_get_or_create(source)
-        irc_dst_id = IRCTalker.id_get_or_create(target)
+        irc_dst_id = IRCTalker.id_get_or_create(target)                    
+        command = e.eventtype()[0:MAX_IRC_COMMAND_SIZE]
+        text = data[0:MAX_IRC_TEXT_SIZE]
         m = dict(honeypot_id=self.hpid, src_id=src_id, dst_id=dst_id, sport=e.sport, dport=e.dport, 
-                       from_id=irc_src_id, to_id=irc_dst_id, command=e.eventtype()[0:MAX_IRC_COMMAND_SIZE], 
-                       timestamp=datetime.fromtimestamp(e.time), text=data[0:MAX_IRC_TEXT_SIZE], 
+                       from_id=irc_src_id, to_id=irc_dst_id, command=command,
+                       timestamp=datetime.fromtimestamp(e.time), text=data,
                        port=self.port, filename=self.file)  
         self.save(m) 
         if not self.count % 10000:

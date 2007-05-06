@@ -3,7 +3,6 @@
     py:extends="'master.kid'">
 
 <head>
-    <meta content="text/html; charset=UTF-8" http-equiv="content-type" py:replace="''"/> 
     <title>Honeysnap</title>
 </head>
 
@@ -18,7 +17,7 @@
     <p>
         Database has ${flows} flows, ${sebek} sebek records and ${irc} irc messages
         from ${honeypots} honeypots
-    </p>
+    </p> 
     <div py:replace="bottommenu()" />
 </body>
 </html>

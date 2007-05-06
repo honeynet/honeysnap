@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:py="http://purl.org/kid/ns#" py:extends="sitetemplate">
 
 <head py:match="item.tag=='{http://www.w3.org/1999/xhtml}head'" py:attrs="item.items()">
-    <meta content="text/html; charset=UTF-8" http-equiv="content-type" py:replace="''"/> >
+    <meta content="text/html; charset=iso-8859-1" http-equiv="content-type" py:replace="''"/> >
     <LINK MEDIA="all" HREF="/static/css/master.css" TYPE="text/css" REL="stylesheet" />
     <title py:replace="''">Your title goes here</title>
     <meta py:replace="item[:]"/>  
@@ -41,7 +41,7 @@
         </div>
     </div>
 
-    <div py:def="ircmenu(action)">
+    <div py:def="search_menu(action)">
       <div id="searchform" class="invisible" align="center">
     ${form(action=action)}
       </div>

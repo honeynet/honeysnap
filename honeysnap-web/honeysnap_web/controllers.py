@@ -10,6 +10,10 @@ import time
 # from honeysnap_web import json
 import logging
 log = logging.getLogger("honeysnap_web.controllers")
+            
+# some paginate setting can go here for now         
+LIMIT=20
+MAX_PAGES=20        
         
 class Flows(controllers.Controller):
     """Flow data""" 
@@ -32,8 +36,10 @@ class Flows(controllers.Controller):
                                 options=dict(sortable=True)),                    
             PaginateDataGrid.Column('dport', 'dport', 'Dst Port',
                                 options=dict(sortable=True)),                    
-            PaginateDataGrid.Column('packets', 'packets', 'Packets'),
-            PaginateDataGrid.Column('bytes', 'bytes', 'Bytes'),
+            PaginateDataGrid.Column('packets', 'packets', 'Packets',
+                                options=dict(sortable=True)),
+            PaginateDataGrid.Column('bytes', 'bytes', 'Bytes',
+                                options=dict(sortable=True)),
             ]
     )   
 
@@ -59,13 +65,14 @@ class Flows(controllers.Controller):
            )
     
     @expose(template="honeysnap_web.templates.details") 
-    @paginate('messages', default_order='starttime', limit=25)
+    @paginate('messages', default_order='starttime', limit=LIMIT, max_pages=MAX_PAGES)
     def details(self):
        """display flows in a paged table"""    
        fq = session.query(Flow)
-       flows = SelectResults(fq)
+       flows = SelectResults(fq) 
+       len = flows.count()
        return { 'request': None, 'form' : self.FlowSearchForm, 'messages' : flows,
-                'list': self.FlowGrid }    
+                'list': self.FlowGrid, 'len': len }    
 
 class SebekMessages(controllers.Controller):
     """Sebek output"""
@@ -121,13 +128,14 @@ class SebekMessages(controllers.Controller):
            )                          
     
     @expose(template="honeysnap_web.templates.details") 
-    @paginate('messages', default_order='timestamp', limit=25)
+    @paginate('messages', default_order='timestamp', limit=LIMIT, max_pages=MAX_PAGES)
     def details(self):
        """display sebek messages in a paged table""" 
        sbq = session.query(Sebek)
-       messages = SelectResults(sbq)
+       messages = SelectResults(sbq) 
+       len = messages.count()
        return { 'request': None, 'form' : self.SebekSearchForm, 'messages' : messages,
-                'list': self.SebekMessageGrid }    
+                'list': self.SebekMessageGrid, 'len': len }    
                
 class IRCMessages(controllers.Controller):
     """IRC output"""
@@ -181,15 +189,14 @@ class IRCMessages(controllers.Controller):
     )  
        
     @expose(template="honeysnap_web.templates.details") 
-    @paginate('messages', default_order='timestamp', limit=25)
+    @paginate('messages', default_order='timestamp', limit=LIMIT, max_pages=MAX_PAGES)
     def details(self):
        """display IRC messages in a paged table""" 
-       log.debug("######################## Happy TurboGears IRC Responding For Duty")
-       
        ircq = session.query(IRCMessage)
        messages = SelectResults(ircq)
+       len = messages.count()
        return { 'request': None, 'form' : self.IRCSearchForm, 'messages' : messages,
-                'list': self.IRCMessageGrid }
+                'list': self.IRCMessageGrid, 'len': len }
 
     @expose(template="honeysnap_web.templates.irc_summary")
     def summary(self):
@@ -234,7 +241,6 @@ class Root(controllers.RootController):
         sebek = session.query(Sebek).count()
         irc = session.query(IRCMessage).count()      
         honeypots = session.query(Honeypot).count()
-        log.debug("Happy TurboGears Controller Responding For Duty")
         return dict(request=None, now=time.ctime(), flows=flows,
             sebek=sebek, irc=irc, honeypots=honeypots)
 

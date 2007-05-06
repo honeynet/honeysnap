@@ -31,7 +31,7 @@ MAX_SBK_DATA_SIZE = 512
 
 # ditto for IRC 
 MAX_IRC_COMMAND_SIZE = 64
-MAX_IRC_TEXT_SIZE = 512
+MAX_IRC_TEXT_SIZE = 756
 
 class HoneysnapModelError(Exception):
     pass
@@ -41,7 +41,7 @@ class BigInteger(types.TypeEngine):
     def get_col_spec(self):
         return "BIGINT"
 
-class Enum(types.Unicode):
+class Enum(types.String):
     """Enum type from http://www.sqlalchemy.org/trac/wiki/UsageRecipes/Enum"""
     def __init__(self, values, empty_to_none=False):      
         '''
@@ -79,9 +79,9 @@ class Enum(types.Unicode):
 honeypot_table = Table("honeypot", metadata,
     Column("id", Integer, primary_key=True), 
     Column("ip_id", Integer, ForeignKey("ip.id"), nullable=False, unique=True), 
-    Column("name", Unicode(64), nullable=False),
+    Column("name", String(64), nullable=False),
     Column("state", Enum(['Up', 'Down', 'Unknown']), default="Up"),
-    Column("description", Unicode(512), default="", nullable="False"),
+    Column("description", String(512), default="", nullable="False"),
     mysql_engine='INNODB',
 )
   
@@ -111,7 +111,7 @@ flow_table = Table("flow", metadata,
     Column("bytes", Integer, default=0, nullable=False), 
     Column("starttime", DateTime(), nullable=False),
     Column("lastseen", DateTime(), nullable=False),   
-    Column("filename", String(1024), default='Not specified', nullable=False),
+    Column("filename", Unicode(1024), default='Not specified', nullable=False),
     mysql_engine='INNODB', 
 )      
           
@@ -125,11 +125,11 @@ sebek_table = Table("sebek", metadata,
     Column("pid", Integer, nullable=False),
     Column("fd", Integer, nullable=False),
     Column("uid", Integer, nullable=False),
-    Column("command", String(64), nullable=False),            
+    Column("command", Unicode(64), nullable=False),            
     # next two fields don't exist in sebek v2 data
     Column("parent_pid", Integer, default=0, nullable=False),
     Column("inode", BigInteger, default=0, nullable=False),
-    Column("data", String(MAX_SBK_DATA_SIZE)),
+    Column("data", Unicode(MAX_SBK_DATA_SIZE)),
     mysql_engine='INNODB',  
 )              
   
@@ -137,7 +137,7 @@ sebek_table = Table("sebek", metadata,
 
 irc_talker_table = Table('irc_talker', metadata,
     Column('id', Integer, primary_key=True),
-    Column('name', String(512), nullable=False, unique=True),
+    Column('name', Unicode(512), nullable=False, unique=True),
 )
                                    
 irc_message_table = Table('irc_message', metadata,
@@ -146,15 +146,15 @@ irc_message_table = Table('irc_message', metadata,
         nullable=False),
     Column('from_id', Integer, ForeignKey('irc_talker.id'), nullable=False),
     Column('to_id', Integer, ForeignKey('irc_talker.id'), default=None),
-    Column('command', String(MAX_IRC_COMMAND_SIZE), nullable=False),
+    Column('command', Unicode(MAX_IRC_COMMAND_SIZE), nullable=False),
     Column('src_id', Integer, ForeignKey('ip.id'), nullable=False),   
     Column('dst_id', Integer, ForeignKey('ip.id'), nullable=False),  
     Column('port', Integer, nullable=False),    # server port
     Column('sport', Integer, nullable=False),
     Column('dport', Integer, nullable=False),
     Column('timestamp', DateTime(), nullable=False),
-    Column('text', String(MAX_IRC_TEXT_SIZE)),
-    Column("filename", String(1024), default='Not specified', nullable=False),
+    Column('text', Unicode(MAX_IRC_TEXT_SIZE)),
+    Column("filename", Unicode(1024), default='Not specified', nullable=False),
 )
 
 # Indexes
