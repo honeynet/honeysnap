@@ -435,7 +435,6 @@ def parseOptions():
         'config'            : None,
         'filename'          : None,
         'wordfile'          : None,
-        'files'             : None,
         'use_utc'           : 'NO',
         'raw_time'          : 'NO',
         'do_pcap'           : 'YES',
