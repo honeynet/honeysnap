@@ -31,7 +31,10 @@ MAX_SBK_DATA_SIZE = 512
 
 # ditto for IRC 
 MAX_IRC_COMMAND_SIZE = 64
-MAX_IRC_TEXT_SIZE = 756
+MAX_IRC_TEXT_SIZE = 512
+
+MAX_IRC_TEXT_DB = MAX_IRC_TEXT_SIZE * 2
+MAX_IRC_COMMAND_DB = MAX_IRC_COMMAND_SIZE * 2
 
 class HoneysnapModelError(Exception):
     pass
@@ -146,14 +149,14 @@ irc_message_table = Table('irc_message', metadata,
         nullable=False),
     Column('from_id', Integer, ForeignKey('irc_talker.id'), nullable=False),
     Column('to_id', Integer, ForeignKey('irc_talker.id'), default=None),
-    Column('command', Unicode(MAX_IRC_COMMAND_SIZE), nullable=False),
+    Column('command', Unicode(MAX_IRC_COMMAND_DB), nullable=False),
     Column('src_id', Integer, ForeignKey('ip.id'), nullable=False),   
     Column('dst_id', Integer, ForeignKey('ip.id'), nullable=False),  
     Column('port', Integer, nullable=False),    # server port
     Column('sport', Integer, nullable=False),
     Column('dport', Integer, nullable=False),
     Column('timestamp', DateTime(), nullable=False),
-    Column('text', Unicode(MAX_IRC_TEXT_SIZE)),
+    Column('text', Unicode(MAX_IRC_TEXT_DB)),
     Column("filename", Unicode(1024), default='Not specified', nullable=False),
 )
 

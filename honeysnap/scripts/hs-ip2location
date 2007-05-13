@@ -48,15 +48,24 @@ else:
 	debug=False
                                                    
 try:                          
-    host, port, user, passwd, db, db_type = parse_dburi(opts.ip_dburi)
-except ValueError:
+    host, port, user, passwd, db, db_type = parse_dburi(opts.ip_dburi)               
+except:
     print 'Bad ip-dburi'
     sys.exit(1)
 
-engine = connect_to_db(opts.dburi, debug)                
+try:
+    engine = connect_to_db(opts.dburi, debug) 
+except:
+    print "Can't connect to %s" % db
+    sys.exit(1)
+    
 session=create_session() 
 
-ipdb = ip2location(host = host, user = user, password = passwd, database = db, database_type = db_type)
+try:
+    ipdb = ip2location(host = host, user = user, password = passwd, database = db, database_type = db_type)
+except:
+    print "Can't connect to database %s" % opts.ip_dburi 
+    sys.exit(1)
   
 ipsr = SelectResults(session.query(Ip))
 ipsr = ipsr.filter(Ip.c.city == None)

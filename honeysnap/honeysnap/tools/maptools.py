@@ -58,7 +58,10 @@ class Worldmap(object):
                 longs.append(ip.longitude)
             else:
                 print "Missing latitude or longitude for %s: skipping" % ip.ip_addr
-                #raise MaptoolsError("Missing latitude or longitude for %s" % ip.ip_addr) 
-        x, y = self.map(longs, lats)        
-        self.map.scatter(x, y, s=size, color=color, marker=marker)
+                #raise MaptoolsError("Missing latitude or longitude for %s" % ip.ip_addr)  
+        if lats and longs:
+            x, y = self.map(longs, lats)        
+            self.map.scatter(x, y, s=size, color=color, marker=marker)
+        else:
+            print 'No valid geolocaton data!'
 
