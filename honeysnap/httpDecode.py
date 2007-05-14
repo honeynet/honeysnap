@@ -20,6 +20,7 @@
 
 # $Id$
 
+import re
 import dpkt
 from flow import reverse as freverse  
 import cStringIO
@@ -41,7 +42,7 @@ def parse_headers(f):
         if not line:
             break
         l = line.split(':', 1)
-        if not len(l) == 2:      
+        if not len(l) == 2:
             raise dpkt.UnpackError('invalid header: %r' % line)
         l[0] = l[0] + ':'
         k = l[0][:-1].lower()
@@ -192,27 +193,32 @@ class httpDecode(flowDecode):
         Data should be a list of the data as obtained via file.readlines()
         Attempts to figure out if this data represents a request
         or a response.
-        """
+        """         
         line = data[0]
-        #print "determineType:line %s" % line
         l = line.strip().split()
-        
-        if l[0] == l[1]:
-            # we have dodgy data in the flow - GET GET or similar
-            # probably due to bad flow reconstruction
-            l = l[1:] 
-            data[0] = ' '.join(l)  
-        
         # is it a request?
         if len(l) == 3 and l[0] in self.__methods and l[2].startswith(self.__proto):
-            return('request', data)
+            return('request', line)
 
         # is it a response?
         if len(l) >= 2 and l[0].startswith(self.__proto) and l[1].isdigit():
-            return('response', data)
+            return('response', line)
 
         #print "determineType:unknown type, probably binary "
         return None, None
+
+    def check_data(self, data):
+        """
+        This is a hack until we have proper fragment re-assembly
+        Look for methods in stream, and remove any leading junk
+        """               
+        l = data[0].strip().split()
+        if len(l) == 4:                                                          
+            if (l[0] not in self.__methods and l[1] in self.__methods) or \
+               (l[0] in self.__methods and l[1] in self.__methods and l[0] == l[1]):
+                data[0] = ' '.join(l[1:])
+                data[0] += '\r\n'
+        return data
 
 
     def decode(self, state, statemgr):
@@ -229,20 +235,16 @@ class httpDecode(flowDecode):
         state.close()
         #print "decode:state ", state.fname
         if len(d) == 0:
-            return
-        t, d = self.determineType(d)
-        if (t, d) == (None, None):
+            return    
+        d = self.check_data(d)
+        t, req = self.determineType(d)
+        if (t, req) == (None, None):
             # binary data
-            return 
-        req = d[0]
-        #print 'req is', req
-        #print 'd is ', d    
-            
-        d = "\n".join(d)
+            return
+        d = "".join(d)
         r = None
         f = state.flow
-        #print 'decode: %s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)  
-        #print 't is ', t
+        #print 'decode: %s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)
         if t =='response':
             try:
                 #print 'decode:response:'
@@ -282,9 +284,7 @@ class httpDecode(flowDecode):
                 #print 'decode:request:'
                 #print 'decode: %s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)
                 # The following line does essentially all the work:
-                #print 'decode:request: d is ', d
-                r = dpkt.http.Request(d)       
-                #print 'dpkt decoded'
+                r = dpkt.http.Request(d) 
                 state.decoded = r
                 r.request = req
                 if not getattr(r, "data"):
@@ -293,8 +293,7 @@ class httpDecode(flowDecode):
                 #print 'decode:uri:    ', r.uri
                 #print "\n"
             except dpkt.Error:
-                try:   
-                    #print 'dpkt failed'
+                try:
                     state.open(flags="rb", statemgr=self.statemgr)
                     l = state.fp.readline()
                     headers = parse_headers(state.fp)
@@ -302,14 +301,14 @@ class httpDecode(flowDecode):
                     r.headers = headers
                     r.body = state.fp.readlines()
                     r.request = req
-                    r.data = None  
+                    r.data = None
                     state.decoded = r
                     state.close()
                     #print 'decode:headers ', headers
                 except dpkt.Error:
                     print "request failed to decode: %s " % state.fname
                     pass
-        
+
         if r:
             state.decoded = r
         else:
@@ -389,15 +388,14 @@ class httpDecode(flowDecode):
         headers = None
         data = None
         body = None
-        request = ""       
+        request = ""
         f = cStringIO.StringIO(d)
         if state.decoded is not None:
             # this request was successfully decoded
             # so the decoded object will contain all the headers
-            # and the detached data  
+            # and the detached data
             headers = {}
             headers = state.decoded.headers
-            #print headers
             body = state.decoded.body
             try:
                 request = state.decoded.request 
@@ -408,7 +406,7 @@ class httpDecode(flowDecode):
             except dpkt.Error:
                 data = None
 
-        else:  
+        else:
             # dpkt.http failed to decode
             f = cStringIO.StringIO(d)
             headers = {}
