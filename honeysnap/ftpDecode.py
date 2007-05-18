@@ -205,9 +205,9 @@ class ftpDecode(flowDecode):
             # rename the data file
             if rstate is not None:
                 fn = renameFile(rstate, filename)
-                id, m5 = self.id.identify(rstate) 
-                output = "%s -> %s, %s (%s, %s) at %s\n\tfile: %s, filetype: %s, md5 sum: %s\n" % (rstate.flow.dst, state.flow.src, 
-                    filename, username, password, self.tf(rstate.ts), fn, id, m5)
+                id, m5 = self.id.identify(rstate)    
+                output = "%s requested %s from %s (%s, %s) at %s\n\tfile: %s, filetype: %s, md5 sum: %s\n" % (rstate.flow.dst, filename, 
+                    rstate.flow.src, username, password, self.tf(rstate.ts), fn, id, m5)                
                 self.add_flow(rstate.ts, rstate.flow.src, rstate.flow.dst, output)
 
 
