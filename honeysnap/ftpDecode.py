@@ -75,6 +75,7 @@ class ftpDecode(flowDecode):
 
     def extractActive(self, state, d):
         #print "Active FTP"
+        username, password = "Unknown", "Unknown"
         # look for port lines
         m = self.activeRE.search(d)
         if m is None:
@@ -86,11 +87,11 @@ class ftpDecode(flowDecode):
             m = self.userRE.search(l)
             if m:
                 username = m.group(1) 
-                continue
+                continue 
             m = self.passRE.search(l)
             if m:
                 password = m.group(1)
-                continue
+                continue       
             if l.find("PORT")>=0:
                 try:
                     nextl = iterlines.next()
@@ -121,7 +122,8 @@ class ftpDecode(flowDecode):
                         self.add_flow(rstate.ts, rstate.flow.src, rstate.flow.dst, output)
 
     def extractPassive(self, state, d): 
-        #print "Passive FTP"
+        #print "Passive FTP"  
+        username, password = "Unknown", "Unknown"
         # repr(port/256), repr(port%256)
         # first we have to find the reverse flow/state
         # from it we will extract the ip and port info
@@ -151,10 +153,14 @@ class ftpDecode(flowDecode):
             if m:
                 username = m.group(1) 
                 continue
+            else:
+                username = "Unknown"
             m = self.passRE.search(l)
             if m:
                 password = m.group(1)
-                continue
+                continue           
+            else:
+                password = "Unknown"
             w = [i for i in cmds if i in l.split()[0]]
             if len(w) == 0:
                 # this line doesn't contain a data command
