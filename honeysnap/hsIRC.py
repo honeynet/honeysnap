@@ -96,7 +96,7 @@ class HnyServerConnection(irclib.ServerConnection):
             line = line.lstrip()
             prefix = None
             command = None
-            arguments = None
+            arguments = []
             self._handle_event(HnyEvent(ts, self.pkt, "all_raw_messages",
                                      self.get_server_name(),
                                      None,
