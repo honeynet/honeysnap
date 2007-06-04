@@ -81,15 +81,13 @@ def setFilters(options):
     default_filters = []
 
     if options["disable_default_filters"] == "NO":
-
-        irc_ports = options["irc_ports"]["global"]
-        if len(irc_ports)==1:
-            irc_filter = "dst port %s" % irc_ports.pop()
-        else:
-            irc_filter = "("
-            port = [ 'dst port %s' % port for port in irc_ports ]
-            irc_filter = irc_filter + " or ".join(port) + ")"
-        
+        #irc_ports = options["irc_ports"]["global"]
+        #if len(irc_ports)==1:
+        #    irc_filter = "dst port %s" % irc_ports.pop()
+        #else:
+        #    irc_filter = "("
+        #    port = [ 'dst port %s' % port for port in irc_ports ]
+        #    irc_filter = irc_filter + " or ".join(port) + ")"
         default_filters = [
             ('Total IPv4 packets:', 'host %s and ip'),
             ('Total TCP packets:', 'host %s and tcp'),
@@ -110,8 +108,6 @@ def setFilters(options):
             ('Inbound HTTP packets:','dst host %s and dst port 80'),
             ('Outbound HTTPS packets:','src host %s and dst port 443'),
             ('Inbound HTTPS packets:','dst host %s and dst port 443'),
-            ('Outbound IRC packets:','src host %s and tcp and %s' % ('%s', irc_filter)),
-            ('Inbound IRC packets:','dst host %s and tcp and %s' % ('%s', irc_filter)),
             ('Sebek packets:','src host %s and udp port %s' % ('%s', options["sebek_port"])),
             ]
 
@@ -450,7 +446,7 @@ def parseOptions():
         'do_ftp'            : 'NO',
         'do_smtp'           : 'NO',
         'do_irc'            : 'NO',
-        'irc_ports'         : [],
+        'irc_ports'         : [6667],
         'irc_limit'         : 10,
         'do_sebek'          : 'NO',
         'do_telnet'         : 'NO',
@@ -625,7 +621,7 @@ def main():
         # handle multiple files being passed as args
         if len(args):
             for f in args:
-                if os.path.exists(f) and os.path.isfile(f):
+                if os.path.exists(f) and os.path.isfile(f): 
                     processFile(f)
                 else:
                     print "File not found: %s" % f
@@ -646,7 +642,7 @@ def main():
             os.unlink(tmpf)
         cleanup(options)
     else:
-        print_help()
+        print_help()  
 
 def start():
     """This is nothing but an entry-point for setuptools in which we can trap ctrl-c"""

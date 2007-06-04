@@ -70,10 +70,11 @@ class SocksDecode(base.Base):
         """Iterate over a pcap object"""
         for ts, buf in self.p:
             self.packetHandler(ts, buf)
-
-        if not self.dataFound:
+        if not self.dataFound:   
             self.doOutput('No SOCKS traffic found\n')
-            self.fp.close()
+        else: 
+            self.doOutput('SOCKS data seen and written to socks.txt\n')
+        self.fp.close()
             
     def packetHandler(self, ts, buf):
         """Process a pcap packet buffer"""
