@@ -21,91 +21,21 @@
 # $Id$
 
 import re
-import dpkt
-from flow import reverse as freverse  
-import cStringIO
-import os                 
+import os  
+import cStringIO               
 import base64
-from util import findName, renameFile
-from flowIdentify import flowIdentify 
-from flowDecode import flowDecode
+import dpkt
 import urllib
 
-def parse_headers(f):
-    """Return dict of HTTP headers parsed from a file object."""
-    d = {}
-    while 1:
-        line = f.readline()
-        if not line:
-            raise dpkt.NeedData('premature end of headers')
-        line = line.strip()
-        if not line:
-            break
-        l = line.split(':', 1)
-        if not len(l) == 2:
-            raise dpkt.UnpackError('invalid header: %r' % line)
-        l[0] = l[0] + ':'
-        k = l[0][:-1].lower()
-        d[k] = len(l) != 1 and l[1] or ''
-    return d
-
-def parse_body(f, headers):
-    """Return HTTP body parsed from a file object, given HTTP header dict."""
-    if headers.get('transfer-encoding', '').lower() == 'chunked':
-        l = []
-        found_end = False
-        while 1:
-            try:
-                sz = f.readline().split(None, 1)[0]
-            except IndexError:
-                raise dpkt.UnpackError('missing chunk size')
-            n = int(sz, 16)
-            if n == 0:
-                found_end = True
-            buf = f.read(n)
-            if f.readline().strip():
-                break
-            if n and len(buf) == n:
-                l.append(buf)
-            else:
-                break
-        if not found_end:
-            raise dpkt.NeedData('premature end of chunked body')
-        body = ''.join(l)
-    elif 'content-length' in headers:
-        n = int(headers['content-length'])
-        body = f.read(n)
-        if len(body) != n:
-            raise dpkt.NeedData('short body (missing %d bytes)' % (n - len(body)))
-    elif 'content-type' in headers:
-        body = f.read()
-    else:
-        # XXX - need to handle HTTP/0.9
-        body = ''
-    return body
-
-class myMessage(dpkt.http.Message):
-    """Hypertext Transfer Protocol headers + body."""
-    __metaclass__ = type
-    __hdr_defaults__ = {}
-    headers = None
-    body = None
-
-    def __init__(self, *args, **kwargs):
-        super(myMessage, self).__init__()
-
-    def unpack(self, buf):
-        f = cStringIO.StringIO(buf)
-        # Parse headers
-        self.headers = parse_headers(f)
-        # Parse body
-        self.body = parse_body(f, self.headers)
-        # Save the rest
-        self.data = f.read()
-
+from util import findName, renameFile  
+from flow import reverse as freverse  
+from flowIdentify import flowIdentify 
+from flowDecode import flowDecode
+import http
+        
 class httpDecode(flowDecode):
-
-    # this part stolen from dpkt.  Thanks Dug!
+    """General HTTP decoding routines"""
+    # method list from dpkt.  Thanks Dug!
     __methods = dict.fromkeys((
         'GET', 'PUT', 'ICY',
         'COPY', 'HEAD', 'LOCK', 'MOVE', 'POLL', 'POST',
@@ -120,8 +50,6 @@ class httpDecode(flowDecode):
         'BASELINE-CONTROL'
         ))
     __proto = 'HTTP'
-
-    __msgtypes = ['response', 'request']
 
     def __init__(self):   
         super(httpDecode, self).__init__()
@@ -144,7 +72,7 @@ class httpDecode(flowDecode):
     
     def _get_log_entry(self, request, response, src, dst, ts):
         """return a dict of header info ready for printing
-        r = dpkt.http.Response, state = honeysnap.flow.state
+        r = http.Response, state = honeysnap.flow.state
         """    
         d = { 'method':request.method, 'uri':request.uri, 'ip': src }
         d['user'] = self._get_http_user(request)
@@ -227,9 +155,6 @@ class httpDecode(flowDecode):
         flow.flow_state_manager
         """   
         self.statemgr = statemgr
-        # The following could be a problem for files having size in the 10s or
-        # 100s of MB, I dunno:
-        #d = "".join(state.data)
         state.open(flags="rb", statemgr=self.statemgr)
         d = state.fp.readlines()  
         state.close()
@@ -249,10 +174,10 @@ class httpDecode(flowDecode):
             try:
                 #print 'decode:response:'
                 #print 'decode:%s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)
-                r = dpkt.http.Response(d)   
+                r = http.Response(d)   
                 r.request = req
-                if not getattr(r, "data"):
-                    r.data = None
+                if not hasattr(r, "data"):
+                    setattr(r,"data", None)
                 state.decoded = r
                 #print 'decode: %s' % `r`
                 #print 'decode:headers: ', r.headers
@@ -265,8 +190,8 @@ class httpDecode(flowDecode):
                 try:
                     state.open(flags="rb", statemgr=self.statemgr)
                     l = state.fp.readline()
-                    headers = parse_headers(state.fp)
-                    r = myMessage()
+                    headers = http.parse_headers(state.fp)
+                    r = http.Message()
                     r.headers = headers
                     r.body = state.fp.readlines()
                     r.data = None   
@@ -284,7 +209,7 @@ class httpDecode(flowDecode):
                 #print 'decode:request:'
                 #print 'decode: %s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)
                 # The following line does essentially all the work:
-                r = dpkt.http.Request(d) 
+                r = http.Request(d) 
                 state.decoded = r
                 r.request = req
                 if not getattr(r, "data"):
@@ -296,8 +221,8 @@ class httpDecode(flowDecode):
                 try:
                     state.open(flags="rb", statemgr=self.statemgr)
                     l = state.fp.readline()
-                    headers = parse_headers(state.fp)
-                    r = myMessage()
+                    headers = http.parse_headers(state.fp)
+                    r = http.Message()
                     r.headers = headers
                     r.body = state.fp.readlines()
                     r.request = req
@@ -319,7 +244,7 @@ class httpDecode(flowDecode):
         if not rs:            
             # haven't seen other half - just fake something so that at least the request gets logged.
             if t == 'request':
-                dummy_response = dpkt.http.Response() 
+                dummy_response = http.Response() 
                 dummy_response.__dict__['status'] = '-'
                 self._add_log_entry(r, dummy_response, f.src, f.dst, state.ts)                
             return
@@ -431,7 +356,7 @@ class httpDecode(flowDecode):
             body = None
 
         # write headers, body, data to files
-        if headers is not None: 
+        if headers is not None and len(headers) > 0: 
             base = state.fname
             base += ".hdr"
             fp = open(base, "wb")
@@ -443,15 +368,14 @@ class httpDecode(flowDecode):
                 line = k + " : " + v + "\n"
                 fp.write(line)
             fp.close()
-        if body is not None:   
+        if body is not None and len(body) > 0:   
             base = state.fname
-            #base += ".body"
             fp = open(base, "wb")
             if isinstance(body, type([])):
                 body = "".join(body)
             fp.write(body)
             fp.close()
-        if data is not None:  
+        if data is not None and len(data) > 0:  
             base = state.fname
             base += ".data"
             fp = open(base, "wb")
