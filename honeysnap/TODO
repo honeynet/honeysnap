@@ -4,8 +4,6 @@ Change all importers to do all hps at once
 
 Per-day summary code to generate same stats as non-db honeysnap
 
-Port honeymine irc frontend to sqa/honeysnap
-
 DNS lookups to db
 
 Better flow identification/extraction
@@ -15,6 +13,8 @@ Flow contents to db
       * ftp
 
 Sanity check -H input
+
+Unicode in IRC is broken. There may be issues in the python-irclib library
 
 Matplotlib
 ----------
