@@ -61,11 +61,11 @@ class FlowIdentify(object):
         self.updated_flows = {}
         self.count = 0        
         self.fq = flow_table.select(and_(
-                flow_table.c.src_id == bindparam('srcid'), 
-                flow_table.c.dst_id == bindparam('dstid'), 
-                flow_table.c.sport == bindparam('sport'), 
-                flow_table.c.dport == bindparam('dport'), 
-                flow_table.c.lastseen > bindparam('timedelta')),
+                    flow_table.c.lastseen > bindparam('timedelta'),
+                    flow_table.c.src_id == bindparam('srcid'), 
+                    flow_table.c.dst_id == bindparam('dstid'), 
+                    flow_table.c.sport == bindparam('sport'), 
+                    flow_table.c.dport == bindparam('dport')),
                 order_by = [desc(flow_table.c.starttime)]).compile()
 
     def _init_pcap(self, file):

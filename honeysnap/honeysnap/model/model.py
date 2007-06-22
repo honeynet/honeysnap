@@ -164,22 +164,21 @@ irc_message_table = Table('irc_message', metadata,
 
 flowindex1 = Index('flowindex1', flow_table.c.starttime, 
                    flow_table.c.src_id, 
-                   flow_table.c.sport, 
                    flow_table.c.dst_id,
+                   flow_table.c.sport, 
                    flow_table.c.dport,
                    unique = True) 
                                                     
 flowindex2 = Index('flowindex2', flow_table.c.lastseen, 
                   flow_table.c.src_id, 
-                  flow_table.c.sport, 
                   flow_table.c.dst_id,
+                  flow_table.c.sport, 
                   flow_table.c.dport)
 
-flowindex3 = Index('flowindex3', flow_table.c.starttime)
-                   
-sebekindex = Index('sebekindex', sebek_table.c.honeypot_id, 
-                    sebek_table.c.type,
+sebekindex = Index('sebekindex', 
                     sebek_table.c.timestamp,
+                    sebek_table.c.honeypot_id, 
+                    sebek_table.c.type,
                     sebek_table.c.pid,
                     sebek_table.c.fd,
                     sebek_table.c.uid,
@@ -187,16 +186,19 @@ sebekindex = Index('sebekindex', sebek_table.c.honeypot_id,
                     sebek_table.c.data,
                     unique = True)                                                  
                     
-ircindex = Index('ircindex', 
+ircindex = Index('ircindex',   
+                  irc_message_table.c.timestamp,
+                  irc_message_table.c.honeypot_id,
                   irc_message_table.c.from_id,
-                  irc_message_table.c.to_id,
+                  irc_message_table.c.to_id,  
                   irc_message_table.c.command,
                   irc_message_table.c.src_id,
                   irc_message_table.c.dst_id, 
-                  irc_message_table.c.port,
-                  irc_message_table.c.timestamp,
                   irc_message_table.c.text,
+                  irc_message_table.c.port,
                   unique=True)                    
+
+irctalkerindex = Index('irctalkerindex', irc_talker_table.c.name)
 
 # Objects
                         
@@ -313,11 +315,11 @@ class Flow(object):
         
     def in_db(self):
         """return True if object is in db"""
-        if flow_table.count(and_(Flow.c.src_id==self.src_id, 
-                         Flow.c.sport==self.sport, 
+        if flow_table.count(and_(Flow.c.starttime==self.starttime,
+                         Flow.c.src_id==self.src_id, 
                          Flow.c.dst_id==self.dst_id, 
-                         Flow.c.dport==self.dport, 
-                         Flow.c.starttime==self.starttime))>0: 
+                         Flow.c.sport==self.sport, 
+                         Flow.c.dport==self.dport))>0: 
             return True
         else:
             return False
@@ -372,9 +374,9 @@ class Sebek(object):
 
     def in_db(self):
         """returns True if object is in db"""
-        if sebek_table.count(and_(Sebek.c.honeypot_id==self.c.honeypot_id,
+        if sebek_table.count(and_(Sebek.c.timestamp==self.c.timestamp,
+                            Sebek.c.honeypot_id==self.c.honeypot_id,
                             Sebek.c.type==self.c.type,
-                            Sebek.c.timestamp==self.c.timestamp,
                             Sebek.c.pid==self.c.pid,
                             Sebek.c.fd==self.c.fd,
                             Sebek.c.uid==self.c.uid,
@@ -488,16 +490,16 @@ class IRCMessage(object):
                            
     def in_db(self):
         """return True if object is in db"""
-        if irc_message_table.count(and_(
+        if irc_message_table.count(and_(    
+                irc_message_table.c.timestamp==self.c.timestamp,
                 irc_message_table.c.honeypot_id==self.c.honeypot_id,
                 irc_message_table.c.from_id==self.c.from_id,
                 irc_message_table.c.to_id==self.c.to_id,
                 irc_message_table.c.command==self.c.command,
                 irc_message_table.c.src_id==self.c.src_id,
                 irc_message_table.c.dst_id==self.c.dst_id, 
-                irc_message_table.c.port==self.c.port,
-                irc_message_table.c.timestamp==self.c.timestamp,
-                irc_message_table.c.text==self.c.text)) > 0: 
+                irc_message_table.c.text==self.c.text,
+                irc_message_table.c.port==self.c.port)) > 0: 
             return True
         else:
             return False
