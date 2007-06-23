@@ -3,48 +3,47 @@
 PURPOSE
 =======  
 
-The purpose of this document is to give you a brief overview
-of what Honeysnap is and how it works.  For more detailed 
-information, and examples, please refer to the USAGE doc that
-comes with the distribution.
+The purpose of this document is to give you a brief overview of what
+Honeysnap is and how it works. For more detailed information, and
+examples, please refer to the doc/USAGE doc that comes with the
+distribution.
 
 
 WHAT IS IT?
 ==========
 
-Honeysnap is a modular, python application that can parse 
-raw or gzipped pcap files and perform a number of diagnostics 
-on the data.  It has been designed to be easily extended to 
-perform more diagnostic duties.  It has also been designed to 
-be minimally dependent on third party executables like tcpflow, 
-etc.
+Honeysnap is a modular Python application that can parse raw or
+gzipped pcap files and perform a number of diagnostics on the data.
+It has been designed to be easily extended to perform more
+diagnostic duties. It has also been designed to be minimally
+dependent on third party executables like tcpflow, etc.
    
-The primary intention is to provide a first cut analysis of
-a directory full of pcap data, data that has probably come 
-from a honeynet deployment using the Honeynet Project's Roo 
-v1.x CDROM. It has the ability to decode and analyze a variety
-of protocols, such as HTTP, SMTP, and IRC and can also recover 
-files transfered.  In addition it has the ability to analyze 
-honeypot specific data sets such as SEBEK.  Because of its 
-modular nature, it is possible to add other protocols.
+The primary intention is to provide a first cut analysis of a
+directory full of pcap data, data that has probably come from a
+honeynet deployment using the Honeynet Project's Roo v1.x honeywall
+CDROM. It has the ability to decode and analyze a variety of
+protocols, such as HTTP, SMTP, and IRC and can also recover files
+transferred. In addition it has the ability to analyze honeypot
+specific data sets such as SEBEK. Because of its modular nature, it
+is possible to add other protocols.
                                                      
-Honeysnap can be run as a daily automated cron 
-job against live honeynet  data, to provide analysts with a 
-starting point for more detailed forensic analysis.
+Honeysnap can be run as a daily automated cron job against live
+honeynet data, to provide analysts with a starting point for more
+detailed forensic analysis.
 
 An overview of what Honeysnap includes:
 
 * Outgoing packet counts for telnet, ssh, http, https, ftp, smtp, 
   and irc. This can be easily extended.
-* Incoming and outgoing connection summaries
-* Binary extraction from http, smtp, irc, and ftp. 
+* Incoming and outgoing connection summaries.
+* Binary extraction from http, smtp, irc, and ftp.
 * Word based inspection of IRC traffic for basic keyword profiling.
-* Support for reading v2 and v3 Sebek keystroke data 
+* Support for reading v2 and v3 Sebek keystroke data.
 
 INSTALLATION
 ============
 
-See the INSTALL file
+See the doc/INSTALL file.
 
 USAGE
 =====
@@ -53,34 +52,43 @@ Modify the honeynet.cfg file to execute the operations you like,
 and specify the output directory. The included honeysnap.cfg file 
 is well commented to help you get started.
 
-to execute:
+To execute:
 honeysnap -c honeysnap.cfg <pcapfile>
 
-For more information and examples, plesase refer to the USAGE 
+For more information and examples, please refer to the doc/USAGE 
 document.
 
 EFFICIENCY
 ==========
 
 Increasing the max number of open files will make things faster. 
-On most unix like OSs this can be done by executing the following.
+On most unix-like OSs this can be done by executing the following:
 
 $ ulimit -n 4096
 
 COPYRIGHT
 =========
 
-All code in honeysnap is copyright The Honeynet Project.
+All code in Honeysnap is copyright The Honeynet Project.
 
 CONTACT
 =======
 
-For general questions, please contact
+For general questions, please contact:
 
 honeysnap@honeynet.org
+
+You are welcome to join the public mailing list at:
+
+https://public.honeynet.org/mailman/listinfo/honeysnap
+
+Public archives of the Honeysnap mail list can be found here:
+
+http://public.honeynet.org/pipermail/honeysnap/
+http://www.mail-archive.com/honeysnap@public.honeynet.org/
 
 BUGS/HELP
 =========
 
 Please send any bugs, tracebacks, comments, or patches to 
-the honeysnap team: honeysnap@honeynet.org
+the Honeysnap team: honeysnap@honeynet.org
