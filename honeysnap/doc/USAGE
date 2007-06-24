@@ -4,13 +4,14 @@
 USAGE
 =====
 
-Set up a database in anything supported by SQLAlchemy. Honeysnap has been tested with MySQL and Postgresql.
+Set up a database in anything supported by SQLAlchemy. Honeysnap has
+been tested with MySQL and PostgreSQL.
 
-For each pcap file you want to import, run
+For each pcap file you want to import, run:
 
 $ honeysnap_db -H <honeypot ips> --dburi=<dburi> <pcap_file>
 
-Optionally, specify --debug to see the raw sql generated.
+Optionally, specify --debug to see the raw SQL generated.
 
 The dburi is in the form 'type://user:password@host/dbname' e.g.
 
@@ -24,7 +25,8 @@ Viewing Data
 
 $ hs-shell --dburi=<dburi>
 
-will give you an ipython shell (if ipython is installed), setup with the model imported into the local scope
+will give you an ipython shell (if ipython is installed), set up with
+the model imported into the local scope.
 
 $ hs-shell --dburi='sqlite:///fred.db'
 
@@ -32,11 +34,12 @@ Welcome to the Honeysnap Shell
 
 In [1]: fq = session.query(Flow).count()
 
-In the shell you have access to all the model classes (Honeypot, Ip, Flow, IRCTalker, IRCMessage, Sebek)
-plus the sqlalchemy objects 'session', 'engine' and 'metadata'
+In the shell you have access to all the model classes (Honeypot, Ip,
+Flow, IRCTalker, IRCMessage, Sebek) plus the SQLAlchemy objects
+'session', 'engine' and 'metadata'.
    
-Any changes you make to the database will be (optionally) committed when you leave ipython
-
+Any changes you make to the database will be (optionally) committed when
+you leave ipython, as shown below:
 
 In [3]: Do you wish to commit your database changes? [yes] 
 
@@ -45,8 +48,9 @@ Do you really want to exit ([y]/n)?
 Graphing Data using Matplotlib
 ==============================
 
-If you install matplotlib (best done via your OS's package management system as there's a lot
-of dependencies), you can plot graphs of your queries in hs-shell.
+If you install matplotlib (best done via your OS's package management
+system as there are a lot of dependencies), you can plot graphs of your
+queries in hs-shell.
 
 $ hs-shell --dburi='sqlite:///fred.db' --pylab
 
@@ -71,8 +75,8 @@ d = DateSeries(st, ft)
 d.plot_dates(s1)
 d.plot_dates(s2, color='red')
 
-To plot on the map, there's also some helpers. Want to
-see which IPs are talking to all our Honeypots?
+To plot on the map, there are also some helpers. Want to see which IPs
+are talking to all our Honeypots?
 
 > sub_q = select(
      [func.count(flow_table.c.honeypot_id).label('nodes'), ip_table.c.id,
@@ -98,7 +102,8 @@ see which IPs are talking to all our Honeypots?
 > m = Worldmap()
 > m.plot_ips(l)
 
-in hs-shell gives you all those ips, nicely plotted on a worldmap. Want to compare with anyother set of ips?
+Running the above code in hs-shell will give you all those IPs nicely
+plotted on a worldmap. Want to compare with another set of IPs?
 
 m.plot(l2, color='red')
           
