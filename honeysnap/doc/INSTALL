@@ -1,11 +1,12 @@
-INSTALLYING HONEYSNAP
+INSTALLING HONEYSNAP
 =====================
 
-This document explains step by step how to install
-Honeysnap, including all dependencies.  Suggestions
-for this document, or Honeysnap in general should be
-sent to <honeysnap@honeynet.org>.  This document is
-broken down into the following parts.
+This document explains step by step how to install Honeysnap, including
+all dependencies. Suggestions for this document, or Honeysnap in general
+should be sent to <honeysnap@honeynet.org> or the public mail list at
+https://public.honeynet.org/mailman/listinfo/honeysnap.
+
+This document is broken down into the following parts:
 
 1: Dependencies
 2: Installation on a Linux/Unix/OS X Workstation
@@ -35,7 +36,7 @@ This latter set should be installed automatically and are listed
 here for completeness.  
 
 For database use you will need either sqlite (for small datasets),
-MySQL or Postgres plus the appropriate python module.
+MySQL or PostgreSQL plus the appropriate Python module.
 
 sqlite - pysqlite
 postgresql - psycopg2
@@ -43,7 +44,7 @@ MySQL - MySQLDB
 
 sqlite is also needed for testing.
 
-Honeysnap should work with any database SQLAlchemy supports (inculding
+Honeysnap should work with any database SQLAlchemy supports (including
 Oracle), but this has not been tested.
                     
 For geolocation (optional) we currently support ip2location with the 
@@ -53,11 +54,11 @@ UK Honeynet Project's ip2location python module.
 2: INSTALLATION ON UNIX
 ========================
 
-First, you will need to install python 2.4 and its header file.  Most
-distributions most likely already have this installed.  Then you will
-need libpcap.  For most UNIX-like systems, it should be in your package 
-management system (apt-get, yum, DarwinPorts etc.).  You will need libcap 
-and also libpcap-devel if that is listed separately.  For example, on
+First, you will need to install python 2.4 and its header file. Most
+distributions most likely already have this installed. Then you will
+need libpcap. For most UNIX-like systems, it should be in your package
+management system (apt-get, yum, DarwinPorts etc.). You will need libcap
+and also libpcap-devel if that is listed separately. For example, on
 Debian/Ubuntu.
 
   $ sudo apt-get install python24-dev
@@ -80,7 +81,7 @@ Install mysql5 and py-mysql5
 
 $ sudo apt-get install mysql-server-5.0 mysql-client-5.0 python-mysqldb
 
-For Postgres:
+For PostgreSQL:
 
 $ sudo apt-get install postgresql81 postgresql-server-dev-8.1
 $ sudo easy_install py-psycopg2
@@ -99,7 +100,8 @@ http://www.monkey.org/~dugsong/pypcap
 
 You should then be able to install Honeysnap and all its remaining
 dependencies (provided you have a network connection).
-E.g. for version 1.0.4:
+
+eg. for version 1.0.4:
 
   $ tar xvzf honeysnap-1.0.4
   $ cd honeysnap-1.0.4
@@ -123,9 +125,9 @@ $ sudo easy_install --script-dir /usr/local/bin honeysnap-1.0.3.tar.gz
 Some notes on python 2.5 and OS/X     
 ---------------------------------
 
-If upgrading Python on a Mac, and you hit problems, try getting the Python 
-pkg from www.python.org, not from Darwin ports.  Get pycap from Dug Song's 
-site as Mac pkg, do not install from source. 
+If upgrading Python on a Mac, and you hit problems, try getting the
+Python pkg from www.python.org, not from Darwin ports. Get pycap from
+Dug Song's site as Mac pkg, do not install from source.
 
 http://code.google.com/p/pypcap/downloads/list
 
@@ -248,8 +250,8 @@ options:
   -h, --help            show this help message and exit
   [.... more options snipped....]
 
-  Please see the accompanying documentation (doc/USAGE) for instructions on
-  configuration.
+  Please see the accompanying documentation (doc/USAGE) for instructions
+  on configuration.
 
 6: OPTIONAL. Installing Matplotlib
 =================================
@@ -281,8 +283,8 @@ Install TurboGears from http://www.turbogears.org/download, or just
 wget http://www.turbogears.org/download/tgsetup.py
 sudo python tgsetup.py
 
-cd honeysnap-web, edit the sqlalchemy.dburi option in dev.cfg to point at your
-database. Run 
+cd honeysnap-web, edit the sqlalchemy.dburi option in dev.cfg to point
+at your database. Run 
 
 $ tg-admin sql create
 $ ./start-honeysnap_web.py
