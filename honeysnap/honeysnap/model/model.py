@@ -176,6 +176,8 @@ flowindex2 = Index('flowindex2', flow_table.c.lastseen,
                   flow_table.c.sport, 
                   flow_table.c.dport,
                   flow_table.c.ip_proto)
+                                            
+flowindex3 = Index('starttime')
 
 sebekindex = Index('sebekindex', 
                     sebek_table.c.timestamp,
