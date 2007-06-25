@@ -18,9 +18,11 @@
 ################################################################################
  
 # $Id: model.py 5038 2007-01-27 17:22:46Z arthur $
-import socket
+import socket    
+import sys
 from datetime import datetime 
-from sqlalchemy import * 
+from sqlalchemy import *
+from sqlalchemy.exceptions import DBAPIError 
 from sqlalchemy.ext.selectresults import SelectResults  
 from sqlalchemy.ext.activemapper import metadata    
 from irclib import nm_to_n, nm_to_uh, nm_to_h, irc_lower                                                          
@@ -583,9 +585,13 @@ def save_table(table, records):
 
 def connect_to_db(dburi, debug=False):
     """Initialise, and create tables"""
-    db = create_engine(dburi)
+    db = create_engine(dburi, strategy="threadlocal")  
     db.echo = debug
-    metadata.connect(db)
-    metadata.create_all()
+    try:
+        metadata.connect(db) 
+        metadata.create_all()
+    except DBAPIError, e:
+        print "Can't connect to %s: %s" % (dburi, e)
+        sys.exit(1)
     return db
 

@@ -21,7 +21,8 @@
 # $Id$
 
 from datetime import datetime 
-from socket import inet_aton
+from socket import inet_aton  
+from time import asctime
 
 import sqlalchemy 
 import dpkt 
@@ -31,6 +32,9 @@ from honeysnap.importers.hsIRC import HoneysnapIRC
 from honeysnap.importers.pcapRE import PcapReCounter
 from honeysnap.singletonmixin import HoneysnapSingleton  
 from honeysnap.model.model import *    
+
+# write to db every N flows
+LOAD_QUANTA = 10000
 
 class IrcDecode(object):
     """
@@ -67,9 +71,11 @@ class IrcDecode(object):
             self.port = port
             hirc.connect(self.tmpf, "host %s and tcp and port %s" % (self.hpip, port) )
             hirc.addHandler("all_events", self.decode, -1)
-            hirc.ircobj.process_once()   
-            self.write_db()  
-            print '\tProcessed %s IRC messages' % self.count
+            self.engine.begin() 
+            hirc.ircobj.process_once()  
+            self.write_db()    
+            self.engine.commit()
+            print '\tProcessed %s IRC messages at %s' % (self.count, asctime())
 
     def find_irc_ports(self):
         """
@@ -110,9 +116,11 @@ class IrcDecode(object):
                        timestamp=datetime.fromtimestamp(e.time), text=data,
                        port=self.port, filename=self.file)  
         self.save(m) 
-        if not self.count % 10000:
-            print '\tProcessed %s IRC messages' % self.count
-            self.write_db()
+        if not self.count % LOAD_QUANTA:
+            print '\tProcessed %s IRC messages at %s' % (self.count, asctime())
+            self.write_db() 
+            self.engine.commit()
+            self.engine.begin()
         
     def save(self, m): 
         if self.hash.has_key(str(m)):

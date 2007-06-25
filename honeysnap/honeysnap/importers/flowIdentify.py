@@ -24,7 +24,7 @@ import pcap
 import socket
 import sys
 import time                        
-from time import time
+from time import time, asctime
 
 import dpkt 
 import sqlalchemy                                                       
@@ -33,7 +33,10 @@ from honeysnap.singletonmixin import HoneysnapSingleton
 from honeysnap.model.model import *
                  
 # regard a flow as new if we don't see a packet for FLOW_DELTA seconds         
-FLOW_DELTA = 3600         
+FLOW_DELTA = 3600          
+
+# write to db every N flows
+LOAD_QUANTA = 10000
          
 class DecodeError(Exception):
     pass
@@ -53,7 +56,7 @@ class FlowIdentify(object):
         options = hs.getOptions()
         self.engine = connect_to_db(options['dburi'], options['debug'])
         self.filename = filename
-        self.session = create_session()  
+        self.session = create_session() 
         self.hp = hp
         self.hpid = Honeypot.get_or_create(self.session, hp).id
         self._init_pcap(file)
@@ -74,11 +77,13 @@ class FlowIdentify(object):
         self.p.setfilter("host %s" % self.hp)
                 
     def run(self):
-        """Iterate over a pcap object"""
+        """Iterate over a pcap object""" 
+        self.engine.begin()
         for ts, buf in self.p:
             self.packet_handler(ts, buf)
-        self.write_db() 
-        print '\tRead %s packets' % self.count
+        self.write_db()    
+        self.engine.commit()
+        print '\tRead %s packets at %s' % (self.count, asctime())
         
     def packet_handler(self, ts, buf):
         """Process a pcap packet buffer"""   
@@ -116,9 +121,11 @@ class FlowIdentify(object):
         """      
         self.count += 1    
         key = (src, dst, sport, dport, proto)
-        if not self.count % 10000:
-            self.write_db()
-            print '\tRead %s packets' % self.count
+        if not self.count % LOAD_QUANTA:
+            self.write_db()     
+            self.engine.commit()
+            self.engine.begin()
+            print '\tRead %s packets at %s' % (self.count, asctime())
         ts_dt = datetime.fromtimestamp(ts)  
         if self.update_in_cache(self.new_flows, key, ts, length):  
             return               

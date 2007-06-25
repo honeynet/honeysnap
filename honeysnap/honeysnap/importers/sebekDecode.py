@@ -61,13 +61,17 @@ import sys
 import struct
 import re
 from socket import inet_ntoa
-from datetime import datetime
+from datetime import datetime 
+from time import asctime
 import dpkt
 import pcap      
 import sqlalchemy           
 
 from honeysnap.singletonmixin import HoneysnapSingleton
 from honeysnap.model.model import *
+
+# write to db every N flows
+LOAD_QUANTA = 10000
 
 sbk2 = "!IHHIIIIII12sI"
 sbk3 = "!IHHIIIIIIII12sI"
@@ -158,9 +162,11 @@ class SebekDecode(object):
         elif type == SBK_OPEN and self.verbose:                                                           
             self.sbk_open(version, t, pid, fd, uid, com, rest, parent_pid, inode) 
         self.count += 1
-        if not self.count % 10000:
-            print '\tProcessed %s sebek records' % self.count
-            self.write_db()    
+        if not self.count % LOAD_QUANTA:
+            print '\tProcessed %s sebek records at %s' % (self.count, asctime())
+            self.write_db()  
+            self.engine.commit()
+            self.engine.begin()  
       
     def sbk_write(self, version, t, pid, fd, uid, com, data, parent_pid, inode):
         """Decode sebek write data. Store data for stdin, stdout and stderr only for now"""
@@ -249,7 +255,8 @@ class SebekDecode(object):
 
     def run(self):
         # since we set a filter on pcap, all the
-        # packets we pull should be handled
+        # packets we pull should be handled   
+        self.engine.begin()
         for ts, buf in self.p:
             ip = dpkt.ethernet.Ethernet(buf).data
             # workaround for broken sebek packets
@@ -258,9 +265,10 @@ class SebekDecode(object):
             try:
                 self.packet_handler(ts, payload)
             except struct.error, e:
-                continue
+                continue  
         self.write_db()  
-        print '\tProcessed %s sebek packets' % self.count
+        self.engine.commit()
+        print '\tProcessed %s sebek packets at %s' % (self.count, asctime())
                 
 
 
