@@ -65,7 +65,8 @@ class FlowIdentify(object):
                     flow_table.c.src_id == bindparam('srcid'), 
                     flow_table.c.dst_id == bindparam('dstid'), 
                     flow_table.c.sport == bindparam('sport'), 
-                    flow_table.c.dport == bindparam('dport')),
+                    flow_table.c.dport == bindparam('dport'), 
+                    flow_table.c.ip_proto == bindparam('proto')),
                 order_by = [desc(flow_table.c.starttime)]).compile()
 
     def _init_pcap(self, file):
@@ -126,7 +127,7 @@ class FlowIdentify(object):
         srcid = Ip.id_get_or_create(src)
         dstid = Ip.id_get_or_create(dst)  
         flows = self.fq.execute(srcid=srcid, dstid=dstid, sport=sport,
-                                dport=dport, timedelta=datetime.fromtimestamp(ts-FLOW_DELTA)).fetchall()
+                                dport=dport, proto=proto, timedelta=datetime.fromtimestamp(ts-FLOW_DELTA)).fetchall()
         if flows:
             # exists in db   
             flow = dict(flows[0])    # if more than one, append data to the last seen flow
