@@ -107,11 +107,11 @@ flow_table = Table("flow", metadata,
     Column("id", Integer, primary_key=True),       
     Column("honeypot_id", Integer, ForeignKey("honeypot.id"), 
             nullable=False),
-    Column("ip_proto", Integer, default=6, nullable=False), 
-    Column("src_id", Integer, ForeignKey("ip.id"), nullable=False),
-    Column("dst_id", Integer, ForeignKey("ip.id"), nullable=False),                        
-    Column("sport", Integer, nullable=False),
-    Column("dport", Integer, nullable=False),
+    Column("ip_proto", Integer, default=6, nullable=False, index=True), 
+    Column("src_id", Integer, ForeignKey("ip.id"), nullable=False, index=True),
+    Column("dst_id", Integer, ForeignKey("ip.id"), nullable=False, index=True),                        
+    Column("sport", Integer, nullable=False, index=True),
+    Column("dport", Integer, nullable=False, index=True),
     Column("packets", Integer, default=0, nullable=False),
     Column("bytes", Integer, default=0, nullable=False), 
     Column("starttime", DateTime(), nullable=False),
@@ -142,7 +142,7 @@ sebek_table = Table("sebek", metadata,
 
 irc_talker_table = Table('irc_talker', metadata,
     Column('id', Integer, primary_key=True),
-    Column('name', Unicode(512), nullable=False, unique=True),
+    Column('name', Unicode(512), nullable=False, unique=True, index=True),
 )
                                    
 irc_message_table = Table('irc_message', metadata,
@@ -162,7 +162,7 @@ irc_message_table = Table('irc_message', metadata,
     Column("filename", Unicode(1024), default='Not specified', nullable=False),
 )
 
-# Indexes
+# Composite indexes
 
 flowindex1 = Index('flowindex1', flow_table.c.starttime, 
                    flow_table.c.src_id, 
@@ -177,10 +177,9 @@ flowindex2 = Index('flowindex2', flow_table.c.lastseen,
                   flow_table.c.dst_id,
                   flow_table.c.sport, 
                   flow_table.c.dport,
-                  flow_table.c.ip_proto)
-                                            
-flowindex3 = Index('starttime')
+                  flow_table.c.ip_proto) 
 
+                                            
 sebekindex = Index('sebekindex', 
                     sebek_table.c.timestamp,
                     sebek_table.c.honeypot_id, 
@@ -203,8 +202,6 @@ ircindex = Index('ircindex',
                   irc_message_table.c.text,
                   irc_message_table.c.port,
                   unique=True)                    
-
-irctalkerindex = Index('irctalkerindex', irc_talker_table.c.name)
 
 # Objects
                         

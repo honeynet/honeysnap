@@ -37,7 +37,7 @@ FLOW_DELTA = 3600
 
 # write to db every N flows
 LOAD_QUANTA = 10000
-         
+       
 class DecodeError(Exception):
     pass
              
@@ -103,7 +103,7 @@ class FlowIdentify(object):
         Return True if we update a flow, False otherwise
         """                  
         if not cache.has_key(key): 
-            return
+            return False
         ts_dt = datetime.fromtimestamp(ts) 
         for i in xrange(0, len(cache[key])):                             
             if cache[key][i]['lastseen'] > datetime.fromtimestamp(ts-FLOW_DELTA): 
@@ -145,7 +145,7 @@ class FlowIdentify(object):
                 flow['packets'] += 1     
                 flow['lastseen'] = ts_dt
                 self.updated_flows.setdefault(key, [])
-                self.updated_flows[key].append(dict(flow))  
+                self.updated_flows[key].append(flow)  
         else:             
             # new flow  
             flow = dict(honeypot_id=self.hpid, ip_proto=proto, src_id=srcid, dst_id=dstid, sport=sport, dport=dport, 
@@ -157,27 +157,28 @@ class FlowIdentify(object):
         """extract basic info (src, dst, sport, dport, length) from a packet and return the data"""
         pkt = dpkt.ethernet.Ethernet(buf)
         subpkt = pkt.data
-        if type(subpkt) != type(dpkt.ip.IP()):
-            # skip non IP packets for now
-            raise DecodeError('\tNot an IP packet')
-        proto = subpkt.p
-        src = socket.inet_ntoa(subpkt.src)
-        dst = socket.inet_ntoa(subpkt.dst)
-        if proto == socket.IPPROTO_TCP or proto == socket.IPPROTO_UDP:  
-            sport = subpkt.data.sport
-            dport = subpkt.data.dport    
-            length = len(subpkt.data.data)
-        elif proto == socket.IPPROTO_ICMP:
-            icmp = subpkt.data
-            # not sure about this, but it'll do for now               
-            sport = icmp.type
-            dport = icmp.code        
-            length = len(icmp.data)  
-        else:               
-            # other wacky IP proto                   
-            sport = -1
-            dport = -1
-            length = len(subpkt.data) 
+        if pkt.type != 2048:
+            # non IP. Ignore
+            raise DecodeError
+        else:
+            proto = subpkt.p
+            src = socket.inet_ntoa(subpkt.src)
+            dst = socket.inet_ntoa(subpkt.dst)
+            if proto == socket.IPPROTO_TCP or proto == socket.IPPROTO_UDP:  
+                sport = subpkt.data.sport
+                dport = subpkt.data.dport    
+                length = len(subpkt.data.data)
+            elif proto == socket.IPPROTO_ICMP:
+                icmp = subpkt.data
+                # not sure about this, but it'll do for now               
+                sport = icmp.type
+                dport = icmp.code        
+                length = len(icmp.data)  
+            else:               
+                # other wacky IP proto                   
+                sport = -1
+                dport = -1
+                length = len(subpkt.data) 
         return (src, dst, sport, dport, proto, length)            
 
     def write_db(self):
