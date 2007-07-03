@@ -58,14 +58,21 @@ First, you will need to install python 2.4 and its header file. Most
 distributions most likely already have this installed. Then you will
 need libpcap. For most UNIX-like systems, it should be in your package
 management system (apt-get, yum, DarwinPorts etc.). You will need libcap
-and also libpcap-devel if that is listed separately. For example, on
-Debian/Ubuntu.
+and also libpcap-devel if that is listed separately.
+
+For example, on Debian / Ubuntu:
 
   $ sudo apt-get install python24-dev
   $ sudo apt-get install libpcap libpcap-dev
 
-Python 2.5 should work but as not been tested (and see below for notes
-about python 2.5 on OS X)
+Or on Fedora 7:
+
+  $ su -
+  $ yum install python python-devel
+  $ yum install libpcap libpcap-devel
+
+Python 2.5 should work but has not been tested (and see below for notes
+about Python 2.5 on OS X)
 
 Database:
 
@@ -73,7 +80,7 @@ For sqlite:
 
 $ sudo apt-get install sqlite3 libsqlite3 libsqlite3-dev python-sqlite3
 
-sqlite is required to run the tests
+sqlite is required to run the tests.
 
 For MySQL:
 
@@ -89,14 +96,30 @@ $ sudo easy_install py-psycopg2
 Note that the py-psycopg2 in Ubuntu not suitable as it is compiled 
 against postgres7.
 
-Next install pypcap. Download pypcap from 
-http://www.monkey.org/~dugsong/pypcap
+Next, install pypcap. Download Dug Song's pypcap from
+http://code.google.com/p/pypcap/ and then install as follows:
 
   $ tar -xzf pypcap-1.1.tar.gz
   $ cd pypcap-1.1
   $ python setup.py config
   $ python setup.py build && sudo python setup.py install
   $ cd ..
+
+However, note that on Fedora 7, the 'python setup.py config' step will
+fail, as libpcap-devel provides libpcap.so rather than libpcap.a. In
+order to work around this problem, ensure you have installed the
+libpcap-devel RPM, edit pypcap's setup.py and add the appropriate line
+to setup.py, ie. to give:
+
+...
+for lib in (('pcap', 'libpcap.a'),
+            ('pcap', 'libpcap.so'),
+            ('pcap', 'libpcap.dylib'),
+            ('wpcap', 'wpcap.lib')):
+...
+
+Once this is done, you should be able to build and install pypcap as
+above.
 
 You should then be able to install Honeysnap and all its remaining
 dependencies (provided you have a network connection).
@@ -112,8 +135,8 @@ installation process further by simply executing the following.
 
   $ sudo easy_install honeysnap-1.0.4.tar.gz 
 
-This is exactly the same as untar'ing the distribution and
-running 'sudo python setup.py install'
+This is exactly the same as unpacking the distribution from the tar file
+and running 'sudo python setup.py install'.
 
 Please note that this will install the honeysnap script into your
 PATH, usually in /usr/bin. If this isn't what you want, specify
@@ -126,7 +149,7 @@ Some notes on python 2.5 and OS/X
 ---------------------------------
 
 If upgrading Python on a Mac, and you hit problems, try getting the
-Python pkg from www.python.org, not from Darwin ports. Get pycap from
+Python pkg from www.python.org, not from Darwin ports. Get pypcap from
 Dug Song's site as Mac pkg, do not install from source.
 
 http://code.google.com/p/pypcap/downloads/list
@@ -164,6 +187,7 @@ and run it. This will install easy_setup. Finally run
                                                     
 This should download and install honeysnap and all its
 dependencies.
+
                  
 4: INSTALLATION ON A HONEYWALL
 ==============================
@@ -253,6 +277,7 @@ options:
   Please see the accompanying documentation (doc/USAGE) for instructions
   on configuration.
 
+
 6: OPTIONAL. Installing Matplotlib
 =================================
 
@@ -275,6 +300,7 @@ $ ipython -pylab
 
 If that produces a graph, it's good.
       
+
 7: OPTIONAL. Installing the web front end
 =========================================
 
