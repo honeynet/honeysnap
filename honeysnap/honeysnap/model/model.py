@@ -83,10 +83,10 @@ class Enum(types.String):
 
 honeypot_table = Table("honeypot", metadata,
     Column("id", Integer, primary_key=True), 
-    Column("ip_id", Integer, ForeignKey("ip.id"), nullable=False, unique=True), 
+    Column("ip_id", Integer, ForeignKey("ip.id"), nullable=False, unique=True, index=True), 
     Column("name", String(64), nullable=False),
     Column("state", Enum(['Up', 'Down', 'Unknown']), default="Up"),
-    Column("description", String(512), default="", nullable="False"),
+    Column("description", String(512), default="", nullable=False),
     mysql_engine='INNODB',
 )
   
@@ -106,7 +106,7 @@ ip_table = Table("ip", metadata,
 flow_table = Table("flow", metadata,
     Column("id", Integer, primary_key=True),       
     Column("honeypot_id", Integer, ForeignKey("honeypot.id"), 
-            nullable=False),
+            nullable=False, index=True),
     Column("ip_proto", Integer, default=6, nullable=False, index=True), 
     Column("src_id", Integer, ForeignKey("ip.id"), nullable=False, index=True),
     Column("dst_id", Integer, ForeignKey("ip.id"), nullable=False, index=True),                        
@@ -114,8 +114,8 @@ flow_table = Table("flow", metadata,
     Column("dport", Integer, nullable=False, index=True),
     Column("packets", Integer, default=0, nullable=False),
     Column("bytes", Integer, default=0, nullable=False), 
-    Column("starttime", DateTime(), nullable=False),
-    Column("lastseen", DateTime(), nullable=False),   
+    Column("starttime", DateTime(), nullable=False, index=True),
+    Column("lastseen", DateTime(), nullable=False, index=True),   
     Column("filename", Unicode(1024), default='Not specified', nullable=False),
     mysql_engine='INNODB', 
 )      
@@ -123,10 +123,10 @@ flow_table = Table("flow", metadata,
 sebek_table = Table("sebek", metadata,
     Column("id", Integer, primary_key=True),
     Column("honeypot_id", Integer, ForeignKey("honeypot.id"), 
-        nullable=False),
+        nullable=False, index=True),
     Column("version", Integer, nullable=False),
-    Column("type", Integer, nullable=False),
-    Column("timestamp", DateTime(), nullable=False),
+    Column("type", Integer, nullable=False, index=True),
+    Column("timestamp", DateTime(), nullable=False, index=True),
     Column("pid", Integer, nullable=False),
     Column("fd", Integer, nullable=False),
     Column("uid", Integer, nullable=False),
@@ -148,16 +148,16 @@ irc_talker_table = Table('irc_talker', metadata,
 irc_message_table = Table('irc_message', metadata,
     Column('id', Integer, primary_key=True),    
     Column('honeypot_id', Integer, ForeignKey('honeypot.id'),
-        nullable=False),
-    Column('from_id', Integer, ForeignKey('irc_talker.id'), nullable=False),
-    Column('to_id', Integer, ForeignKey('irc_talker.id'), default=None),
+        nullable=False, index=True),
+    Column('from_id', Integer, ForeignKey('irc_talker.id'), nullable=False, index=True),
+    Column('to_id', Integer, ForeignKey('irc_talker.id'), default=None, index=True),
     Column('command', Unicode(MAX_IRC_COMMAND_DB), nullable=False),
-    Column('src_id', Integer, ForeignKey('ip.id'), nullable=False),   
-    Column('dst_id', Integer, ForeignKey('ip.id'), nullable=False),  
+    Column('src_id', Integer, ForeignKey('ip.id'), nullable=False, index=True),   
+    Column('dst_id', Integer, ForeignKey('ip.id'), nullable=False, index=True),  
     Column('port', Integer, nullable=False),    # server port
     Column('sport', Integer, nullable=False),
     Column('dport', Integer, nullable=False),
-    Column('timestamp', DateTime(), nullable=False),
+    Column('timestamp', DateTime(), nullable=False, index=True),
     Column('text', Unicode(MAX_IRC_TEXT_DB)),
     Column("filename", Unicode(1024), default='Not specified', nullable=False),
 )
@@ -177,8 +177,7 @@ flowindex2 = Index('flowindex2', flow_table.c.lastseen,
                   flow_table.c.dst_id,
                   flow_table.c.sport, 
                   flow_table.c.dport,
-                  flow_table.c.ip_proto) 
-
+                  flow_table.c.ip_proto)
                                             
 sebekindex = Index('sebekindex', 
                     sebek_table.c.timestamp,
@@ -188,9 +187,9 @@ sebekindex = Index('sebekindex',
                     sebek_table.c.fd,
                     sebek_table.c.uid,
                     sebek_table.c.command,
-                    sebek_table.c.data,
-                    unique = True)                                                  
-                    
+                    sebek_table.c.data,                  
+                    unique = True)
+
 ircindex = Index('ircindex',   
                   irc_message_table.c.timestamp,
                   irc_message_table.c.honeypot_id,
@@ -201,7 +200,7 @@ ircindex = Index('ircindex',
                   irc_message_table.c.dst_id, 
                   irc_message_table.c.text,
                   irc_message_table.c.port,
-                  unique=True)                    
+                  unique=True)
 
 # Objects
                         
@@ -228,7 +227,7 @@ class Honeypot(object):
             h = Honeypot.by_ip(session, hp)            
         except HoneysnapModelError:
             ipid = Ip.id_get_or_create(hp)
-            h = Honeypot(name=name, ip_id=ipid, state="Up")
+            h = Honeypot(name=name, ip_id=ipid, state="Up", description="Fake Honeypot data")
             session.save(h)  
             session.flush()
         return h    
@@ -322,7 +321,7 @@ class Flow(object):
                          Flow.c.src_id==self.src_id, 
                          Flow.c.dst_id==self.dst_id, 
                          Flow.c.sport==self.sport, 
-                         Flow.c.dport==self.dport))>0: 
+                         Flow.c.dport==self.dport),limit=1)>0: 
             return True
         else:
             return False
@@ -384,7 +383,7 @@ class Sebek(object):
                             Sebek.c.fd==self.c.fd,
                             Sebek.c.uid==self.c.uid,
                             Sebek.c.command==self.c.command,
-                            Sebek.c.data==self.c.data))>0:
+                            Sebek.c.data==self.c.data),limit=1)>0:
             return True
         else:
             return False
@@ -502,7 +501,7 @@ class IRCMessage(object):
                 irc_message_table.c.src_id==self.c.src_id,
                 irc_message_table.c.dst_id==self.c.dst_id, 
                 irc_message_table.c.text==self.c.text,
-                irc_message_table.c.port==self.c.port)) > 0: 
+                irc_message_table.c.port==self.c.port),limit=1)>0: 
             return True
         else:
             return False

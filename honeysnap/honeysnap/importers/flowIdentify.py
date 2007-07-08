@@ -36,7 +36,7 @@ from honeysnap.model.model import *
 FLOW_DELTA = 3600          
 
 # write to db every N flows
-LOAD_QUANTA = 10000
+LOAD_QUANTA = 20000
        
 class DecodeError(Exception):
     pass
