@@ -99,7 +99,7 @@ class FlowIdentify(object):
         Look for flow identified by key in cache cache. 
         Update flow if it needs updating, allowing for times.
         Return True if we update a flow, False otherwise
-        """                  
+        """            
         if not cache.has_key(key): 
             return False
         ts_dt = datetime.fromtimestamp(ts) 
@@ -119,7 +119,7 @@ class FlowIdentify(object):
         """      
         self.count += 1    
         key1 = (src, dst, sport, dport, proto)
-        key2 = (dst, src, sport, dport, proto)
+        key2 = (dst, src, dport, sport, proto)
         if not self.count % LOAD_QUANTA:
             self.write_db()     
             print '\tRead %s packets at %s' % (self.count, asctime())

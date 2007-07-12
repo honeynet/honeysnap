@@ -177,6 +177,30 @@ class test_flowIdentify(unittest.TestCase):
         self.fid.match_flow(ts3, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12, False)
         assert self.fid.updated_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['bytes'] == 44
         assert self.fid.updated_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['lastseen'] == datetime.fromtimestamp(ts3)
+                     
+
+    def test_match_dir(self):
+        """match_flow should match the reverse half of the flow as part of the same flow"""
+        src_id = Ip.id_get_or_create('192.168.0.1')
+        dst_id = Ip.id_get_or_create('192.168.0.2')  
+        ts1 = 111111.0  
+        ts2 = ts1 + 5
+        self.fid.match_flow(ts1, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12, False)
+        self.fid.match_flow(ts2, '192.168.0.2', '192.168.0.1', 664, 80, 6, 12, False)
+        assert self.fid.new_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['bytes'] == 24
+
+    def test_match_dir_db(self):
+        """match_flow should match the reverse half of same flow in db"""
+        src_id = Ip.id_get_or_create('192.168.0.1')
+        dst_id = Ip.id_get_or_create('192.168.0.2')  
+        ts1 = 111111.0  
+        ts2 = ts1 + 5
+        flow_table.insert().execute( dict(honeypot_id=self.fid.hpid, ip_proto=6, src_id=src_id, dst_id=dst_id, sport=80, 
+                                                    dport=664, starttime=datetime.fromtimestamp(ts1), 
+                                                    lastseen=datetime.fromtimestamp(ts1), packets=1, 
+                                                    bytes=20, filename='testing')) 
+        self.fid.match_flow(ts2, '192.168.0.2', '192.168.0.1', 664, 80, 6, 12, False)
+        assert self.fid.updated_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['bytes'] == 32                                                    
 
     def test_match_flow_in_db_pre_hour(self):
         """match_flow should spot flow in db, but create new if it was more than FLOW_DELTA ago"""             
