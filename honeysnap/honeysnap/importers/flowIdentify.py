@@ -108,7 +108,6 @@ class FlowIdentify(object):
                 cache[key][i]['lastseen'] = ts_dt
                 cache[key][i]['bytes'] += length;
                 cache[key][i]['packets'] += 1; 
-                #print 'match in cache'
                 return True       
         return False
 
@@ -138,7 +137,6 @@ class FlowIdentify(object):
                                     dport=dport, proto=proto, timedelta=datetime.fromtimestamp(ts-FLOW_DELTA)).fetchall()
             if flows:
                 # exists in db in forward dir 
-                #print 'Match fwd in db' 
                 flow = dict(flows[0])    # if more than one, append data to the last seen flow
                 if flow['starttime'] == ts_dt:
                     raise DuplicateFlow
@@ -152,7 +150,6 @@ class FlowIdentify(object):
             flows = self.fq.execute(srcid=dstid, dstid=srcid, sport=dport,
                                     dport=sport, proto=proto, timedelta=datetime.fromtimestamp(ts-FLOW_DELTA)).fetchall()
             if flows:       
-                #print 'Match backward in db'
                 # exists in db in backward dir
                 flow = dict(flows[0])    # if more than one, append data to the last seen flow
                 if flow['starttime'] == ts_dt:

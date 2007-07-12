@@ -50,8 +50,8 @@ class test_flowIdentify(unittest.TestCase):
     def test_decode_packet_tcp(self):
         """decode_packet should get values right for tcp packet"""
         buf = '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00E\x00\x00K\x00\x00\x00\x00@\x06\xf9Y\xc0\xa8\x00\x01\xc0\xa8\x00\x02\x1a\x0b\xd1\x0c\x04\xc45].c^`P\x18\x0bh\xcd\xc5\x00\x00PING :Lelystad.NL.EU.UnderNet.Org\r\n'
-        (src, dst, sport, dport, proto, length) = self.fid.decode_packet(buf)
-        print src, dst, sport, dport, proto, length
+        (src, dst, sport, dport, proto, length, new) = self.fid.decode_packet(buf)
+        print src, dst, sport, dport, proto, length, new
         assert proto == socket.IPPROTO_TCP
         assert src == '192.168.0.1'
         assert dst == '192.168.0.2'
@@ -62,8 +62,8 @@ class test_flowIdentify(unittest.TestCase):
     def test_decode_packet_udp(self):
         """decode_packet should get values right for udp""" 
         buf = '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00E\x00\x00I\xae\xf7\x00\x00\xff\x11\xf8\xa9\n\x00\x00\x01\n\x00\x00\x02\xc3\xe7\x005\x00\x08\xe6\xf3hello world'
-        (src, dst, sport, dport, proto, length) = self.fid.decode_packet(buf)
-        print src, dst, sport, dport, proto, length 
+        (src, dst, sport, dport, proto, length, new) = self.fid.decode_packet(buf)
+        print src, dst, sport, dport, proto, length, new 
         assert proto == socket.IPPROTO_UDP
         assert src == '10.0.0.1'
         assert dst == '10.0.0.2'
@@ -74,8 +74,8 @@ class test_flowIdentify(unittest.TestCase):
     def test_decode_packet_icmp(self):
         """decode_packet should get values right for icmp"""
         buf = '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00E\x00\x00L\x00\x00@\x00@\x01&\xaf\n\x00\x00\x01\n\x00\x00\x02\t\x03\xf6\xfc'
-        (src, dst, sport, dport, proto, length) = self.fid.decode_packet(buf)
-        print src, dst, sport, dport, proto, length 
+        (src, dst, sport, dport, proto, length, new) = self.fid.decode_packet(buf)
+        print src, dst, sport, dport, proto, length, new 
         assert proto == socket.IPPROTO_ICMP
         assert src == '10.0.0.1'
         assert dst == '10.0.0.2'
@@ -86,7 +86,7 @@ class test_flowIdentify(unittest.TestCase):
     def test_decode_packet_other(self):
         """decode_packet should set sport and dport = -1 for other protos"""
         buf = '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00E\x00\x00L\x00\x00@\x00@p&\xaf\n\x00\x00\x01\n\x00\x00\x02\x01\x17d\x02\x00\x00\x00d'
-        (src, dst, sport, dport, proto, length) = self.fid.decode_packet(buf)
+        (src, dst, sport, dport, proto, length, new) = self.fid.decode_packet(buf)
         print src, dst, sport, dport, proto, length 
         assert proto == 112  # vrrp 
         assert src == '10.0.0.1'
@@ -115,7 +115,7 @@ class test_flowIdentify(unittest.TestCase):
                                                     dport=664, starttime=datetime.fromtimestamp(ts), 
                                                     lastseen=datetime.fromtimestamp(ts), packets=1, 
                                                     bytes=20, filename='testing')]
-        self.fid.match_flow(ts, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)                                                    
+        self.fid.match_flow(ts, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12, False)                                                    
         assert self.fid.new_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['bytes'] == 32  
         assert self.fid.new_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['lastseen'] == datetime.fromtimestamp(ts)
 
@@ -129,8 +129,8 @@ class test_flowIdentify(unittest.TestCase):
                                                     dport=664, starttime=datetime.fromtimestamp(ts1), 
                                                     lastseen=datetime.fromtimestamp(ts1), packets=1, 
                                                     bytes=20, filename='testing')]
-        self.fid.match_flow(ts2, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)                                                    
-        self.fid.match_flow(ts3, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)        
+        self.fid.match_flow(ts2, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12, False)                                                    
+        self.fid.match_flow(ts3, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12, False)        
         assert self.fid.new_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['bytes'] == 44  
         assert self.fid.new_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['lastseen'] == datetime.fromtimestamp(ts3)
 
@@ -144,7 +144,7 @@ class test_flowIdentify(unittest.TestCase):
                                                     dport=664, starttime=datetime.fromtimestamp(ts1), 
                                                     lastseen=datetime.fromtimestamp(ts1), packets=1, 
                                                     bytes=20, filename='testing')]
-        self.fid.match_flow(ts2, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)                                                    
+        self.fid.match_flow(ts2, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12, False)                                                    
         assert self.fid.new_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['bytes'] == 20
         assert self.fid.new_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][1]['bytes'] == 12  
 
@@ -157,7 +157,7 @@ class test_flowIdentify(unittest.TestCase):
         flow_table.insert().execute(dict(honeypot_id=self.fid.hpid, ip_proto=6, src_id=src_id, dst_id=dst_id, sport=80, 
                                                     dport=664, starttime=ts_dt, lastseen=ts_dt, packets=1, 
                                                     bytes=20, filename='testing')) 
-        self.fid.match_flow(ts+20, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)   
+        self.fid.match_flow(ts+20, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12, False)   
         print self.fid.updated_flows
         assert self.fid.updated_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['bytes'] == 32
         assert self.fid.updated_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['lastseen'] == datetime.fromtimestamp(ts+20)
@@ -173,8 +173,8 @@ class test_flowIdentify(unittest.TestCase):
                                                     dport=664, starttime=datetime.fromtimestamp(ts1), 
                                                     lastseen=datetime.fromtimestamp(ts1), packets=1, 
                                                     bytes=20, filename='testing')) 
-        self.fid.match_flow(ts2, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)
-        self.fid.match_flow(ts3, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)
+        self.fid.match_flow(ts2, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12, False)
+        self.fid.match_flow(ts3, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12, False)
         assert self.fid.updated_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['bytes'] == 44
         assert self.fid.updated_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['lastseen'] == datetime.fromtimestamp(ts3)
 
@@ -187,7 +187,7 @@ class test_flowIdentify(unittest.TestCase):
         flow_table.insert().execute(dict(honeypot_id=self.fid.hpid, ip_proto=6, src_id=src_id, dst_id=dst_id, sport=80, 
                                                     dport=664, starttime=ts1, lastseen=ts1, packets=1, 
                                                     bytes=20, filename='testing'))       
-        self.fid.match_flow(ts2, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12)                                                    
+        self.fid.match_flow(ts2, '192.168.0.1', '192.168.0.2', 80, 664, 6, 12, False)                                                    
         assert self.fid.new_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['bytes'] == 12     
 
     def test_match_flow_new(self):
@@ -203,7 +203,7 @@ class test_flowIdentify(unittest.TestCase):
         flow_table.insert().execute(flow)
         self.fid.updated_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ] = \
                     [flow]
-        self.fid.match_flow(ts2, '192.168.0.1', '192.168.0.3', 80, 664, 6, 12)                                                             
+        self.fid.match_flow(ts2, '192.168.0.1', '192.168.0.3', 80, 664, 6, 12, False)                                                             
         assert self.fid.updated_flows[ ('192.168.0.1', '192.168.0.2', 80, 664, 6) ][0]['bytes'] == 20        
         assert self.fid.new_flows[ ('192.168.0.1', '192.168.0.3', 80, 664, 6) ][0]['bytes'] == 12 
 
