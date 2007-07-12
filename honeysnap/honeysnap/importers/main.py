@@ -106,7 +106,7 @@ def process_file(file):
         sbd.run() 
         print "Importing IRC for honeypot %s" % hp
         ircd = IrcDecode(tmpf, file, hp)
-        ircd.run()
+        ircd.run()   
     # delete the tmp file we used to hold unzipped data
     if deletetmp:
         os.unlink(tmpf)

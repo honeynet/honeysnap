@@ -165,8 +165,6 @@ class SebekDecode(object):
         if not self.count % LOAD_QUANTA:
             print '\tProcessed %s sebek records at %s' % (self.count, asctime())
             self.write_db()  
-            self.engine.commit()
-            self.engine.begin()  
       
     def sbk_write(self, version, t, pid, fd, uid, com, data, parent_pid, inode):
         """Decode sebek write data. Store data for stdin, stdout and stderr only for now"""
@@ -248,7 +246,7 @@ class SebekDecode(object):
         """
         write everything from the insert_list to the db
         First try insert_many; if that fails go to one-by-one, skipping dups
-        """        
+        """                       
         save_table(sebek_table, self.insert_list)
         self.hash = {}
         self.insert_list = []                       
@@ -256,7 +254,6 @@ class SebekDecode(object):
     def run(self):
         # since we set a filter on pcap, all the
         # packets we pull should be handled   
-        self.engine.begin()
         for ts, buf in self.p:
             ip = dpkt.ethernet.Ethernet(buf).data
             # workaround for broken sebek packets
@@ -267,7 +264,6 @@ class SebekDecode(object):
             except struct.error, e:
                 continue  
         self.write_db()  
-        self.engine.commit()
         print '\tProcessed %s sebek packets at %s' % (self.count, asctime())
                 
 

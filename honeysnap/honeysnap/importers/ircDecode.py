@@ -71,10 +71,8 @@ class IrcDecode(object):
             self.port = port
             hirc.connect(self.tmpf, "host %s and tcp and port %s" % (self.hpip, port) )
             hirc.addHandler("all_events", self.decode, -1)
-            self.engine.begin() 
             hirc.ircobj.process_once()  
             self.write_db()    
-            self.engine.commit()
             print '\tProcessed %s IRC messages at %s' % (self.count, asctime())
 
     def find_irc_ports(self):
@@ -119,8 +117,6 @@ class IrcDecode(object):
         if not self.count % LOAD_QUANTA:
             print '\tProcessed %s IRC messages at %s' % (self.count, asctime())
             self.write_db() 
-            self.engine.commit()
-            self.engine.begin()
         
     def save(self, m): 
         if self.hash.has_key(str(m)):
