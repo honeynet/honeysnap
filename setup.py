@@ -7,7 +7,7 @@ import ez_setup
 ez_setup.use_setuptools()
                        
 from setuptools import setup
-VERSION="1.0.6.8"
+VERSION="1.0.6.9"
 
 setup(name="honeysnap",
     version=VERSION,
@@ -28,7 +28,6 @@ setup(name="honeysnap",
         "magic>=0.1",
         "python-irclib>=0.4.6",
         "dpkt>=1.6",
-        "SocksiPy>=1.0",
     ],
     # This doesn't work
     # easy_install http://monkey.org/~dugsong/pypcap/pypcap-1.1.tar.gz
