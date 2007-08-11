@@ -32,10 +32,11 @@ setup(name="honeysnap",
         "dpkt>=1.6",
         "sqlalchemy>=0.3.1", 
          #"pysqlite>=2.3.2", 
-        'ipython>=0.8',
+        'ipython>=0.8',                                                
+        'pcap',
     ],
     dependency_links = [    
-    #    "http://monkey.org/~dugsong/pypcap/pypcap-1.1.tar.gz" 
+        "http://www.honeynet.org/tools/honeysnap/pcap-1.1.tar.gz",
         "http://dpkt.googlecode.com/files/dpkt-1.6.tar.gz",
     ],
     entry_points = {
