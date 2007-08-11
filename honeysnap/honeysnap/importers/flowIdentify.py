@@ -64,12 +64,13 @@ class FlowIdentify(object):
         self.updated_flows = {}
         self.count = 0        
         self.fq = flow_table.select(and_(
-                    flow_table.c.lastseen > bindparam('timedelta'),
                     flow_table.c.src_id == bindparam('srcid'), 
                     flow_table.c.dst_id == bindparam('dstid'), 
                     flow_table.c.sport == bindparam('sport'), 
                     flow_table.c.dport == bindparam('dport'), 
-                    flow_table.c.ip_proto == bindparam('proto')),
+                    flow_table.c.ip_proto == bindparam('proto'),  
+                    flow_table.c.lastseen < bindparam('ts'),
+                    flow_table.c.lastseen > bindparam('timedelta')),
                 order_by = [desc(flow_table.c.starttime)], limit = 1).compile()
 
     def _init_pcap(self, file):
@@ -134,7 +135,8 @@ class FlowIdentify(object):
                 return 
             # look for flow in both directions in db
             flows = self.fq.execute(srcid=srcid, dstid=dstid, sport=sport,
-                                    dport=dport, proto=proto, timedelta=datetime.fromtimestamp(ts-FLOW_DELTA)).fetchall()
+                                    dport=dport, proto=proto, ts=ts, 
+                                    timedelta=datetime.fromtimestamp(ts-FLOW_DELTA)).fetchall()
             if flows:
                 # exists in db in forward dir 
                 flow = dict(flows[0])    # if more than one, append data to the last seen flow
@@ -148,7 +150,8 @@ class FlowIdentify(object):
                     self.updated_flows[key1].append(flow) 
                 return
             flows = self.fq.execute(srcid=dstid, dstid=srcid, sport=dport,
-                                    dport=sport, proto=proto, timedelta=datetime.fromtimestamp(ts-FLOW_DELTA)).fetchall()
+                                    dport=sport, proto=proto, ts=ts, 
+                                    timedelta=datetime.fromtimestamp(ts-FLOW_DELTA)).fetchall()
             if flows:       
                 # exists in db in backward dir
                 flow = dict(flows[0])    # if more than one, append data to the last seen flow

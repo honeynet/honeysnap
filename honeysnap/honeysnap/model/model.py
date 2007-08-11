@@ -172,12 +172,13 @@ flowindex1 = Index('flowindex1', flow_table.c.starttime,
                    flow_table.c.ip_proto,
                    unique = True) 
                                                     
-flowindex2 = Index('flowindex2', flow_table.c.lastseen, 
+flowindex2 = Index('flowindex2', 
                   flow_table.c.src_id, 
                   flow_table.c.dst_id,
                   flow_table.c.sport, 
                   flow_table.c.dport,
-                  flow_table.c.ip_proto)
+                  flow_table.c.ip_proto,
+                  flow_table.c.lastseen)
                                             
 sebekindex = Index('sebekindex', 
                     sebek_table.c.timestamp,

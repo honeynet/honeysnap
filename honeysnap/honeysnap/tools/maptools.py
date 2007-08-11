@@ -53,9 +53,9 @@ class Worldmap(object):
         lats = []
         longs = []
         for ip in ips:                    
-            if ip.latitude != None and ip.longitude != None:
-                lats.append(ip.latitude)
-                longs.append(ip.longitude)
+            if ip.ip_latitude != None and ip.ip_longitude != None:
+                lats.append(ip.ip_latitude)
+                longs.append(ip.ip_longitude)
             else:
                 print "Missing latitude or longitude for %s: skipping" % ip.ip_addr
                 #raise MaptoolsError("Missing latitude or longitude for %s" % ip.ip_addr)  
