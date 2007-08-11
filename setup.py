@@ -7,7 +7,7 @@ import ez_setup
 ez_setup.use_setuptools()
                        
 from setuptools import setup
-VERSION="1.0.6.9"
+VERSION="1.0.6.10"
 
 setup(name="honeysnap",
     version=VERSION,
@@ -27,13 +27,11 @@ setup(name="honeysnap",
     install_requires = [
         "magic>=0.1",
         "python-irclib>=0.4.6",
-        "dpkt>=1.6",
+        "dpkt>=1.6", 
+        "pcap-1.1",
     ],
-    # This doesn't work
-    # easy_install http://monkey.org/~dugsong/pypcap/pypcap-1.1.tar.gz
-    # as it needs a 'setup.py config' stage that is non-standard
     dependency_links = [    
-    #    "http://monkey.org/~dugsong/pypcap/pypcap-1.1.tar.gz" 
+        "http://www.honeynet.org/tools/honeysnap/pcap-1.1.tar.gz"
         "http://dpkt.googlecode.com/files/dpkt-1.6.tar.gz",
     ],
     entry_points = {

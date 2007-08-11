@@ -43,15 +43,6 @@ Debian/Ubuntu with python2.4:
   $ sudo apt-get install python24-dev
   $ sudo apt-get install libpcap0.8 libpcap0.8-dev
 
-Next install pypcap. Download pypcap from 
-http://code.google.com/p/pypcap
-
-  $ tar -xzf pypcap-1.1.tar.gz
-  $ cd pypcap-1.1
-  $ python setup.py config
-  $ python setup.py build && sudo python setup.py install
-  $ cd ..
-
 You should then be able to install Honeysnap and all its remaining
 dependencies (provided you have a network connection).
 E.g. for version 1.0.6:
