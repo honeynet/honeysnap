@@ -25,6 +25,8 @@ from sqlalchemy import *
 from sqlalchemy.exceptions import DBAPIError 
 from sqlalchemy.ext.selectresults import SelectResults  
 from sqlalchemy.ext.activemapper import metadata    
+from sqlalchemy.databases.postgres import PGInet
+
 from irclib import nm_to_n, nm_to_uh, nm_to_h, irc_lower                                                          
 
 # max length of sebek data
@@ -87,20 +89,18 @@ honeypot_table = Table("honeypot", metadata,
     Column("name", String(64), nullable=False),
     Column("state", Enum(['Up', 'Down', 'Unknown']), default="Up"),
     Column("description", String(512), default="", nullable=False),
-    mysql_engine='INNODB',
 )
   
 # location data based on the fields from ip2location
 ip_table = Table("ip", metadata,
     Column('id', Integer, primary_key=True),
-    Column('ip_addr', String(16), nullable=False, index=True, unique=True),
+    Column('ip_addr', PGInet, nullable=False, index=True, unique=True),
     Column('latitude', Float, default=None),
     Column('longitude', Float, default=None),
     Column('isp', Unicode(256), default=None),    
     Column('domain', Unicode(256), default=None),
     Column('country', Unicode(256), default=None),
     Column('city', Unicode(256), default=None), 
-    mysql_engine='INNODB',
 )
 
 flow_table = Table("flow", metadata,
@@ -117,7 +117,6 @@ flow_table = Table("flow", metadata,
     Column("starttime", DateTime(), nullable=False, index=True),
     Column("lastseen", DateTime(), nullable=False, index=True),   
     Column("filename", Unicode(1024), default='Not specified', nullable=False),
-    mysql_engine='INNODB', 
 )      
           
 sebek_table = Table("sebek", metadata,
@@ -135,7 +134,6 @@ sebek_table = Table("sebek", metadata,
     Column("parent_pid", Integer, default=0, nullable=False),
     Column("inode", BigInteger, default=0, nullable=False),
     Column("data", Unicode(MAX_SBK_DATA_SIZE)),
-    mysql_engine='INNODB',  
 )              
   
 # IRC related tables

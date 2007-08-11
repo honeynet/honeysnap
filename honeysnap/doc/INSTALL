@@ -101,9 +101,13 @@ http://code.google.com/p/pypcap/ and then install as follows:
 
   $ tar -xzf pypcap-1.1.tar.gz
   $ cd pypcap-1.1
-  $ python setup.py config
-  $ python setup.py build && sudo python setup.py install
+  $ rm pcap.c
+  $ make all
+  $ sudo python setup.py install
   $ cd ..
+
+You'll need pyrex installed from 
+http://www.cosc.canterbury.ac.nz/greg.ewing/python/Pyrex/
 
 However, note that on Fedora 7, the 'python setup.py config' step will
 fail, as libpcap-devel provides libpcap.so rather than libpcap.a. In
