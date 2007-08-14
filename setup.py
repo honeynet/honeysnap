@@ -28,10 +28,8 @@ setup(name="honeysnap",
         "magic>=0.1",
         "python-irclib>=0.4.6",
         "dpkt>=1.6", 
-        "pcap-1.1",
     ],
     dependency_links = [    
-        "http://www.honeynet.org/tools/honeysnap/pcap-1.1.tar.gz"
         "http://dpkt.googlecode.com/files/dpkt-1.6.tar.gz",
     ],
     entry_points = {

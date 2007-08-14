@@ -43,6 +43,16 @@ Debian/Ubuntu with python2.4:
   $ sudo apt-get install python24-dev
   $ sudo apt-get install libpcap0.8 libpcap0.8-dev
 
+Get pypcap from http://www.honeynet.org/tools/honeysnap/pypcap-1.1.tar.gz
+
+This version is the same as the one from Dug Song's site, but with the 
+installer altered to install cleanly on linux and on python 2.5.
+                              
+$ wget http://www.honeynet.org/tools/honeysnap/pypcap-1.1.tar.gz
+$ tar xvzf pypcap-1.1.tar.gz
+$ cd pcap-1.1
+$ sudo python setup.py install
+
 You should then be able to install Honeysnap and all its remaining
 dependencies (provided you have a network connection).
 E.g. for version 1.0.6:
@@ -54,6 +64,7 @@ E.g. for version 1.0.6:
 If you already have easy_install installed, you can simplify the
 installation process further by simply executing the following.
 
+  $ sudo easy_install http://www.honeynet.org/tools/honeysnap/pypcap-1.1.tar.gz
   $ sudo easy_install honeysnap-1.0.6.tar.gz 
 
 This is exactly the same as untar'ing the distribution and
@@ -76,8 +87,9 @@ Download  and install the following, in order.
   * winpcap from
   http://www.winpcap.org/install/default.htm  
 	
-  * pypcap from http://www.monkey.org/~dugsong/pypcap
-  You need to download and run the 'Windows Python 2.4 Installer'
+  * pypcap from http://code.google.com/p/pypcap/downloads/list
+  You need to download and run the Windows installer for your 
+  version of Python (2.4 in our example)
 
 To make Python easily available on the command line, right click
 on "My Computer" and select Properties. Then go to Advanced and
@@ -149,11 +161,9 @@ $ yum install python2.4 python2.4-devel
 
 iv) Install pypcap
 
-$ wget http://www.monkey.org/~dugsong/pypcap/pypcap-1.1.tar.gz
+$ wget http://www.honeynet.org/tools/honeysnap/pypcap-1.1.tar.gz
 $ tar xzvf pypcap-1.1.tar.gz
 $ cd pypcap-1.1
-$ python2.4 setup.py config
-$ python2.4 setup.py build
 $ python2.4 setup.py install
 
 v) Install Honeysnap
