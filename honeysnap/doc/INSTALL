@@ -22,30 +22,31 @@ This document is broken down into the following parts:
 General Dependencies
  Python 2.4 or greater      http://www.python.org
  libpcap                    http://sourceforge.net/projects/libpcap/
- pypcap 1.1 or greater      http://www.monkey.org/~dugsong/pypcap/ 
-                            (or from http://www.honeynet.org/tools/honeysnap/pcap-1.1.tar.gz for Linux, see below)
- Either sqlite, MySQL or PostgresSQL
+ pypcap 1.1 or greater      http://code.google.com/p/pypcap/
+                            (or from http://www.honeynet.org/tools/honeysnap/pypcap-1.1.tar.gz for Linux, see below)
+ Either sqlite or PostgresSQL
 
 Pure python modules:
  irclib 0.4.6 or greater    http://python-irclib.sourceforge.net/
- dpkt                       http://monkey.org/~dugsong/dpkt/
+ dpkt                       http://code.google.com/p/dpkt/
  magic                      http://www.demonseed.net/~jp/code/magic.py  
  sqlalchemy					http://www.sqlalchemy.org
 
 This latter set should be installed automatically and are listed
 here for completeness.  
 
-For database use you will need either sqlite (for small datasets),
-MySQL or PostgreSQL plus the appropriate Python module.
+For database use you will need either sqlite (for small datasets)
+or PostgreSQL plus the appropriate Python module.
 
 sqlite - pysqlite
 postgresql - psycopg2
-MySQL - MySQLDB
 
 sqlite is also needed for testing.
 
 Honeysnap should work with any database SQLAlchemy supports (including
-Oracle), but this has not been tested.
+Oracle), but this has not been tested. Currently there are various 
+problems with mysql and this is not recommended. See doc/mysql.txt
+for details.
                     
 For geolocation (optional) we currently support ip2location with the 
 UK Honeynet Project's ip2location python module.
@@ -85,7 +86,17 @@ $ sudo apt-get install postgresql81 postgresql-server-dev-8.1
 $ sudo easy_install py-psycopg2
 
 Note that the py-psycopg2 in Ubuntu not suitable as it is compiled 
-against postgres7.
+against postgres7.                              
+
+Get pypcap from http://www.honeynet.org/tools/honeysnap/pypcap-1.1.tar.gz
+
+This version is the same as the one from Dug Song's site, but with the 
+installer altered to install cleanly on linux and on python 2.5.
+                              
+$ wget http://www.honeynet.org/tools/honeysnap/pypcap-1.1.tar.gz
+$ tar xvzf pypcap-1.1.tar.gz
+$ cd pcap-1.1
+$ sudo python setup.py install
 
 You should then be able to install Honeysnap and all its remaining
 dependencies (provided you have a network connection).
@@ -98,11 +109,13 @@ eg. for version 1.0.4:
 
 If you already have easy_install installed, you can simplify the
 installation process further by simply executing the following.
-
+   
+  $ sudo easy_install http://www.honeynet.org/tools/honeysnap/pypcap-1.1.tar.gz
   $ sudo easy_install honeysnap-1.0.4.tar.gz 
 
 This is exactly the same as unpacking the distribution from the tar file
-and running 'sudo python setup.py install'.
+and running 'sudo python setup.py install' and replaces the install 
+of pypcap and honeysnap from tarballs.
 
 Please note that this will install the honeysnap script into your
 PATH, usually in /usr/bin. If this isn't what you want, specify
