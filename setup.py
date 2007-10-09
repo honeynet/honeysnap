@@ -7,7 +7,7 @@ import ez_setup
 ez_setup.use_setuptools()
                        
 from setuptools import setup
-VERSION="1.0.6.10"
+VERSION="1.0.6.11"
 
 setup(name="honeysnap",
     version=VERSION,
@@ -25,7 +25,6 @@ setup(name="honeysnap",
     include_package_data=True,
 
     install_requires = [
-        "magic>=0.1",
         "python-irclib>=0.4.6",
         "dpkt>=1.6", 
     ],
