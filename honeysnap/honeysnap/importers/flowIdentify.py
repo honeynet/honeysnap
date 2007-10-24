@@ -70,7 +70,7 @@ class FlowIdentify(object):
                     flow_table.c.dport == bindparam('dport'), 
                     flow_table.c.ip_proto == bindparam('proto'),  
                     flow_table.c.lastseen < bindparam('ts'),
-                    flow_table.c.lastseen > bindparam('timedelta')),
+                    flow_table.c.lastseen > bindparam('starttime')), 
                 order_by = [desc(flow_table.c.starttime)], limit = 1).compile()
 
     def _init_pcap(self, file):
@@ -100,7 +100,7 @@ class FlowIdentify(object):
         Look for flow identified by key in cache cache. 
         Update flow if it needs updating, allowing for times.
         Return True if we update a flow, False otherwise
-        """            
+        """      
         if not cache.has_key(key): 
             return False
         ts_dt = datetime.fromtimestamp(ts) 
@@ -108,16 +108,16 @@ class FlowIdentify(object):
             if cache[key][i]['lastseen'] > datetime.fromtimestamp(ts-FLOW_DELTA): 
                 cache[key][i]['lastseen'] = ts_dt
                 cache[key][i]['bytes'] += length;
-                cache[key][i]['packets'] += 1; 
+                cache[key][i]['packets'] += 1;   
                 return True       
         return False
 
     def match_flow(self, ts, src, dst, sport, dport, proto, length, new_flow):
         """
         have we seen matching flow in this pcap file/already? 
-        If we've seen in in this before, update cache, otherwise try and match in db
+        If we've seen it before, update cache, otherwise try and match in db
         If that doesn't match, then create new object
-        """      
+        """                     
         self.count += 1    
         key1 = (src, dst, sport, dport, proto)
         key2 = (dst, src, dport, sport, proto)
@@ -127,17 +127,17 @@ class FlowIdentify(object):
         ts_dt = datetime.fromtimestamp(ts) 
         srcid = Ip.id_get_or_create(src)
         dstid = Ip.id_get_or_create(dst)        
-        if not new_flow:  
+        if not new_flow: 
             # look for flow in both directions in both caches
             if self.update_in_cache(self.new_flows, key1, ts, length) or self.update_in_cache(self.new_flows, key2, ts, length):  
                 return               
             if self.update_in_cache(self.updated_flows, key1, ts, length) or self.update_in_cache(self.updated_flows, key2, ts, length):
                 return 
-            # look for flow in both directions in db
+            # look for flow in both directions in db      
             flows = self.fq.execute(srcid=srcid, dstid=dstid, sport=sport,
-                                    dport=dport, proto=proto, ts=ts, 
-                                    timedelta=datetime.fromtimestamp(ts-FLOW_DELTA)).fetchall()
-            if flows:
+                                    dport=dport, proto=proto, ts=ts_dt, 
+                                    starttime=datetime.fromtimestamp(ts-FLOW_DELTA)).fetchall()
+            if flows:             
                 # exists in db in forward dir 
                 flow = dict(flows[0])    # if more than one, append data to the last seen flow
                 if flow['starttime'] == ts_dt:
@@ -148,10 +148,10 @@ class FlowIdentify(object):
                     flow['lastseen'] = ts_dt
                     self.updated_flows.setdefault(key1, [])
                     self.updated_flows[key1].append(flow) 
-                return
+                return   
             flows = self.fq.execute(srcid=dstid, dstid=srcid, sport=dport,
-                                    dport=sport, proto=proto, ts=ts, 
-                                    timedelta=datetime.fromtimestamp(ts-FLOW_DELTA)).fetchall()
+                                    dport=sport, proto=proto, ts=ts_dt, 
+                                    starttime=datetime.fromtimestamp(ts-FLOW_DELTA)).fetchall()
             if flows:       
                 # exists in db in backward dir
                 flow = dict(flows[0])    # if more than one, append data to the last seen flow

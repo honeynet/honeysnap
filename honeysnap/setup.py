@@ -27,7 +27,6 @@ setup(name="honeysnap",
     include_package_data=True,
 
     install_requires = [
-        "magic>=0.1",
         "python-irclib>=0.4.6",
         "dpkt>=1.6",
         "sqlalchemy>=0.3.1", 

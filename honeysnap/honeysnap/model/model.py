@@ -19,7 +19,7 @@
  
 # $Id: model.py 5038 2007-01-27 17:22:46Z arthur $
 import socket    
-import sys
+from time import time
 from datetime import datetime 
 from sqlalchemy import *
 from sqlalchemy.exceptions import DBAPIError 
@@ -27,7 +27,8 @@ from sqlalchemy.ext.selectresults import SelectResults
 from sqlalchemy.ext.activemapper import metadata    
 from sqlalchemy.databases.postgres import PGInet
 
-from irclib import nm_to_n, nm_to_uh, nm_to_h, irc_lower                                                          
+from irclib import nm_to_n, nm_to_uh, nm_to_h, irc_lower 
+#from cache import timed_cache                                                         
 
 # max length of sebek data
 # must be < ~700 for mysql but can be larger for postgres
@@ -388,8 +389,8 @@ class Sebek(object):
             return False
 
     @staticmethod
-    def num_of_type(session, hp, type, starttime=0, endtime=datetime.now()):
-        """Return count() of sebek records within date range with type type"""
+    def num_of_type(session, hp, type, starttime=datetime.fromtimestamp(0), endtime=datetime.now()):
+        """Return count() of sebek records within date range with type type""" 
         return session.query(Sebek).count(and_(Sebek.c.honeypot_id==hp.c.id, Sebek.c.type==type, \
             Sebek.c.timestamp>starttime, Sebek.c.timestamp<endtime)) 
         

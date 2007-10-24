@@ -29,7 +29,6 @@ General Dependencies
 Pure python modules:
  irclib 0.4.6 or greater    http://python-irclib.sourceforge.net/
  dpkt                       http://code.google.com/p/dpkt/
- magic                      http://www.demonseed.net/~jp/code/magic.py  
  sqlalchemy					http://www.sqlalchemy.org
 
 This latter set should be installed automatically and are listed
