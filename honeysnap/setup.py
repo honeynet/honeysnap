@@ -29,7 +29,7 @@ setup(name="honeysnap",
     install_requires = [
         "python-irclib>=0.4.6",
         "dpkt>=1.6",
-        "sqlalchemy>=0.3.1", 
+        "sqlalchemy==0.3.10", 
          #"pysqlite>=2.3.2", 
         'ipython>=0.8',                                                
     ],
