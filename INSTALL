@@ -40,7 +40,7 @@ management system (apt-get, yum, DarwinPorts etc.).  You will need libcap
 and also libpcap-devel if that is listed separately.  For example, on
 Debian/Ubuntu with python2.4:
 
-  $ sudo apt-get install python24-dev
+  $ sudo apt-get install python2.4-dev
   $ sudo apt-get install libpcap0.8 libpcap0.8-dev
 
 Get pypcap from http://www.honeynet.org/tools/honeysnap/pypcap-1.1.tar.gz
