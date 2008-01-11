@@ -43,12 +43,12 @@ Debian/Ubuntu with python2.4:
   $ sudo apt-get install python2.4-dev
   $ sudo apt-get install libpcap0.8 libpcap0.8-dev
 
-Get pypcap from http://www.honeynet.org/tools/honeysnap/pypcap-1.1.tar.gz
+Get pypcap from https://projects.honeynet.org/honeysnap/attachment/wiki/WikiStart/pypcap-1.1.tar.gz
 
 This version is the same as the one from Dug Song's site, but with the 
 installer altered to install cleanly on linux and on python 2.5.
                               
-$ wget http://www.honeynet.org/tools/honeysnap/pypcap-1.1.tar.gz
+$ wget https://projects.honeynet.org/honeysnap/attachment/wiki/WikiStart/pypcap-1.1.tar.gz
 $ tar xvzf pypcap-1.1.tar.gz
 $ cd pcap-1.1
 $ sudo python setup.py install
@@ -64,7 +64,7 @@ E.g. for version 1.0.6:
 If you already have easy_install installed, you can simplify the
 installation process further by simply executing the following.
 
-  $ sudo easy_install http://www.honeynet.org/tools/honeysnap/pypcap-1.1.tar.gz
+  $ sudo easy_install https://projects.honeynet.org/honeysnap/attachment/wiki/WikiStart/pypcap-1.1.tar.gz
   $ sudo easy_install honeysnap-1.0.6.tar.gz 
 
 This is exactly the same as untar'ing the distribution and
@@ -120,7 +120,7 @@ i) yum install pcap
 
 ii) Install honeysnap (e.g. version 1.0.6):
 
-$ wget http://www.honeynet.org/tools/honeysnap/honeysnap-1.0.6.tar.gz 
+$ wget https://projects.honeynet.org/honeysnap/attachment/wiki/WikiStart/honeysnap-1.0.6.12.tar.gz 
 $ tar xvzf honeysnap-1.0.6
 $ cd honeysnap-1.0.6
 $ sudo python setup.py install
