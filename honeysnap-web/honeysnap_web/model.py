@@ -17,21 +17,16 @@
 #
 ################################################################################
                                                                               
-import socket
 from datetime import datetime
-from sqlalchemy import *
+from turbogears.database import metadata, mapper
+from sqlalchemy import Table, Column, ForeignKey
+from sqlalchemy.orm import relation
+from sqlalchemy import String, Unicode, Integer, DateTime
+from turbogears import identity
 
-from sqlalchemy.ext.assignmapper import assign_mapper
-from sqlalchemy.ext.selectresults import SelectResults 
-from turbogears.database import session
-from turbogears import identity 
-         
-# honeysnap stuff  
-# DO NOT ADD DATA TABLES HERE! Add them to honeysnap.model.model instead
-   
-from honeysnap.model.model import *
 
-# The identity schema.
+# the identity schema
+
 visits_table = Table('visit', metadata,
     Column('visit_key', String(40), primary_key=True),
     Column('created', DateTime, nullable=False, default=datetime.now),
@@ -66,23 +61,41 @@ permissions_table = Table('permission', metadata,
 )
 
 user_group_table = Table('user_group', metadata,
-    Column('user_id', Integer, ForeignKey('tg_user.user_id')),
-    Column('group_id', Integer, ForeignKey('tg_group.group_id'))
+    Column('user_id', Integer, ForeignKey('tg_user.user_id',
+        onupdate='CASCADE', ondelete='CASCADE')),
+    Column('group_id', Integer, ForeignKey('tg_group.group_id',
+        onupdate='CASCADE', ondelete='CASCADE'))
 )
 
 group_permission_table = Table('group_permission', metadata,
-    Column('group_id', Integer, ForeignKey('tg_group.group_id')),
-    Column('permission_id', Integer, ForeignKey('permission.permission_id'))
+    Column('group_id', Integer, ForeignKey('tg_group.group_id',
+        onupdate='CASCADE', ondelete='CASCADE')),
+    Column('permission_id', Integer, ForeignKey('permission.permission_id',
+        onupdate='CASCADE', ondelete='CASCADE'))
 )
 
 
+# the identity model
+
+
 class Visit(object):
-    def lookup_visit(cls, visit_key):
-        return Visit.get(visit_key)
+    """
+    A visit to your site
+    """
+    def lookup_visit(cls, visit_key): 
+        print "*******"
+        print cls
+        print type(cls)
+        return cls.query.get(visit_key)
     lookup_visit = classmethod(lookup_visit)
 
+
 class VisitIdentity(object):
+    """
+    A Visit that is link to a User object
+    """
     pass
+
 
 class Group(object):
     """
@@ -90,27 +103,80 @@ class Group(object):
     """
     pass
 
+
 class User(object):
     """
-    Reasonably basic User definition. Probably would want additional
-    attributes.
+    Reasonably basic User definition.
+    Probably would want additional attributes.
     """
     def permissions(self):
         perms = set()
         for g in self.groups:
-            perms = perms | set(g.permissions)
+            perms |= set(g.permissions)
         return perms
     permissions = property(permissions)
 
+    def by_email_address(cls, email):
+        """
+        A class method that can be used to search users
+        based on their email addresses since it is unique.
+        """
+        return cls.query.filter_by(email_address=email).first()
+
+    by_email_address = classmethod(by_email_address)
+
+    def by_user_name(cls, username):
+        """
+        A class method that permits to search users
+        based on their user_name attribute.
+        """
+        return cls.query.filter_by(user_name=username).first()
+
+    by_user_name = classmethod(by_user_name)
+
+    def _set_password(self, password):
+        """
+        encrypts password on the fly using the encryption
+        algo defined in the configuration
+        """
+        self._password = identity.encrypt_password(password)
+
+    def _get_password(self):
+        """
+        returns password
+        """
+        return self._password
+
+    password = property(_get_password, _set_password)
+
+
 class Permission(object):
+    """
+    A relationship that determines what each Group can do
+    """
     pass
 
-assign_mapper(session.context, Visit, visits_table)
-assign_mapper(session.context, VisitIdentity, visit_identity_table,
-          properties=dict(users=relation(User, backref='visit_identity')))
-assign_mapper(session.context, User, users_table)
-assign_mapper(session.context, Group, groups_table,
-          properties=dict(users=relation(User,secondary=user_group_table, backref='groups')))
-assign_mapper(session.context, Permission, permissions_table,
-          properties=dict(groups=relation(Group,secondary=group_permission_table, backref='permissions')))
 
+# set up mappers between identity tables and classes
+
+mapper(Visit, visits_table)
+
+mapper(VisitIdentity, visit_identity_table,
+        properties=dict(users=relation(User, backref='visit_identity')))
+
+mapper(User, users_table,
+        properties=dict(_password=users_table.c.password))
+
+mapper(Group, groups_table,
+        properties=dict(users=relation(User,
+                secondary=user_group_table, backref='groups')))
+
+mapper(Permission, permissions_table,
+        properties=dict(groups=relation(Group,
+                secondary=group_permission_table, backref='permissions')))
+
+
+# honeysnap stuff  
+# DO NOT ADD DATA TABLES HERE! Add them to honeysnap.model.model instead
+
+from honeysnap.model.model import *  
