@@ -169,25 +169,16 @@ class httpDecode(flowDecode):
         d = "".join(d)
         r = None
         f = state.flow
-        #print 'decode: %s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)
         if t =='response':
             try:
-                #print 'decode:response:'
-                #print 'decode:%s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)
                 r = http.Response(d)   
                 r.request = req
                 if not hasattr(r, "data"):
                     setattr(r,"data", None)
                 state.decoded = r
-                #print 'decode: %s' % `r`
-                #print 'decode:headers: ', r.headers
-                #print 'decode:version: ', r.version
-                #print 'decode:status: ', r.status
-                #print 'decode:reason: ', r.reason
-                #print 'decode:len(body): ', len(r.body)
-                #print "\n"
             except (dpkt.Error, ValueError):
-                try:
+                try:  
+                    # bad data, try lax parsing
                     state.open(flags="rb", statemgr=self.statemgr)
                     l = state.fp.readline()
                     headers = http.parse_headers(state.fp)
@@ -199,26 +190,20 @@ class httpDecode(flowDecode):
                     r.request = req
                     state.decoded = r
                     state.close()
-                    #print 'decode:headers %s' % headers
                 except dpkt.Error:
                     print "response failed to decode: %s " % state.fname
                     pass
 
         if t == 'request':
             try:
-                #print 'decode:request:'
-                #print 'decode: %s.%s-%s.%s' % (f.src, f.sport, f.dst, f.dport)
-                # The following line does essentially all the work:
                 r = http.Request(d) 
                 state.decoded = r
                 r.request = req
                 if not getattr(r, "data"):
                     r.data = None
-                #print 'decode:method: ', r.method
-                #print 'decode:uri:    ', r.uri
-                #print "\n"
             except dpkt.Error:
-                try:
+                try:  
+                    # bad data, so let's try some laxer parsing
                     state.open(flags="rb", statemgr=self.statemgr)
                     l = state.fp.readline()
                     headers = http.parse_headers(state.fp)
@@ -228,8 +213,11 @@ class httpDecode(flowDecode):
                     r.request = req
                     r.data = None
                     state.decoded = r
-                    state.close()
-                    #print 'decode:headers ', headers
+                    state.close()          
+                    # frig up some stuff for the logging
+                    h = req.split()
+                    r.method = h[0].strip()
+                    r.uri = h[1].strip()
                 except dpkt.Error:
                     print "request failed to decode: %s " % state.fname
                     pass
@@ -245,7 +233,7 @@ class httpDecode(flowDecode):
             # haven't seen other half - just fake something so that at least the request gets logged.
             if t == 'request':
                 dummy_response = http.Response() 
-                dummy_response.__dict__['status'] = '-'
+                dummy_response.__dict__['status'] = '-'   
                 self._add_log_entry(r, dummy_response, f.src, f.dst, state.ts)                
             return
         if rs.decoded:  

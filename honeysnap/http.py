@@ -54,7 +54,8 @@ def parse_headers(f):
         l = line.split(':', 1)
         if not len(l) == 2:
             raise dpkt.UnpackError('invalid header: %r' % line)
-        l[0] = l[0] + ':'
+        l = [ x.strip() for x in l ]
+        l[0] = l[0] + ':'          
         k = l[0][:-1].lower()
         d[k] = len(l) != 1 and l[1] or ''
     return d
@@ -86,7 +87,9 @@ def parse_body(f, headers):
         n = int(headers['content-length'])
         body = f.read(n)
         if len(body) != n:
-            raise dpkt.NeedData('short body (missing %d bytes)' % (n - len(body)))
+            #raise dpkt.NeedData('short body (missing %d bytes)' % (n - len(body)))
+            # we don't care if we miss some data, so plough on
+            pass
     elif 'content-type' in headers:
         body = f.read()
     else:
