@@ -10,7 +10,7 @@ comes with the distribution.
 
 WHAT IS IT?
 ==========
-Honeysnap is a modular, python application that can parse 
+Honeysnap is a modular Python application that can parse 
 raw or gzipped pcap files and perform a number of diagnostics 
 on the data.  It has been designed to be easily extended to 
 perform more diagnostic duties.  It has also been designed to 
@@ -75,7 +75,7 @@ $ ulimit -n 4096
 COPYRIGHT
 =========
 
-All code in honeysnap is copyright The Honeynet Project.
+All code in Honeysnap is copyright The Honeynet Project.
 
 CONTACT
 =======
@@ -88,4 +88,4 @@ BUGS/HELP
 =========
 
 Please send any bugs, tracebacks, comments, or patches to 
-the honeysnap team: honeysnap@honeynet.org
+the Honeysnap team: honeysnap@honeynet.org
