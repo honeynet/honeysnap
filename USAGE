@@ -158,9 +158,9 @@ more complex to use, and more prone to bugs.
 We've used this specific feature request as an opportunity 
 to illustrate how to use honeysnap modules to write a specific 
 application.  xBytesNseconds.py does one thing: it reads pcap 
-files and reports flows that are contain more than X bytes in 
+files and reports flows that contain more than X bytes in 
 N seconds.  It will read regular or gzip compressed pcap files 
-or from standard in.   If you look at the code you will see 
+or from standard input.   If you look at the code you will see 
 the bulk of the program is involved with details of handling 
 command line options, file handling, and output.  The actual 
 data analysis work itself is contained in only 1 function.  
@@ -198,7 +198,7 @@ Multiple Files
  honeysnap -c honeysnap.cfg pcap1 pcap2 pcap3
 
     
-In general, using a script is a better solution that giving
+In general, using a script is a better solution than giving
 multiple files on the command line unless you only have a couple 
 of files as it will make the output much easier to deal with and 
 reduce the risk of overlapping filenames.

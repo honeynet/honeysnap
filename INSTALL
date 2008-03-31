@@ -1,4 +1,4 @@
-INSTALLYING HONEYSNAP
+INSTALLING HONEYSNAP
 =====================
 
 This document explains step by step how to install
@@ -36,7 +36,7 @@ here for completeness.
 First, you will need to install python 2.4 or 2.5 and its header file.  Most
 distributions most likely already have this installed.  Then you will
 need libpcap.  For most UNIX-like systems, it should be in your package 
-management system (apt-get, yum, DarwinPorts etc.).  You will need libcap 
+management system (apt-get, yum, MacPorts etc.).  You will need libpcap 
 and also libpcap-devel if that is listed separately.  For example, on
 Debian/Ubuntu with python2.4:
 

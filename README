@@ -21,17 +21,17 @@ The primary intention is to provide a first cut analysis of
 a directory full of pcap data, data that has probably come 
 from a honeynet deployment using the Honeynet Project's Roo 
 v1.x CDROM. It has the ability to decode and analyze a variety
-of protocols, such as HTTP, SMTP, and IRC abd can also recover 
+of protocols, such as HTTP, SMTP, and IRC and can also recover 
 files transfered.  In addition it has the ability to analyze 
 honeypot specific data sets such as SEBEK.  Because of its 
 modular nature, it is possible to add other protocols.
                                                      
 Honeysnap can be run as a daily automated cron 
-job against live honeynet  data, to provide analysts with a 
+job against live honeynet data, to provide analysts with a 
 starting point for more detailed forensic analysis. Currently 
 the analysis performed is static, in that per run results 
 are being stored to disk but not to a database (although
-h DB persistance and trending will be added in future releases). 
+DB persistence and trending will be added in future releases). 
 
 Honeysnap.py is derived/inspired by work of David Watson, 
 Steve Mumford, and Arthur Clune of the UK Honeynet Project,
@@ -61,14 +61,14 @@ is well commented to help you get started.
 to execute:
 honeysnap -c honeysnap.cfg <pcapfile>
 
-For more information and examples, plesase refer to the USAGE 
+For more information and examples, please refer to the USAGE 
 document.
 
 EFFICIENCY
 ==========
 
 Increasing the max number of open files will make things faster. 
-On most unix like OSs this can be done by executing the following.
+On most unix-like OSs this can be done by executing the following.
 
 $ ulimit -n 4096
 
