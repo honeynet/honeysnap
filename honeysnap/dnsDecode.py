@@ -140,7 +140,7 @@ class dnsDecode(base.Base):
     def run(self):
         # since we set a filter on pcap, all the
         # packets we pull should be handled
-        for ts, buf in self.p:    
+        for ts, buf in self.p:   
             try:
                 ip = dpkt.ethernet.Ethernet(buf).data 
                 self.packetHandler(ts, ip, ip.data.data)

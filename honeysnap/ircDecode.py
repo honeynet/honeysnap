@@ -108,11 +108,11 @@ class ircDecode(Base):
                 print "Can't open specified wordlist %s. Stopping" % self.wordfile
                 print "Please check the existence of the wordfile, or delete the WORDFILE option from the config if it's not wanted"
                 sys.exit(1)
-         
+
     def printLines(self, c, e):        
         """Simple print method"""
         if e.eventtype() != 'ping' and e.eventtype() != 'all_raw_messages':   
-            self.fp.write("%s\t%s:%s -> %s:%s\t%s\t%s\t%s\t%s\n" % (self.tf(e.time), e.src, e.sport, e.dst, e.dport,
+            self.fp.write("%s\t%s:%s -> %s:%s\t%s\t%s\t%s\t%s" % (self.tf(e.time), e.src, e.sport, e.dst, e.dport,
                                          e.eventtype(), e.source(),
                                          e.target(), ' '.join(e.arguments())))
              
@@ -183,7 +183,7 @@ class ircDecode(Base):
         if len(self.botlines) > 0:
             self.doOutput("\n\tPossible bot commands:\n")
             for line, matches in self.botlines:
-                self.doOutput("\t\t%s\n\t\t\t(matches %s)" % (line, matches))
+                self.doOutput("\t\t%s\t([Honeysnap: line matches %s]\n" % (line, matches))
         """
         print "\n****** talking ips ******"
         for k,v in self.ips.items():
@@ -208,7 +208,7 @@ class ircDecode(Base):
         data = ' '.join(e.arguments())
         matches = [w for w in self.botwords if w in data]
         if len(matches) > 0:  
-            self.botlines.append( [str(e), matches])
+            self.botlines.append([str(e), matches])
         
     def keywords(self, c, e):
         """Find lines matching word list"""

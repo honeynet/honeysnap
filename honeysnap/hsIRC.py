@@ -36,7 +36,9 @@ import time
 from datetime import datetime
 from socket import inet_ntoa 
 import sys
+from singletonmixin import HoneysnapSingleton
        
+      
        
 class HnyEvent(irclib.Event):
     """
@@ -45,6 +47,9 @@ class HnyEvent(irclib.Event):
     """ 
     def __init__(self, ts, pkt, eventtype, source, target, arguments=None): 
         irclib.Event.__init__(self, eventtype, source, target, arguments)
+        hs = HoneysnapSingleton.getInstance()
+        options = hs.getOptions()
+        self.tf = options['time_convert_fn']
         self.time  = ts
         self.src   = inet_ntoa(pkt.src)
         self.dst   = inet_ntoa(pkt.dst)
@@ -52,7 +57,7 @@ class HnyEvent(irclib.Event):
         self.sport = pkt.data.sport 
     
     def __str__(self):                                 
-         return "%s\t%s:%s -> %s:%s\t%s\t%s\t%s\t%s" % (datetime.fromtimestamp(self.time), self.src, self.sport, self.dst, self.dport,
+         return "%s\t%s:%s -> %s:%s\t%s\t%s\t%s\t%s" % (self.tf(self.time), self.src, self.sport, self.dst, self.dport,
                                       self.eventtype(), self.source(),
                                       self.target(), ' '.join(self.arguments()))
                                       

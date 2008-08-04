@@ -577,7 +577,7 @@ def parseOptions():
         options['time_convert_fn'] = lambda x: time.asctime(time.localtime(x))
     if options['raw_time'] == "YES":
         if options['use_utc'] != 'YES':
-            options['time_convert_fn'] = lambda x: x
+            options['time_convert_fn'] = lambda x: "%.4f" % x
         else:
             print "Can't use --raw-time with --use-utc"
             sys.exit(1)
