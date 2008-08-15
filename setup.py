@@ -11,7 +11,7 @@ VERSION="1.0.6.14"
 
 setup(name="honeysnap",
     version=VERSION,
-    author="Jed Hale/Arthur Clune",
+    author="Arthur Clune/Arthur Clune",
     author_email="honeysnap@honeynet.org",  
     url="https://projects.honeynet.org/honeysnap/", 
     description="A tool for analysing pcap files",
@@ -19,8 +19,8 @@ setup(name="honeysnap",
     license="GNU GPL",
     packages=["honeysnap"],
     scripts = [
-        'scripts/xBytesNseconds.py',
-        'scripts/threshholdflows.py',
+        'scripts/xBytesNseconds',
+        'scripts/threshholdflows',
     ],    
     include_package_data=True,
 
