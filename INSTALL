@@ -105,7 +105,7 @@ ez_setup.py from
 
 and run it. This will install easy_setup. Finally run
 
-  easy_install honeysnap-1.0.6.zip
+  easy_install -f . honeysnap-1.0.6.zip
                                                     
 This should download and install honeysnap and all its
 dependencies.
