@@ -65,7 +65,7 @@ If you already have easy_install installed, you can simplify the
 installation process further by simply executing the following.
 
   $ sudo easy_install https://projects.honeynet.org/honeysnap/attachment/wiki/WikiStart/pypcap-1.1.tar.gz
-  $ sudo easy_install honeysnap-1.0.6.tar.gz 
+  $ sudo easy_install -f . honeysnap-1.0.6.tar.gz 
 
 This is exactly the same as untar'ing the distribution and
 running 'sudo python setup.py install'
