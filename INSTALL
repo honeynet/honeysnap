@@ -43,12 +43,17 @@ Debian/Ubuntu with python2.4:
   $ sudo apt-get install python2.4-dev
   $ sudo apt-get install libpcap0.8 libpcap0.8-dev
 
+On Fedora/RHEL
+
+$ sudo yum install python-devel
+$ sudo yum install libpcap-devel
+
 Get pypcap from https://projects.honeynet.org/honeysnap/attachment/wiki/WikiStart/pypcap-1.1.tar.gz
 
 This version is the same as the one from Dug Song's site, but with the 
 installer altered to install cleanly on linux and on python 2.5.
                               
-$ wget https://projects.honeynet.org/honeysnap/attachment/wiki/WikiStart/pypcap-1.1.tar.gz
+$ wget -O pypcap-1.1.tar.gz --no-check-certificate https://projects.honeynet.org/honeysnap/attachment/wiki/WikiStart/pypcap-1.1.tar.gz
 $ tar xvzf pypcap-1.1.tar.gz
 $ cd pcap-1.1
 $ sudo python setup.py install
