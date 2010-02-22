@@ -1,0 +1,156 @@
+INSTALLING HONEYSNAP
+=====================
+
+This document explains step by step how to install
+Honeysnap, including all dependencies.  Suggestions
+for this document, or Honeysnap in general should be
+sent to <honeysnap@honeynet.org>.  This document is
+broken down into the following parts.
+
+1: Dependencies
+2: Installation on a Linux/Unix/OS X Workstation
+3: Installation on Windows
+4: Installation on a Honeywall
+5: Running Honeysnap
+
+
+1. DEPENDENCIES
+================
+
+General Dependencies
+ Python 2.4 or greater      http://www.python.org
+ libpcap                    http://sourceforge.net/projects/libpcap/
+ pypcap 1.1 or greater      http://code.google.com/p/pypcap/
+
+Pure python modules:
+ irclib 0.4.6 or greater    http://python-irclib.sourceforge.net/
+ dpkt                       http://code.google.com/p/dpkt/
+ magic                      http://www.demonseed.net/~jp/code/magic.py
+
+This latter set should be installed automatically and are listed
+here for completeness.
+      
+2: INSTALLATION ON UNIX
+========================
+
+First, you will need to install python 2.4 or 2.5 and its header file.  Most
+distributions most likely already have this installed.  Then you will
+need libpcap.  For most UNIX-like systems, it should be in your package 
+management system (apt-get, yum, MacPorts etc.).  You will need libpcap 
+and also libpcap-devel if that is listed separately.  For example, on
+Debian/Ubuntu with python2.4:
+
+  $ sudo apt-get install python2.4-dev
+  $ sudo apt-get install libpcap0.8 libpcap0.8-dev
+
+On Fedora/RHEL
+
+$ sudo yum install python-devel
+$ sudo yum install libpcap-devel
+
+Get pypcap from https://projects.honeynet.org/honeysnap/attachment/wiki/WikiStart/pypcap-1.1.tar.gz
+
+This version is the same as the one from Dug Song's site, but with the 
+installer altered to install cleanly on linux and on python 2.5.
+                              
+$ wget -O pypcap-1.1.tar.gz --no-check-certificate https://projects.honeynet.org/honeysnap/attachment/wiki/WikiStart/pypcap-1.1.tar.gz
+$ tar xvzf pypcap-1.1.tar.gz
+$ cd pcap-1.1
+$ sudo python setup.py install
+
+You should then be able to install Honeysnap and all its remaining
+dependencies (provided you have a network connection).
+E.g. for version 1.0.6:
+
+  $ tar xvzf honeysnap-1.0.6
+  $ cd honeysnap-1.0.6
+  $ sudo python setup.py install
+
+If you already have easy_install installed, you can simplify the
+installation process further by simply executing the following.
+
+  $ sudo easy_install https://projects.honeynet.org/honeysnap/attachment/wiki/WikiStart/pypcap-1.1.tar.gz
+  $ sudo easy_install -f . honeysnap-1.0.6.tar.gz 
+
+This is exactly the same as untar'ing the distribution and
+running 'sudo python setup.py install'
+
+Please note that this will install the honeysnap script into your
+PATH, usually in /usr/bin. If this isn't what you want, specify
+--script-dir. e.g
+
+$ sudo easy_install --script-dir /usr/local/bin honeysnap-1.0.6.tar.gz
+
+3: INSTALLATION ON WINDOWS
+==========================
+
+Download  and install the following, in order.
+
+  * Python 2.4 (from http://www.python.org/download). You can install
+  from the Windows MSI installer linked from that page.
+
+  * winpcap from
+  http://www.winpcap.org/install/default.htm  
+	
+  * pypcap from http://code.google.com/p/pypcap/downloads/list
+  You need to download and run the Windows installer for your 
+  version of Python (2.4 in our example)
+
+To make Python easily available on the command line, right click
+on "My Computer" and select Properties. Then go to Advanced and
+choose Environment Variables. Add to the end of the PATH variable 
+
+ ;C:\Python24;C:\Python24\Scripts
+
+(assuming you installed Python to the default location). If you 
+don't already have setuptools installed, you'll need to download 
+ez_setup.py from
+
+  http://peak.telecommunity.com/dist/ez_setup.py
+
+and run it. This will install easy_setup. Finally run
+
+  easy_install -f . honeysnap-1.0.6.zip
+                                                    
+This should download and install honeysnap and all its
+dependencies.
+                 
+4: INSTALLATION ON A HONEYWALL
+==============================
+
+Note: These instructions apply to version 1.3 of the Honeywall
+and later only.
+                 
+i) yum install pcap 
+
+ii) Install honeysnap (e.g. version 1.0.6):
+
+$ wget https://projects.honeynet.org/honeysnap/attachment/wiki/WikiStart/honeysnap-1.0.6.12.tar.gz 
+$ tar xvzf honeysnap-1.0.6
+$ cd honeysnap-1.0.6
+$ sudo python setup.py install
+
+ii) Test!
+
+$ honeysnap --version
+
+
+5: Running honeysnap
+====================
+Try to execute 'honeysnap':
+
+  $ honeysnap
+
+You should see:
+                               
+usage: honeysnap [options]
+
+options:
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  [.... more options snipped....]
+
+  Please see the accompanying documentation for instructions on
+  configuration.
+
+       

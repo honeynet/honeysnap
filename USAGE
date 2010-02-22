@@ -1,0 +1,206 @@
+$Id$
+
+PURPOSE OF THIS DOCUMENT
+========================
+
+To give detailed information on the operation of Honeysnap.
+In addition, to provide examples of its value and output.
+It's assumed you have already read and understood the INSTALL
+and README docs that accompany the distribution.
+
+
+GETTING STARTED
+===============
+
+The easiest way to get started is to take the sample
+honeynet.cfg file, alter the IP address of the honeypot
+to match your setup (the line HONEYPOTS=). Then to run
+honeysnap over a data file 'myfile.pcap' with most of the
+options turned on, run
+
+honeysnap -c honeynet.cfg myfile.pcap
+
+This should print a large set of output to the screen
+and store a chunk of data in a directory called 'analysis'
+(unless you changed that in the config file). 
+
+Doing this should give you a basic idea as to what honeysnap
+can do. In general, you may find it simpler to stick with
+the config file method until you are happy with all the options 
+rather than using the (many) command line switches.
+ 
+Remember to use a new output directory for each run. In order
+to handle multiple files, honeysnap will append to existing files
+for things like IRC and sebek output. This is probably not what
+you want for un-related files!
+                                    
+WORDS
+=====
+
+Honeysnap has the ability to intelligently analyze and report
+on specific words used in IRC communications. This is done
+using the 'words' file.  The words file is used by Honeysnap 
+to search IRC traffic for specific key words.  You can specify 
+a words file in Honeysnap with --words at the cmd line or by 
+setting WORDFILE=/path/to/file in the config file.  The words 
+file should can contain as words as the user requires, one 
+per line.  If no words file is provided, Honeysnap 
+will use a built-in set of words. If a word file is provided,
+honeysnap will append the user-supplied list to its own list.
+
+EXAMPLES
+========
+
+A variety of examples and the expected output.
+
+Here we get the standard command line options
+
+ honeysnap --help 
+
+You do not have to have a configuration file to run Honeysnap.  You 
+can run Honeysnap strictly using command line options.  When run 
+from the command line without a configuration file, you must specify 
+-H to tell Honeysnap the ip's of your honeypots.
+
+Here is an example of the most basic Honeysnap command, assuming 
+10.1.1.2 and 10.1.1.3 are your honeypots.  This command will open 
+pcapfile and output some basic information: 
+
+ honeysnap -H10.1.1.2,10.1.1.3 pcapfile
+
+To get some quick stats for packet counts for a few protocols:
+
+ honeysnap -H10.1.1.2,10.1.1.3 --do-packets pcapfile
+
+To extract HTTP info and files.  The extracted data is placed in 
+/tmp/analysis by default.  Some information about what Honeysnap 
+did will be written to standard out:
+
+ honeysnap -H10.1.1.2,10.1.1.3 --do-http pcapfile
+
+To extract http info and place the data somewhere else:
+
+ honeysnap -H10.1.1.2,10.1.1.3 --do-http -o /home/user/analysis pcapfile
+
+To extract http info and write the results to a file instead of 
+standard out:
+ 
+ honeysnap -H10.1.1.2,10.1.1.3 --do-http -f /home/user/analysis/results.txt pcapfile
+
+To extract irc statistics, and do honeysnap's irc analysis:
+
+ honeysnap -H10.1.1.2,10.1.1.3 --do-irc pcapfile
+
+To extract from ftp:
+
+ honeysnap -H10.1.1.2,10.1.1.3 --do-ftp pcapfile
+
+To extract sebek info:
+
+ honeysnap -H10.1.1.2,10.1.1.3 --do-sebek pcapfile
+
+To extract smtp:
+
+ honeysnap -H10.1.1.2,10.1.1.3 --do-smtp pcapfile
+
+To look at outbound flow information:
+
+ honeysnap -H10.1.1.2,10.1.1.3 --do-outgoing pcapfile
+
+To get a more verbose look at outbound flows:
+
+ honeysnap -H10.1.1.2,10.1.1.3 --do-outgoing --verbose-summary pcapfile
+
+To do binary extraction from all flows:
+
+ honeysnap -H10.1.1.2,10.1.1.3 --all-flows  pcapfile
+
+All of these options can be combined at the command line:
+
+ honeysnap -H10.1.1.2,10.1.1.3 --do-outgoing --do-irc --do-ftp --do-sebek --do-htp --do-outgoing -o /home/user/analysis -f /home/user/analysis/results.txt -d /home/pcaps
+
+All the command line options are generally useful to do 
+quick one off runs against some pcap data.  If a configuration 
+file is provided, along with command line options, then any 
+options specified at the command line take precedence.
+
+The configuration file provided with the honeysnap distribution 
+(honeynet.cfg) is well commented and is a good place to start 
+in writing your own config file.
+
+If you want to do a daily run out of cron to generate daily 
+reports then you would want something like the following.  
+daily.cfg should contain all the options you want to run every day:
+
+ honeysnap -c daily.cfg -d $YESTERDAYS_DATA_DIRECTORY -o $OUTPUT_DIR -f $RESULTS_FILE
+
+
+CREATING NEW MODULES
+====================
+
+Honeysnap is modular, allowing people to add their own decoding
+routines, extending its capabilities.  To get started, first study 
+main.py.  This file contains the core code that makes honeysnap do 
+its thing, this is where the main loop resides, option parsing and 
+file handling happens here as well.  Looking at the processFile 
+function in main.py will show you how Honeysnap's modules are used 
+to do the actual processing of the data.  Next look at how some of 
+the modules that do the actual processing work.  We suggest 
+starting with packetCounter.py, httpDecode.py, smtpDecode.py, etc.
+
+It's also possible to use Honeysnap without changing the code. e.g.
+At some point somebody had made a feature request for honeysnap to 
+extract flow statistics of all flows where greater than N bytes 
+were transferred in less than X seconds.  To keep adding endless 
+variations of analysis to honeysnap will only make it more and 
+more complex to use, and more prone to bugs. 
+
+We've used this specific feature request as an opportunity 
+to illustrate how to use honeysnap modules to write a specific 
+application.  xBytesNseconds.py does one thing: it reads pcap 
+files and reports flows that contain more than X bytes in 
+N seconds.  It will read regular or gzip compressed pcap files 
+or from standard input.   If you look at the code you will see 
+the bulk of the program is involved with details of handling 
+command line options, file handling, and output.  The actual 
+data analysis work itself is contained in only 1 function.  
+
+The code is heavily commented to help the reader follow along.
+
+Here's the basic usage:
+ xBytesNseconds.py [options]
+Options:
+  --version             show program's version number and exit
+  -h, --help            show this help message and exit
+  -b BYTES, --bytes=BYTES
+                        Look for flows greater than bytes, defaults to 0
+  -s SECONDS, --seconds=SECONDS
+                        Ceiling in seconds for candidate flows, defaults to
+                        sys.maxint
+  -H HONEYPOTS, --honeypots=HONEYPOTS
+                        Comma delimited list of honeypots
+
+For examples:
+xBytesNseconds.py -H10.0.0.2,10.0.0.3 -b 1000 -s 10 /data/pcaps/somepcap.gz
+
+This will examine /data/pcaps/somepcap.gz for any flows of less than 
+10 seconds duration with more than 1000 bytes transmitted. The code
+is included in the scripts/ directory in this distribution.
+
+MULTIPLE FILES
+==============
+
+Honeysnap can handle multiple pcap files, compressed or 
+un-compressed.  You have several options on how to do this.
+
+Multiple Files 
+
+ honeysnap -c honeysnap.cfg pcap1 pcap2 pcap3
+
+    
+In general, using a script is a better solution than giving
+multiple files on the command line unless you only have a couple 
+of files as it will make the output much easier to deal with and 
+reduce the risk of overlapping filenames.
+ 
+

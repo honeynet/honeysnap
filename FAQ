@@ -1,0 +1,122 @@
+$Id$
+
+FAQ
+===
+
+Some common questions/problems.    
+  
+Questions
+=========
+
+1) Honeysnap is showing all counts as zero even though I know 
+there are packets it should be counting!
+
+2) When Honeysnap processes separate pcap files it reports on
+each one separately. How do I get it to just report on all the
+files as one?
+             
+3) Does Honeysnap support Python 2.3?
+
+4) Honeysnap installs the binaries in a stupid place! How do I 
+change where they go?
+
+5) I want to hack on the code, but running $ sudo python setup.py install
+every time I make a change is annoying!    
+
+6) I'm getting 'Too many open file' errors or 'honeysnap.flow.fileHandleError' 
+
+7) Does Honeysnap work on Windows?
+
+8) I noticed TCP protocols such as HTTP, SMTP and FTP each show packets
+going outbound, but all 3 show 0 packets inbound.  How is that possible?  
+Since TCP is a stateful packet, should there also be a lot of return packets? 
+
+9) The packet counts show traffic on a protocol, but honeysnap doesn't seem
+to have decoded it even though it can! 
+
+Answers
+=======
+
+1) Honeysnap is showing all counts as zero even though I know 
+there are packets it should be counting!
+
+A) Check that your honeypot IP addresses are correct. If they
+are wrong, honeysnap will be looking for packets to hosts that
+may well not even be in the pcap file, hence the zero counts
+
+2) When Honeysnap processes separate pcap files it reports on
+each one separately. How do I get it to just report on all the
+files as one?
+
+A) There is no functionality in Honeysnap itself to do this
+currently, however it is easy to do. First use another program
+to merge the pcap files into one and then run honeysnap on 
+the result.
+
+One program that does this is pcapmerge, which is part of 
+tcpreplay, available from
+
+http://www.sourceforge.net/projects/tcpreplay/
+
+Install this, and then use
+
+pcapmerge -o outfile pcap1 pcap2
+
+to merge the files pcap1 and pcap2 into one file 'outfile'.
+Then run honeysnap over 'outfile'.   
+
+3) Does Honeysnap support Python 2.3?
+
+A) No. Honeysnap requires Python 2.4 or greater.   
+ 
+4) Honeysnap installs the binaries in a stupid place! How do I 
+change where they go?
+                                                          
+A) Specify a script directory like this:
+
+$ sudo python setup.py install --install-scripts=/usr/local/bin
+
+5) I want to hack on the code, but running 
+$ sudo python setup.py install
+every time I make a change is annoying!
+
+A) Instead of the standard 'python setup.py install' run:
+
+python setup.py develop
+
+This will point the path at your install directory so honeysnap
+will run directly from there. Specify --uninstall to undo.    
+
+You'll need to re-run this everytime the version number changes
+or you'll get a traceback.
+
+6) I'm getting 'Too many open file' errors or 'honeysnap.flow.fileHandleError'
+
+A) Please report a bug in Bugzilla! As a workaround, try increasing the
+number of open files. On a UNIX-like systems (Linux, OS X etc), run
+
+$ ulimit -n 4096
+                           
+
+7) Does Honeysnap work on Windows?
+
+A) As of 1.0.3, it should work fine. See the INSTALL docs for details. 
+If you have problems, please report a bug!
+
+8) I noticed TCP protocols such as HTTP, SMTP and FTP each show packets
+going outbound, but all 3 show 0 packets inbound.  How is that possible?  
+Since TCP is a stateful packet, should there also be a lot of return packets?
+
+A) As an example, The tcpdump filter for HTTP is "src HP and dst port 80"
+for outbound. For inbound it's "dst HP and dst port 80" so will only show 
+a count if a HTTP server is running (which would be interesting). Replies 
+to requests go to a high port so don't get counted.
+   
+9) The packet counts show traffic on a protocol, but honeysnap doesn't seem
+to have decoded it even though it can!
+
+A) Have a look at the data in ethereal/a packet sniffer. The packet counts
+don't look at tcp state, while the flow extraction does, so packets will
+still be counted even if they are out-of-state (e.g. Checksum incorrect)
+but will not be decoded.
+
