@@ -32,13 +32,15 @@ from util import orderByValue, make_dir
 from base import Base
 
 # global bot word list.
-botprefixes = [".", "-", "!", "\`",  "\\", "|"]
-botcoms = ["die ", "esay ", "flood ", "m ", "me ", "part ", "payment ", "ping ", "s ", "say ", "server ",
-        "services ", "startflood ", "stopflood ", "x ", "antiaction ", "antibold ", "anticolour ", "antinotice ",
-        "antipub ", "antirepeat ", "antireverse ", "antiunderline ", "antiurl ", "autovoice ", "chanserv ", 
-        "cycle ", "dynamicexempts ", "dynamicinvites ", "enforcetopiclimit ", "nodesynch ", "locked ",
-        "noop ", "op ", "passive ", "private ", "revenge ", "revengebot ", "secret ", "seen ", "seen ",
-        "shared ", "stats ", "strictop ", "suspended ", "topic ", "userexempts ", "userinvites ", "voice "]
+botprefixes = ["", "?", ":", ".", "-", "!", "\`",  "\\", "|"]
+botcoms = ["die ", "esay ", "flood ", "m ", "me ", "part ", "payment ", "ping ", "pingstop ", "s ", "say ", "server ", "services ", "startflood ",
+        "stopflood ", "x ", "advscan ", "asc ", "aolspam.", "antiaction ", "antibold ", "anticolour ", "antinotice ", "antipub ", "antirepeat ", "antireverse ",
+        "antiunderline ", "antiurl ", "autovoice ", "carnivore ", "chanserv ", "clone ", "c ", "clonestop ", "cycle ", "c_raw ", "c_mode ", "c_nick ",
+        "c_join ", "c_part ", "c_privmsg ", "c_action ", "c_r ", "c_m ", "c_n ", "c_j ", "c_p ", "c_pm ", "c_a ", "cvar.", "download ", "dl ", "dynamicexempts ",
+        "dynamicinvites ", "ddos.", "enforcetopiclimit ", "email ", "execute ", "findfile ", "ff ", "findfilestopp ", "http.", "icmp ", "icmpflood ",
+        "nodesynch ", "locked ", "noop ", "op ", "passive ", "private ", "rename ", "mv ", "revenge ", "revengebot ", "scanall ", "sa ", "scandel ", "scan.",
+        "scanstop ", "scanstats ", "secret ", "seen ", "seen ", "shared ", "sniffer.", "stats ", "spam.", "syn ", "synstop ", "strictop ", "suspended ", "topic ",
+        "udp ", "udpstop ", "update ", "up ", "userexempts ", "userinvites ", "voice "]
 
 botwords = []
 for i in botprefixes:
@@ -91,7 +93,9 @@ class ircDecode(Base):
         self.botwords = botwords
         self.words = words
         self.wordlines = []
-        self.botlines = []
+        self.botlines = []    
+        self.currenttopicsBotCmd = []
+        self.currenttopicsKeyword = []        
         self.privcount = 0     
         self.dir = ""
         self.fp = sys.stdout   
@@ -154,7 +158,7 @@ class ircDecode(Base):
                 self.targets[target] = 0
             self.targets[target] += 1
             #self.ipsearch(c,e)
-            if cmd in ["privmsg", "pubmsg", "notice", "privnotice"]:
+            if cmd in ['privmsg', 'mode', 'quit', 'nick', 'join', 'pubmsg', 'currenttopic', 'topicinfo', 'topic']:
                 self.analyzeMsg(c, e)
             
     def printSummary(self):
@@ -195,7 +199,7 @@ class ircDecode(Base):
     
     def ipsearch(self, c, e):
         cmd = e.eventtype()
-        if cmd in ['privmsg', 'mode', 'quit', 'nick', 'join', 'pubmsg']:
+        if cmd in ['privmsg', 'mode', 'quit', 'nick', 'join', 'pubmsg', 'currenttopic', 'topicinfo', 'topic']:
             #srcip = dnet.addr(c.pkt.src)
             srcip = e.src
             if srcip not in self.ips:
@@ -204,18 +208,43 @@ class ircDecode(Base):
                 self.ips[srcip][e.source()] = 1
                 
     def botcmds(self, c, e):   
-        """Find lines matching botwords"""
+        """Find lines matching botwords"""     
+        if e.eventtype() == 'topicinfo':
+            self.topics(e, 'botcmds')
+            return
         data = ' '.join(e.arguments())
         matches = [w for w in self.botwords if w in data]
         if len(matches) > 0:  
-            self.botlines.append([str(e), matches])
+            self.botlines.append([str(e), matches])  
+            if e.eventtype() == 'currenttopic':
+                self.currenttopicsBotCmd.append(str(e))
         
     def keywords(self, c, e):
-        """Find lines matching word list"""
+        """Find lines matching word list"""    
+        if e.eventtype() == 'topicinfo':
+            self.topics(e, 'keyword')
+            return        
         data = ' '.join(e.arguments())
         matches = [w for w in self.words if w in data]
         if len(matches) > 0: 
-            self.wordlines.append([str(e), matches])
+            self.wordlines.append([str(e), matches])  
+            if e.eventtype() == 'currenttopic':
+                self.currenttopicsKeyword.append(str(e))            
+
+    def topics(self, e, matchtype):
+        """
+        Find matching currenttopic and topicinfo
+        Store result in self.botlines or self.wordlines (for keyword matches)
+        """
+        savedtopics = self.currenttopicsBotCmd
+        matchlist   = self.botlines
+        if matchtype == 'keyword':
+            savedtopics = self.currenttopicsKeyword
+            matchlist   = self.wordlines
+        timecmp = str(e).split(' ')[0].strip()
+        for s in savedtopics:
+            if s.split(' ')[0].strip() == timecmp:
+                matchlist.append([str(e), 'currenttopic'])
     
     def analyzeMsg(self, c, e):
         """
@@ -231,10 +260,9 @@ class ircDecode(Base):
             return
         else:
             fromuser = e.source()
-        #t = time.asctime(time.localtime(c.ts))
         t = e.time
         cmd = e.eventtype()
-        if cmd == "pubmsg" or cmd=="notice":
+        if cmd == "pubmsg" or cmd=="notice" or cmd=="topic":
             channel = e.target()
         if cmd == "privmsg" or cmd=="privnotice":
             targetuser = e.target()

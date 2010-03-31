@@ -22,10 +22,10 @@ setup(name="honeysnap",
 
     install_requires = [
         "python-irclib>=0.4.6",
-        "dpkt>=1.6", 
+        "dpkt>=1.7", 
     ],
     dependency_links = [    
-        "http://dpkt.googlecode.com/files/dpkt-1.6.tar.gz",
+        "http://dpkt.googlecode.com/files/dpkt-1.7.tar.gz",
     ],
     entry_points = {
         'console_scripts': [
