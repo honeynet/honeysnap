@@ -24,7 +24,8 @@ from hsIRC import HoneySnapIRC
 from singletonmixin import HoneysnapSingleton
 import math 
 import os
-import time    
+import time
+import socket
 import sys
 import re
 #import dnet
@@ -78,7 +79,7 @@ class ircDecode(Base):
     * top N ips
     """
 
-    def __init__(self):        
+    def __init__(self, hp):        
         hs = HoneysnapSingleton.getInstance()
         options = hs.getOptions()
         Base.__init__(self)
@@ -95,7 +96,11 @@ class ircDecode(Base):
         self.wordlines = []
         self.botlines = []    
         self.currenttopicsBotCmd = []
-        self.currenttopicsKeyword = []        
+        self.currenttopicsKeyword = []
+        self.serversvisited = []
+        self.channelsvisited = []
+        self.possbotnet = False
+        self.honeypot = hp       
         self.privcount = 0     
         self.dir = ""
         self.fp = sys.stdout   
@@ -158,7 +163,7 @@ class ircDecode(Base):
                 self.targets[target] = 0
             self.targets[target] += 1
             #self.ipsearch(c,e)
-            if cmd in ['privmsg', 'mode', 'quit', 'nick', 'join', 'pubmsg', 'currenttopic', 'topicinfo', 'topic']:
+            if cmd in ['privmsg', 'mode', 'quit', 'nick', 'join', 'pubmsg', 'currenttopic', 'topicinfo', 'topic', 'pass']:
                 self.analyzeMsg(c, e)
             
     def printSummary(self):
@@ -180,6 +185,7 @@ class ircDecode(Base):
         self.doOutput("\tIPs %d\n" % len(self.ips))
         self.doOutput("\tUsers %d\n" % len(self.users))
         self.doOutput("\tChannels %d\n" % len(self.channels))
+        
         if len(self.wordlines) > 0:
             self.doOutput("\tLines matching wordlist:\n")
             for line, matches in self.wordlines:
@@ -188,6 +194,24 @@ class ircDecode(Base):
             self.doOutput("\n\tPossible bot commands:\n")
             for line, matches in self.botlines:
                 self.doOutput("\t\t%s\t([Honeysnap: line matches %s]\n" % (line, matches))
+            if len(self.serversvisited) > 0:
+                self.possbotnet = self.possbotnetMatch()
+            if self.possbotnet:
+                connections = ""
+                for server, port, password in self.serversvisited:
+                    if server != self.honeypot:
+                        try:
+                            host = socket.gethostbyaddr(server)[0]
+                        except socket.herror:
+                            host = server
+                        connections = "\t\tServer: %s\tPort: %s\tPassword: %s\t" % (host, port, password)
+                        for conn, channel, passwd in self.channelsvisited:
+                            if conn == server:
+                                tmp = "[Channel: %s Password: %s]\t" % (channel, passwd)
+                                connections += tmp
+                if len(connections) > 0:
+                    self.doOutput("\n\tPossible botnet command and control servers and channels:\n")
+                    self.doOutput(connections + "\n\n")
         """
         print "\n****** talking ips ******"
         for k,v in self.ips.items():
@@ -195,11 +219,26 @@ class ircDecode(Base):
             for i in v.keys():
                 print "\t"+i
         """
-
+        
+    def possbotnetMatch(self):
+        """ 
+        Look for matching hosts in self.wordlines
+        and self.botlines to find possible botnet servers
+        stored in self.serversvisited
+        """
+        mergedlist = self.wordlines
+        for s in self.botlines:
+            mergedlist.append(s)
+            
+        for server, port, password in self.serversvisited:
+            for line, matches in mergedlist:
+                if server in line:
+                    return True
+        return False
     
     def ipsearch(self, c, e):
         cmd = e.eventtype()
-        if cmd in ['privmsg', 'mode', 'quit', 'nick', 'join', 'pubmsg', 'currenttopic', 'topicinfo', 'topic']:
+        if cmd in ['privmsg', 'mode', 'quit', 'nick', 'join', 'pubmsg', 'currenttopic', 'topicinfo', 'topic', 'pass']:
             #srcip = dnet.addr(c.pkt.src)
             srcip = e.src
             if srcip not in self.ips:
@@ -244,7 +283,9 @@ class ircDecode(Base):
         timecmp = str(e).split(' ')[0].strip()
         for s in savedtopics:
             if s.split(' ')[0].strip() == timecmp:
-                matchlist.append([str(e), 'currenttopic'])
+                if not str(e) in matchlist:
+                    matchlist.append([str(e), 'currenttopic'])
+                    break
     
     def analyzeMsg(self, c, e):
         """
@@ -253,6 +294,25 @@ class ircDecode(Base):
         e: instance of irclib.Event
         This function handles analysis for any IRC events.
         """
+        
+        if e.eventtype() == 'pass':
+            sep = str(e).split(' ')
+            port = sep[len(sep) - 1].split('\t')[0].split(':')[1]
+            self.serversvisited.append([e.dst, port, e.target()])
+            return
+            
+        if e.eventtype() == 'join':
+            foundmatch = False
+            for server, port, passwd in self.serversvisited:
+                if e.dst in server:
+                    foundmatch = True
+            if not foundmatch:
+                sep = str(e).split(' ')
+                port = sep[len(sep) - 1].split('\t')[0].split(':')[1]
+                self.serversvisited.append([e.dst, port, ""])
+            self.channelsvisited.append([e.dst, e.target(), " ".join(e.arguments())])
+            return
+            
         channel = None
         targetuser = None
         fromuser = None

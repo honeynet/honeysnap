@@ -273,7 +273,7 @@ def processFile(file):
                 out("\nHoneypot %s, port %s\n\n" % (hp, port))
                 hirc = HoneySnapIRC()
                 hirc.connect(tmpf, "host %s and tcp and port %s" % (hp, port))
-                hd = ircDecode()
+                hd = ircDecode(hp)
                 hd.setOutput(out)
                 hd.setOutdir(outdir)
                 hd.setOutfile('irclog-%s.txt' % port)
